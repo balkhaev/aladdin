@@ -1,0 +1,26 @@
+{
+  "name": "@aladdin/market-data",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist",
+    "start": "bun dist/index.js",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aladdin/shared": "workspace:*",
+    "@hono/node-server": "^1.13.7",
+    "dotenv": "^17.2.3",
+    "hono": "^4.7.8",
+    "ws": "^8.18.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.3"
+  }
+}

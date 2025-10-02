@@ -1,0 +1,26 @@
+{
+  "name": "@aladdin/portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "check": "biome check .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@aladdin/database": "workspace:*",
+    "@aladdin/shared": "workspace:*",
+    "bullmq": "^5.29.3",
+    "dotenv": "^16.4.7",
+    "hono": "^4.7.12",
+    "ioredis": "^5.4.2",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

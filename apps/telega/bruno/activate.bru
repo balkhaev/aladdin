@@ -1,0 +1,26 @@
+meta {
+  name: Activate Channel Subscription
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/channels/cryptosignalschannel/activate
+  body: none
+  auth: none
+}
+
+docs {
+  # Активировать подписку на канал
+  
+  Активирует ранее деактивированную подписку и подключается к каналу.
+  Подписка должна существовать в Redis.
+  
+  ## URL Parameters
+  - `channelId`: имя канала без @ (в URL)
+  
+  ## Response
+  - `message`: статус операции
+  - `channelId`: ID канала
+}
+

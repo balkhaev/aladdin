@@ -1,0 +1,22 @@
+{
+  "name": "twity-api",
+  "version": "0.0.1",
+  "description": "Lightweight Twitter scraper using Puppeteer",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts"
+  },
+  "dependencies": {
+    "@aladdin/shared": "workspace:*",
+    "@clickhouse/client": "^1.12.1",
+    "@types/node": "^20.11.19",
+    "dotenv": "^17.0.0",
+    "hono": "^4.3.0",
+    "puppeteer": "^22.8.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.4.0"
+  }
+}

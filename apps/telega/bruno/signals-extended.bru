@@ -1,0 +1,20 @@
+meta {
+  name: Get Signals (Extended)
+  type: http
+  seq: 8
+}
+
+get {
+  url: http://localhost:3005/signals?limit=20
+  body: none
+  auth: none
+}
+
+query {
+  limit: 20
+}
+
+docs {
+  Получить последние 20 сигналов из базы данных.
+  Сигналы хранятся в PostgreSQL после парсинга из Telegram.
+} 

@@ -1,0 +1,53 @@
+{
+  "name": "coffee",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "oxlint",
+    "dev": "turbo dev --concurrency 15",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "dev:market-data": "turbo -F @aladdin/market-data dev",
+    "dev:trading": "turbo -F @aladdin/trading dev",
+    "dev:portfolio": "turbo -F @aladdin/portfolio dev",
+    "dev:risk": "turbo -F @aladdin/risk dev",
+    "dev:analytics": "turbo -F @aladdin/analytics dev",
+    "dev:screener": "turbo -F @aladdin/screener dev",
+    "dev:macro-data": "turbo -F @aladdin/macro-data dev",
+    "dev:on-chain": "turbo -F @aladdin/on-chain dev",
+    "dev:sentiment": "turbo -F @aladdin/sentiment dev",
+    "dev:strategy-executor": "turbo -F @aladdin/strategy-executor dev",
+    "db:push": "turbo -F @aladdin/database db:push",
+    "db:seed": "turbo -F @aladdin/database db:seed",
+    "db:studio": "turbo -F @aladdin/database db:studio",
+    "db:generate": "turbo -F @aladdin/database db:generate",
+    "db:migrate": "turbo -F @aladdin/database db:migrate",
+    "clickhouse:schema": "bun scripts/apply-clickhouse-schema.ts",
+    "infra:up": "docker-compose up -d",
+    "infra:down": "docker-compose down",
+    "infra:logs": "docker-compose logs -f"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "bun-types": "^1.2.23",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "oxlint": "^1.12.0",
+    "turbo": "^2.5.4",
+    "ultracite": "5.4.7"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "bun x ultracite fix"
+    ]
+  },
+  "packageManager": "bun@1.2.21"
+}

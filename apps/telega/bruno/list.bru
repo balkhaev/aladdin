@@ -1,0 +1,25 @@
+meta {
+  name: Get All Channels
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/channels
+  body: none
+  auth: none
+}
+
+docs {
+  # Получить список всех подписок на каналы
+  
+  Возвращает все подписки (активные и неактивные) из Redis,
+  а также список текущих активных каналов в userbot.
+  
+  ## Response
+  - `subscriptions`: массив всех подписок
+  - `activeChannels`: массив ID активных каналов в userbot
+  - `total`: общее количество подписок
+  - `active`: количество активных каналов
+}
+

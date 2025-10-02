@@ -1,0 +1,35 @@
+meta {
+  name: Get Recent Messages from All Channels
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/channels/messages/recent?limit=5
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 5
+}
+
+docs {
+  # Получить последние сообщения из всех подписанных каналов
+  
+  Возвращает последние сообщения из всех активных каналов.
+  Если какие-то каналы недоступны, они будут в списке errors.
+  
+  ## Query Parameters
+  - `limit`: количество сообщений на канал (по умолчанию 10, максимум 100)
+  
+  ## Response
+  - `channels`: массив объектов с полями:
+    - `channelId`: ID канала
+    - `count`: количество сообщений
+    - `messages`: массив сообщений
+  - `total`: количество каналов
+  - `limitPerChannel`: запрошенный лимит на канал
+  - `errors`: массив ошибок (если были)
+}
+

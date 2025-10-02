@@ -1,0 +1,31 @@
+meta {
+  name: Subscribe to Channel
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/channels/subscribe
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "channelId": "cryptosignalschannel"
+  }
+}
+
+docs {
+  # Подписаться на Telegram канал
+  
+  Добавляет подписку в Redis и подключается к каналу через Telegram userbot.
+  
+  ## Request Body
+  - `channelId`: имя канала без @ (например: "cryptosignalschannel")
+  
+  ## Response
+  - `message`: статус операции
+  - `subscription`: объект подписки с channelId, addedAt, active
+}
+

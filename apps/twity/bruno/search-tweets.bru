@@ -1,0 +1,44 @@
+meta {
+  name: Search Tweets
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/twitter/search?query=bitcoin&limit=10
+  body: none
+  auth: none
+}
+
+params:query {
+  query: bitcoin
+  limit: 10
+}
+
+docs {
+  # Поиск твитов
+  
+  Поиск твитов по запросу через Twitter.
+  
+  ## Query Parameters
+  - `query` (обязательный): поисковый запрос
+  - `limit` (опциональный): количество твитов (по умолчанию 20, максимум 100)
+  
+  ## Response
+  Массив твитов с полями:
+  - `id`: ID твита
+  - `text`: текст твита
+  - `author`: автор твита
+  - `date`: дата публикации
+  - `likes`: количество лайков
+  - `retweets`: количество ретвитов
+  - `url`: ссылка на твит
+  
+  ## Примеры запросов
+  ```
+  /twitter/search?query=bitcoin
+  /twitter/search?query=ethereum&limit=50
+  /twitter/search?query=crypto%20market
+  ```
+}
+

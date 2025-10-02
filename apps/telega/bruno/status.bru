@@ -1,0 +1,25 @@
+meta {
+  name: Get Service Status
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/status
+  body: none
+  auth: none
+}
+
+docs {
+  # Получить детальный статус сервиса
+  
+  Возвращает информацию о состоянии сервиса, подключении к Telegram,
+  userbot и список активных каналов.
+  
+  ## Response
+  - `server`: информация о сервере (uptime, memory, timestamp)
+  - `telegram`: статус подключения к Telegram
+  - `userbot`: статус userbot и список подписанных каналов
+  - `environment`: переменные окружения (NODE_ENV)
+}
+

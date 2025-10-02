@@ -1,0 +1,14 @@
+node_modules
+.turbo
+.alchemy
+.env
+
+# logs
+logs/
+*.log
+*.log.*
+
+# NATS data
+nats-data/
+
+dist

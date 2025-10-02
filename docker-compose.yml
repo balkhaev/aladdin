@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  # PostgreSQL - транзакционная база данных
+  postgres:
+    image: postgres:16-alpine
+    container_name: aladdin-postgres
+    environment:
+      POSTGRES_USER: aladdin
+      POSTGRES_PASSWORD: aladdin_password
+      POSTGRES_DB: aladdin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aladdin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ClickHouse - аналитическая база данных для временных рядов
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: aladdin-clickhouse
+    environment:
+      CLICKHOUSE_DB: aladdin
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8123:8123" # HTTP interface
+      - "9000:9000" # Native client
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docs/clickhouse-schema.sql:/docker-entrypoint-initdb.d/init.sql
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NATS - брокер сообщений
+  nats:
+    image: nats:2.10-alpine
+    container_name: aladdin-nats
+    ports:
+      - "4222:4222" # Client connections
+      - "8222:8222" # HTTP monitoring
+      - "6222:6222" # Cluster routing
+    command: >
+      --jetstream
+      --store_dir=/data
+      --http_port=8222
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - кэш и хранилище сессий
+  redis:
+    image: redis:7-alpine
+    container_name: aladdin-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  nats_data:
+  redis_data:
+
+networks:
+  default:
+    name: aladdin-network

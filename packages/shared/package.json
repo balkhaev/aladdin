@@ -1,0 +1,50 @@
+{
+  "name": "@aladdin/shared",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./logger": "./src/logger.ts",
+    "./nats": "./src/nats.ts",
+    "./clickhouse": "./src/clickhouse.ts",
+    "./crypto": "./src/crypto.ts",
+    "./circuit-breaker": "./src/circuit-breaker.ts",
+    "./retry": "./src/retry.ts",
+    "./cache": "./src/cache.ts",
+    "./config": "./src/config.ts",
+    "./types": "./src/types.ts",
+    "./http": "./src/http.ts",
+    "./errors": "./src/errors.ts",
+    "./base-service": "./src/base-service.ts",
+    "./service-bootstrap": "./src/service-bootstrap.ts",
+    "./telemetry": "./src/telemetry.ts",
+    "./middleware/validation": "./src/middleware/validation.ts",
+    "./middleware/auth": "./src/middleware/auth.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aladdin/database": "workspace:*",
+    "@clickhouse/client": "^1.10.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.64.6",
+    "@opentelemetry/exporter-jaeger": "^2.1.0",
+    "@opentelemetry/exporter-prometheus": "^0.205.0",
+    "@opentelemetry/instrumentation-express": "^0.54.3",
+    "@opentelemetry/instrumentation-http": "^0.205.0",
+    "@opentelemetry/resources": "^2.1.0",
+    "@opentelemetry/sdk-node": "^0.205.0",
+    "@opentelemetry/semantic-conventions": "^1.37.0",
+    "hono": "^4.6.14",
+    "ioredis": "^5.4.1",
+    "nats": "^2.28.2",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}

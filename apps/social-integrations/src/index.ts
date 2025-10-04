@@ -25,28 +25,31 @@ await initializeService<SocialIntegrationsService>({
      */
     app.get("/api/social/sentiment/:symbol", (c) => {
       const symbol = c.req.param("symbol");
-      
+
       // Mock data for now - full implementation requires telega/twity integration
-      return c.json(createSuccessResponse({
-        symbol,
-        overall: 0,
-        telegram: {
-          score: 0,
-          bullish: 0,
-          bearish: 0,
-          signals: 0,
-        },
-        twitter: {
-          score: 0,
-          positive: 0,
-          negative: 0,
-          neutral: 0,
-          tweets: 0,
-        },
-        confidence: 0,
-        timestamp: new Date().toISOString(),
-        _note: "Social integrations (Telegram + Twitter) are not yet fully migrated. Use /api/analytics/sentiment/:symbol for composite sentiment.",
-      }));
+      return c.json(
+        createSuccessResponse({
+          symbol,
+          overall: 0,
+          telegram: {
+            score: 0,
+            bullish: 0,
+            bearish: 0,
+            signals: 0,
+          },
+          twitter: {
+            score: 0,
+            positive: 0,
+            negative: 0,
+            neutral: 0,
+            tweets: 0,
+          },
+          confidence: 0,
+          timestamp: new Date().toISOString(),
+          _note:
+            "Social integrations (Telegram + Twitter) are not yet fully migrated. Use /api/analytics/sentiment/:symbol for composite sentiment.",
+        })
+      );
     });
 
     /**
@@ -56,7 +59,7 @@ await initializeService<SocialIntegrationsService>({
       const body = await c.req.json();
       const symbols = body.symbols as string[];
 
-      if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+      if (!(symbols && Array.isArray(symbols)) || symbols.length === 0) {
         return c.json(
           {
             success: false,

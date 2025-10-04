@@ -127,7 +127,7 @@ export function useBatchSocialSentiment(
       }
 
       const result = await response.json();
-      return result.data.analyses;
+      return result.data;
     },
     refetchInterval: 60_000,
     enabled: enabled && !!symbols && symbols.length > 0,

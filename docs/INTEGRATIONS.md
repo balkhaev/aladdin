@@ -4,363 +4,59 @@
 
 ---
 
-## 📱 Telegram Integration (Telega)
-
-**Статус:** ✅ Integrated  
-**Port:** 3000  
-**Purpose:** Parsing торговых сигналов из Telegram каналов
-
-### Architecture
-
-```
-Telegram Channels
-    ↓
-Telega Service (userbot)
-    ↓
-PostgreSQL Storage
-    ↓
-REST API + Webhooks
-    ↓
-Sentiment Service (aggregation)
-```
-
-### Setup
-
-**1. Install & Configure:**
-
-```bash
-cd apps/telega
-npm install
-```
-
-**2. Environment (.env):**
-
-```bash
-PORT=3000
-DATABASE_URL=postgresql://...
-TELEGRAM_API_ID=your_api_id
-TELEGRAM_API_HASH=your_api_hash
-TELEGRAM_SESSION=your_session_string
-```
-
-**3. Start:**
-
-```bash
-npm run dev
-```
-
-### API
-
-```bash
-# Get signals
-GET http://localhost:3000/signals
-
-# Get signals by symbol
-GET http://localhost:3000/signals?symbol=BTC
-
-# Health check
-GET http://localhost:3000/health
-```
-
-**Response:**
-
-```json
-{
-  "signals": [
-    {
-      "symbol": "BTCUSDT",
-      "type": "LONG",
-      "source": "channel_name",
-      "confidence": 0.8,
-      "timestamp": "2025-10-04T..."
-    }
-  ]
-}
-```
-
-### Sentiment Calculation
-
-```typescript
-// Telega signals → sentiment score
-const score = (bullishCount - bearishCount) / totalSignals
-// Range: -1 (all bearish) to +1 (all bullish)
-```
-
-### Database Schema
-
-```sql
-CREATE TABLE telegram_signals (
-  id SERIAL PRIMARY KEY,
-  symbol VARCHAR(20),
-  type VARCHAR(10),      -- LONG/SHORT
-  channel VARCHAR(100),
-  raw_text TEXT,
-  confidence DECIMAL(3,2),
-  created_at TIMESTAMP
-);
-```
-
----
-
-## 🐦 Twitter Integration (Twity)
-
-**Статус:** ✅ Integrated  
-**Port:** 8000  
-**Purpose:** Twitter scraping без API ключей
-
-### Architecture
-
-```
-Twitter
-    ↓
-Twity Service (scraper)
-    ↓
-Cookie-based auth
-    ↓
-REST API
-    ↓
-Sentiment Service (keyword analysis)
-```
-
-### Setup
-
-**1. Install:**
-
-```bash
-cd apps/twity
-pnpm install
-```
-
-**2. Configure Cookies:**
-
-```bash
-# twitter_cookies.json
-{
-  "cookies": [
-    {
-      "name": "auth_token",
-      "value": "your_token",
-      "domain": ".twitter.com"
-    }
-  ]
-}
-```
-
-**3. Start:**
-
-```bash
-pnpm dev:api
-```
-
-### API
-
-```bash
-# Search tweets
-GET http://localhost:8000/twitter/search?query=BTC&limit=20
-
-# Search by user
-GET http://localhost:8000/twitter/user/elonmusk?limit=10
-
-# Health check
-GET http://localhost:8000/health
-```
-
-**Response:**
-
-```json
-{
-  "tweets": [
-    {
-      "id": "123456789",
-      "text": "Bitcoin looking bullish! 🚀",
-      "author": "@cryptotrader",
-      "likes": 150,
-      "retweets": 45,
-      "timestamp": "2025-10-04T..."
-    }
-  ]
-}
-```
-
-### Sentiment Analysis
-
-**Keyword-based scoring:**
-
-Bullish keywords: `bullish`, `moon`, `pump`, `buy`, `long`, `🚀`, `📈`, `💎`  
-Bearish keywords: `bearish`, `dump`, `sell`, `short`, `📉`, `⚠️`, `crash`
-
-```typescript
-const sentiment = {
-  positive: tweets.filter((t) => hasBullishKeywords(t.text)).length,
-  negative: tweets.filter((t) => hasBearishKeywords(t.text)).length,
-  neutral: tweets.length - positive - negative,
-}
-
-const score = (positive - negative) / tweets.length
-// Range: -1 to +1
-```
-
-### Monitored Accounts
-
-- Crypto influencers
-- Trading signal providers
-- Market analysts
-- Exchange announcements
-
----
-
-## 🧠 Sentiment Service Integration
+## 📱 Social Integrations (Telegram + Twitter)
 
 **Статус:** ✅ Production Ready  
 **Port:** 3018  
-**Purpose:** Aggregation Telega + Twity
+**Purpose:** Sentiment analysis из Telegram и Twitter
 
-### Architecture
+Полная документация: **[SOCIAL_INTEGRATIONS.md](SOCIAL_INTEGRATIONS.md)**
 
-```
-┌──────────┐        ┌──────────┐
-│  Telega  │        │  Twity   │
-│  :3000   │        │  :8000   │
-└────┬─────┘        └────┬─────┘
-     │                   │
-     └────────┬──────────┘
-              ▼
-     ┌────────────────────┐
-     │ Sentiment Service  │
-     │      :3018         │
-     │                    │
-     │ • TelegramClient   │
-     │ • TwitterClient    │
-     │ • Aggregator       │
-     └─────────┬──────────┘
-               │ NATS Events
-               ▼
-     ┌─────────────────────┐
-     │ Strategy Executor   │
-     │      :3019          │
-     └─────────────────────┘
-```
+### Краткое описание
 
-### Components
+- ✅ **Telegram**: Real-time парсинг сигналов через NATS
+- ✅ **Twitter**: Периодический сбор (каждые 10 мин) → ClickHouse
+- ✅ **15 KOL** мониторинг на Twitter
+- ✅ **Русский + английский** парсинг для Telegram
+- ✅ **Weighted aggregation** для sentiment scoring
 
-**1. TelegramClient**
+### API
 
-```typescript
-class TelegramClient {
-  async getSignals(symbol: string) {
-    const response = await fetch(`${TELEGA_URL}/signals?symbol=${symbol}`)
-    return this.calculateSentiment(response.signals)
-  }
-}
-```
+```bash
+# Single symbol sentiment
+GET /api/sentiment/BTCUSDT
 
-**2. TwitterClient**
-
-```typescript
-class TwitterClient {
-  async searchTweets(query: string) {
-    const response = await fetch(`${TWITY_URL}/twitter/search?query=${query}`)
-    return this.analyzeSentiment(response.tweets)
-  }
-}
-```
-
-**3. SentimentAggregator**
-
-```typescript
-class SentimentAggregator {
-  async analyze(symbol: string) {
-    const telegram = await this.telegramClient.getSignals(symbol)
-    const twitter = await this.twitterClient.searchTweets(symbol)
-
-    // Weighted aggregation (Telegram: 60%, Twitter: 40%)
-    const overall = telegram.score * 0.6 + twitter.score * 0.4
-    const confidence = this.calculateConfidence(telegram, twitter)
-
-    return { overall, telegram, twitter, confidence }
-  }
-}
-```
-
-### Weighted Aggregation
-
-```typescript
-// Telegram has higher weight (more actionable signals)
-const weights = {
-  telegram: 0.6, // Trading signals have higher priority
-  twitter: 0.4, // Social sentiment for confirmation
+# Batch analysis
+POST /api/sentiment/analyze-batch
+{
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
 }
 
-const overall =
-  telegram.score * weights.telegram + twitter.score * weights.twitter
+# Debug stats
+GET /api/sentiment/debug
 
-// Confidence based on data quality
-const confidence = Math.min(
-  telegram.signalCount / 10, // More signals = higher confidence
-  twitter.tweetCount / 30 // More tweets = higher confidence
-)
+# Health check
+GET /health
 ```
 
 ### NATS Events
 
-**Published by Sentiment Service:**
-
 ```typescript
-// Every 5 minutes
+// Published every 5 minutes
 nats.publish("sentiment.analysis", {
   symbol: "BTCUSDT",
   overall: 0.65,
-  telegram: { score: 0.8, bullish: 8, bearish: 2 },
-  twitter: { score: 0.5, positive: 15, negative: 5 },
-  confidence: 0.75,
-  timestamp: Date.now(),
+  telegram: { score: 0.8, signals: 13 },
+  twitter: { score: 0.5, tweets: 50 },
+  confidence: 0.75
 })
 
 // On significant change (>30%)
 nats.publish("sentiment.shift", {
   symbol: "BTCUSDT",
   shift: "BULLISH",
-  magnitude: 0.45,
-  previousScore: 0.2,
-  currentScore: 0.65,
+  magnitude: 0.45
 })
-```
-
-### API
-
-```bash
-# Analyze sentiment
-GET /api/sentiment/:symbol
-
-# Response:
-{
-  "symbol": "BTCUSDT",
-  "overall": 0.65,
-  "telegram": {
-    "score": 0.8,
-    "bullish": 8,
-    "bearish": 2,
-    "signals": 10
-  },
-  "twitter": {
-    "score": 0.5,
-    "positive": 15,
-    "negative": 5,
-    "neutral": 10,
-    "tweets": 30
-  },
-  "confidence": 0.75,
-  "timestamp": "2025-10-04T..."
-}
-
-# Batch analysis
-POST /api/sentiment/analyze-batch
-{
-  "symbols": ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
-}
-
-# Service health
-GET /api/sentiment/services/health
 ```
 
 ---

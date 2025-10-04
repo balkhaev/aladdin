@@ -151,13 +151,16 @@ coffee/
 
 - **[API.md](docs/API.md)** - 🔌 REST API и WebSocket эндпоинты
 - **[FEATURES.md](docs/FEATURES.md)** - ✨ Основные фичи (Sentiment, Futures, Trading Bot, Cache)
-- **[INTEGRATIONS.md](docs/INTEGRATIONS.md)** - 🔗 Интеграции (Telegram, Twitter, Redis, Sentiment)
+- **[INTEGRATIONS.md](docs/INTEGRATIONS.md)** - 🔗 Интеграции (Social, Redis, Strategy Executor)
+- **[SOCIAL_INTEGRATIONS.md](docs/SOCIAL_INTEGRATIONS.md)** - 📱 Telegram & Twitter sentiment analysis
 - **[EXAMPLES.md](docs/EXAMPLES.md)** - 💡 Практические примеры использования API
 - **[QUICK_START_TRADING.md](docs/QUICK_START_TRADING.md)** - 🚀 Быстрый старт автоматической торговли
 - **[SECURITY.md](docs/SECURITY.md)** - 🔐 Безопасность, шифрование
 - **[PERFORMANCE.md](docs/PERFORMANCE.md)** - ⚡ Оптимизация и производительность
 - **[CHANGELOG.md](docs/CHANGELOG.md)** - 📝 История изменений и багфиксов
 - **[ALADDIN_ROADMAP.md](docs/ALADDIN_ROADMAP.md)** - 🎯 Roadmap к Aladdin-like системе
+- **[REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md)** - 📦 Итоги рефакторинга v2.1
+- **[FRONTEND_SENTIMENT_GUIDE.md](docs/FRONTEND_SENTIMENT_GUIDE.md)** - 🎨 Гайд по фронтенду sentiment
 - **[migrations/](docs/migrations/)** - 📊 SQL миграции для ClickHouse
 - **[PORTS.md](docs/PORTS.md)** - 🔌 Порты всех сервисов
 

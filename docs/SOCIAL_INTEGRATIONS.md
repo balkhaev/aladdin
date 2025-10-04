@@ -64,10 +64,12 @@
 ### Парсинг сигналов
 
 **Bullish keywords:**
+
 - English: long, buy, bullish, rally, surge, pump, moon, breakout, gain, profit, green
 - Русский: рост, покупк, приток, бычь, ралли, пробой, прибыл, позитив
 
 **Bearish keywords:**
+
 - English: short, sell, bearish, crash, dump, drop, fall, loss, red
 - Русский: падени, продаж, медвеж, обвал, снижени, убыт, негатив
 
@@ -127,6 +129,7 @@ curl http://localhost:3005/channels/messages/recent?limit=100 | jq
 ### ClickHouse таблицы
 
 **twitter_tweets:**
+
 ```sql
 CREATE TABLE aladdin.twitter_tweets (
   tweet_id String,
@@ -144,6 +147,7 @@ TTL datetime + INTERVAL 30 DAY
 ```
 
 **twitter_scrape_runs:**
+
 ```sql
 CREATE TABLE aladdin.twitter_scrape_runs (
   run_id UUID,
@@ -162,6 +166,7 @@ TTL started_at + INTERVAL 90 DAY
 ### Symbol extraction
 
 Автоматически распознает:
+
 - Тикеры: BTC, ETH, SOL
 - Полные названия: Bitcoin, Ethereum, Solana
 - С символами: $BTC, #ETH
@@ -175,12 +180,13 @@ TTL started_at + INTERVAL 90 DAY
 // Веса источников
 const weights = {
   telegram: min(signals_count / 10, 1),
-  twitter: min(tweets_count / 50, 1)
+  twitter: min(tweets_count / 50, 1),
 }
 
 // Общий score
-overall = (telegram_score * telegram_weight + twitter_score * twitter_weight) 
-          / (telegram_weight + twitter_weight)
+overall =
+  (telegram_score * telegram_weight + twitter_score * twitter_weight) /
+  (telegram_weight + twitter_weight)
 
 // Confidence
 confidence = (telegram_weight + twitter_weight) / 2
@@ -189,11 +195,13 @@ confidence = (telegram_weight + twitter_weight) / 2
 ### Интерпретация
 
 **Score:**
+
 - `> 0.3` = BULLISH 🟢
 - `-0.3 to 0.3` = NEUTRAL ⚪
 - `< -0.3` = BEARISH 🔴
 
 **Strength:**
+
 - `|score| > 0.7` = STRONG 💪
 - `|score| > 0.4` = MODERATE 🤝
 - `|score| ≤ 0.4` = WEAK 👌
@@ -355,18 +363,21 @@ tail -f logs/social-integrations-error-2025-10-05.log
 ### Telegram данных нет
 
 1. **Проверьте Telega подключение:**
+
 ```bash
 curl http://localhost:3005/status | jq '.telegram.connected'
 # Должно быть: true
 ```
 
 2. **Проверьте подписки на каналы:**
+
 ```bash
 curl http://localhost:3005/status | jq '.userbot.subscribedChannels'
 # Должно быть: ["markettwits", "ggshot"]
 ```
 
 3. **Проверьте debug stats:**
+
 ```bash
 curl http://localhost:3018/api/sentiment/debug | jq '.data.telegram'
 # Должно быть: totalSignals > 0
@@ -375,12 +386,14 @@ curl http://localhost:3018/api/sentiment/debug | jq '.data.telegram'
 ### Twitter данных нет
 
 1. **Проверьте данные в ClickHouse:**
+
 ```bash
 curl "http://49.13.216.63:8123/?query=SELECT count() FROM aladdin.twitter_tweets&database=aladdin"
 # Должно быть > 0 после первого scrape
 ```
 
 2. **Проверьте последний scrape:**
+
 ```sql
 SELECT * FROM aladdin.twitter_scrape_runs ORDER BY started_at DESC LIMIT 1
 ```
@@ -390,18 +403,19 @@ SELECT * FROM aladdin.twitter_scrape_runs ORDER BY started_at DESC LIMIT 1
 ### Low conversion rate
 
 **Это нормально!**
+
 - Новостные каналы: 5-15% conversion rate
 - Торговые каналы: 15-30% conversion rate
 - Многие сообщения про макроэкономику, не про конкретные монеты
 
 ## 📈 Performance
 
-| Метрика                 | До миграции | После          |
-| ----------------------- | ----------- | -------------- |
-| **Response Time**       | 5-30 сек    | 50-200ms       |
-| **Success Rate**        | 60-80%      | 99%+           |
-| **Concurrent Requests** | 1-2         | 1000+          |
-| **Data Freshness**      | On-demand   | Every 10 min   |
+| Метрика                 | До миграции | После        |
+| ----------------------- | ----------- | ------------ |
+| **Response Time**       | 5-30 сек    | 50-200ms     |
+| **Success Rate**        | 60-80%      | 99%+         |
+| **Concurrent Requests** | 1-2         | 1000+        |
+| **Data Freshness**      | On-demand   | Every 10 min |
 
 ## 🔮 Next Steps
 
@@ -411,4 +425,3 @@ SELECT * FROM aladdin.twitter_scrape_runs ORDER BY started_at DESC LIMIT 1
 - [ ] Historical sentiment charts
 - [ ] Корреляция sentiment vs price движения
 - [ ] Автоматические alerts на sentiment shifts
-

@@ -50,8 +50,7 @@ let sentimentService: SentimentAnalysisService | undefined;
 // Combined sentiment service instance
 let combinedSentimentService: CombinedSentimentService | undefined;
 
-// Sentiment aggregator service (from sentiment service)
-let sentimentAggregator: any;
+// Note: Sentiment aggregator from old sentiment service could be integrated here if needed
 
 // Helper function to format report as CSV
 function formatReportAsCSV(
@@ -694,8 +693,12 @@ initializeService({
       const body = await c.req.json();
       const symbols = body.symbols as string[];
 
-      if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+      if (!symbols || !Array.isArray(symbols)) {
         throw new ValidationError("symbols array is required in request body");
+      }
+      
+      if (symbols.length === 0) {
+        throw new ValidationError("symbols array cannot be empty");
       }
 
       // Check if sentiment service is initialized

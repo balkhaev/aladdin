@@ -36,6 +36,13 @@ export class MarketDataServiceWrapper extends BaseService {
     return "market-data";
   }
 
+  /**
+   * Expose ClickHouse client for macro and on-chain routes
+   */
+  get clickhouseClient() {
+    return this.clickhouse;
+  }
+
   protected onInitialize(): Promise<void> {
     if (!this.natsClient) {
       throw new Error("NATS client is required for Market Data Service");

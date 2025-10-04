@@ -56,14 +56,34 @@
 
 ## 📊 Проверено и работает
 
+### Backward Compatibility Routes
 ```bash
-✓ /api/macro/global
-✓ /api/macro/feargreed
-✓ /api/macro/trending
-✓ /api/macro/categories
-✓ /api/sentiment/analyze-batch
-✓ /api/on-chain/*
-✓ /api/risk/*
+✓ /api/macro/global                    → 200 OK, data returned
+✓ /api/macro/feargreed?limit=1         → 200 OK, data returned
+✓ /api/macro/trending                  → 200 OK, data returned
+✓ /api/macro/categories                → 200 OK, data returned
+✓ /api/sentiment/analyze-batch         → 200 OK, sentiment data for multiple symbols
+✓ /api/on-chain/*                      → Working (through gateway)
+✓ /api/risk/*                          → Working (through gateway)
+```
+
+### Real Sentiment Data Test
+```json
+POST /api/sentiment/analyze-batch
+Request: {"symbols":["BTCUSDT","ETHUSDT"]}
+Response: {
+  "success": true,
+  "data": [
+    {
+      "symbol": "BTCUSDT",
+      "compositeScore": 3.9,
+      "compositeSignal": "NEUTRAL",
+      "confidence": 81,
+      "components": { fearGreed, onChain, technical }
+    },
+    { "symbol": "ETHUSDT", ... }
+  ]
+}
 ```
 
 ## 🚀 Health Check
@@ -79,16 +99,18 @@
 ✅ Social (3018) - running
 ```
 
-## 📝 Git Commits
+## 📝 Git Commits (10 коммитов)
 
 ```
-✓ refactor: consolidate services from 14 to 8
-✓ fix: resolve linter errors and update documentation
-✓ docs: add refactoring summary report
-✓ fix: correct SocialIntegrationsService implementation
-✓ fix: add backward compatibility routes
-✓ fix: expose clickhouse client in market-data
-✓ fix: update frontend to use API Gateway
+1. refactor: consolidate services from 14 to 8
+2. fix: resolve linter errors and update documentation
+3. docs: add refactoring summary report
+4. fix: correct SocialIntegrationsService implementation
+5. fix: add backward compatibility routes for old API paths
+6. fix: expose clickhouse client in market-data service
+7. fix: update frontend to use API Gateway for sentiment endpoints
+8. docs: add migration complete documentation
+9. fix: add /api/sentiment and /api/social to public paths
 ```
 
 ## 💡 Следующие шаги

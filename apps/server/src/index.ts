@@ -177,7 +177,8 @@ app.use(
   })
 );
 
-// Старый /api/sentiment/* -> /api/analytics/sentiment/*
+// Старый /api/sentiment/* -> /api/analytics/sentiment/* (composite sentiment)
+// Note: /api/social/sentiment/* идет к social-integrations (Telegram + Twitter)
 app.use(
   "/api/sentiment/*",
   proxyToService({

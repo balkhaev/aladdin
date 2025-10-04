@@ -9,9 +9,11 @@
 ### Сокращение сервисов: 14 → 8 (43%)
 
 **Было:**
+
 - web, server + 12 backend сервисов
 
 **Стало:**
+
 - web, server + 6 backend сервисов
 
 ### Объединенные сервисы
@@ -26,6 +28,7 @@
 ## ✅ Выполненные задачи
 
 ### Backend
+
 - [x] Объединены все запланированные сервисы
 - [x] Backward compatibility routes в API Gateway
 - [x] Все API endpoints работают корректно
@@ -33,11 +36,13 @@
 - [x] Все linter errors исправлены
 
 ### Frontend
+
 - [x] Обновлен для использования API Gateway
 - [x] Удален hardcoded URL старого sentiment сервиса
 - [x] Все hooks используют VITE_API_URL
 
 ### Документация
+
 - [x] README.md обновлен до v2.1
 - [x] docs/PORTS.md - новая карта портов
 - [x] docs/REFACTORING_SUMMARY.md создан
@@ -57,6 +62,7 @@
 ## 📊 Проверено и работает
 
 ### Backward Compatibility Routes
+
 ```bash
 ✓ /api/macro/global                    → 200 OK, data returned
 ✓ /api/macro/feargreed?limit=1         → 200 OK, data returned
@@ -68,6 +74,7 @@
 ```
 
 ### Real Sentiment Data Test
+
 ```json
 POST /api/sentiment/analyze-batch
 Request: {"symbols":["BTCUSDT","ETHUSDT"]}
@@ -89,6 +96,7 @@ Response: {
 ## 🚀 Health Check
 
 Все 7 сервисов работают:
+
 ```
 ✅ Gateway (3000) - ok
 ✅ Market Data (3010) - running

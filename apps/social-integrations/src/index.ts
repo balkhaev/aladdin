@@ -1,26 +1,18 @@
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import { createSuccessResponse } from "@aladdin/shared/http";
 import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { SocialIntegrationsService } from "./service";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3018;
 const PORT = process.env.PORT ? Number(process.env.PORT) : DEFAULT_PORT;
 
-// Import Telegram and Twitter services would go here
-// For now, we'll create a placeholder service
-
-class SocialIntegrationsService {
-  constructor() {
-    // Initialize telegram and twitter services
-  }
-}
-
 await initializeService<SocialIntegrationsService>({
   serviceName: "social-integrations",
   port: PORT,
 
-  createService: () => new SocialIntegrationsService(),
+  createService: (deps) => new SocialIntegrationsService(deps),
 
-  setupRoutes: (app, _service) => {
+  setupRoutes: (app) => {
     /**
      * Telegram routes (from telega service)
      */

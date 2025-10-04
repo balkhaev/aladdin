@@ -6,7 +6,7 @@ export function setupExecutorRoutes(app: Hono, executor: StrategyExecutor | unde
   /**
    * GET /api/trading/executor/stats - Get executor statistics
    */
-  app.get("/api/trading/executor/stats", async (c) => {
+  app.get("/api/trading/executor/stats", (c) => {
     if (!executor) {
       return c.json({
         success: false,
@@ -25,7 +25,7 @@ export function setupExecutorRoutes(app: Hono, executor: StrategyExecutor | unde
   /**
    * GET /api/trading/executor/config - Get current configuration
    */
-  app.get("/api/trading/executor/config", async (c) => {
+  app.get("/api/trading/executor/config", (c) => {
     if (!executor) {
       return c.json({
         success: false,
@@ -84,7 +84,7 @@ export function setupExecutorRoutes(app: Hono, executor: StrategyExecutor | unde
   /**
    * GET /api/trading/executor/pending - Get pending signals
    */
-  app.get("/api/trading/executor/pending", async (c) => {
+  app.get("/api/trading/executor/pending", (c) => {
     if (!executor) {
       return c.json({
         success: false,

@@ -5,7 +5,6 @@ import { TwityService } from "./service";
 const DEFAULT_PORT = 8000;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-const BAD_REQUEST_STATUS_CODE = 400;
 const ERROR_STATUS_CODE = 500;
 
 await initializeService<TwityService>({

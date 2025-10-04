@@ -27,8 +27,6 @@ import {
 import { PortfolioWebSocketHandler } from "./websocket/handler";
 import { RiskService } from "./services/risk";
 import { CorrelationAnalysisService } from "./services/correlation-analysis";
-import { PositionMonitor } from "./services/position-monitor";
-import { PositionSizer } from "./services/position-sizer";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3012;
@@ -42,8 +40,6 @@ type WebSocketData = {
 
 let wsHandler: PortfolioWebSocketHandler;
 let riskService: RiskService;
-let positionMonitor: PositionMonitor;
-let positionSizer: PositionSizer;
 let correlationAnalysis: CorrelationAnalysisService;
 
 await initializeService<PortfolioService, WebSocketData>({
@@ -62,14 +58,13 @@ await initializeService<PortfolioService, WebSocketData>({
 
     // Initialize Risk services
     riskService = new RiskService(deps);
-    if (deps.prisma && deps.natsClient) {
-      positionMonitor = new PositionMonitor(deps.prisma, deps.natsClient, deps.logger);
-      positionSizer = new PositionSizer(deps.prisma, deps.logger);
-    }
     if (deps.clickhouse) {
       correlationAnalysis = new CorrelationAnalysisService(deps.clickhouse, deps.logger);
     }
     deps.logger.info("Risk services initialized in portfolio service");
+    
+    // Note: PositionMonitor and PositionSizer are available but not exposed in routes yet
+    // They can be added when needed for position monitoring endpoints
   },
 
   setupRoutes: (app, service) => {

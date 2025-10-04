@@ -2,17 +2,18 @@
 
 Современная микросервисная платформа для торговли и анализа крипто рынков.
 
-**Версия:** 2.0 (After Major Refactor)  
+**Версия:** 2.1 (Service Consolidation)  
 **Статус:** Production Ready ✅  
-**Последнее обновление:** 4 октября 2025
+**Последнее обновление:** 5 октября 2025
 
-## 🎯 Ключевые улучшения v2.0
+## 🎯 Ключевые улучшения v2.1
 
+- ✅ **Оптимизация архитектуры** - 14 сервисов → 8 сервисов (43% сокращение)
 - ✅ **Единая инфраструктура** - BaseService, ServiceBootstrap, стандартизированные утилиты
 - ✅ **Безопасность** - Исправлены все SQL injection, добавлено шифрование API ключей
 - ✅ **Производительность** - Redis кэширование (7-24x ускорение), Circuit Breaker, Retry логика
 - ✅ **Типобезопасность** - Zod валидация, полная типизация с TypeScript
-- ✅ **Модульность** - Analytics разбит на переиспользуемые модули
+- ✅ **Уменьшение кода** - ~13,700 строк удалено благодаря объединению сервисов
 
 📊 **[Подробный статус проекта →](docs/PROJECT_STATUS.md)**
 
@@ -31,7 +32,12 @@ bun db:push
 # Или запустить отдельные сервисы
 bun dev:web          # Frontend (3001)
 bun dev:server       # API Gateway (3000)
-bun dev:market-data  # Market Data (3010)
+bun dev:market-data  # Market Data (3010) - включает macro + on-chain
+bun dev:trading      # Trading (3011) - включает executor
+bun dev:portfolio    # Portfolio (3012) - включает risk
+bun dev:analytics    # Analytics (3014) - включает sentiment
+bun dev:screener     # Screener (3017)
+bun dev:social       # Social Integrations (3018) - telega + twity
 ```
 
 Откройте http://localhost:3001
@@ -39,26 +45,24 @@ bun dev:market-data  # Market Data (3010)
 ## 🏗️ Архитектура
 
 ```
-Frontend (React) → API Gateway → Микросервисы → Инфраструктура
-      (3001)          (3000)       (3010-3017)   (PostgreSQL, ClickHouse, NATS)
+Frontend (React) → API Gateway → 6 Backend Services → Инфраструктура
+      (3001)          (3000)         (3010-3018)        (PostgreSQL, ClickHouse, NATS)
 ```
 
-### Сервисы
+### Сервисы (После рефакторинга v2.1)
 
-| Сервис      | Порт | Статус | Версия | Миграция v2.0 |
-| ----------- | ---- | ------ | ------ | ------------- |
-| Web UI      | 3001 | ✅     | 1.0    | N/A           |
-| API Gateway | 3000 | ✅     | 1.5    | 🟡 Частично   |
-| Market Data | 3010 | ✅     | 1.5    | 🟡 Частично   |
-| Trading     | 3011 | ✅     | 1.0    | 🔴 Не начата  |
-| Portfolio   | 3012 | ✅     | 1.0    | 🔴 Не начата  |
-| Risk        | 3013 | ✅     | 2.0    | ✅ Завершена  |
-| Analytics   | 3014 | ✅     | 2.0    | ✅ Завершена  |
-| On-Chain    | 3015 | ✅     | 1.0    | 🔴 Не начата  |
-| Macro Data  | 3016 | ✅     | 1.0    | 🔴 Не начата  |
-| Screener    | 3017 | ✅     | 1.0    | 🔴 Не начата  |
+| Сервис               | Порт | Объединяет                     | Статус |
+| -------------------- | ---- | ------------------------------ | ------ |
+| **Web UI**           | 3001 | Frontend                       | ✅     |
+| **API Gateway**      | 3000 | Gateway                        | ✅     |
+| **Market Data**      | 3010 | market-data + macro + on-chain | ✅     |
+| **Trading**          | 3011 | trading + executor             | ✅     |
+| **Portfolio**        | 3012 | portfolio + risk               | ✅     |
+| **Analytics**        | 3014 | analytics + sentiment          | ✅     |
+| **Screener**         | 3017 | screener                       | ✅     |
+| **Social**           | 3018 | telega + twity                 | ✅     |
 
-**Прогресс миграции:** 30% (2 из 8 сервисов)
+**Итого:** 8 сервисов (было 14) — сокращение на 43%!
 
 ## 📦 Возможности
 
@@ -126,20 +130,19 @@ Frontend (React) → API Gateway → Микросервисы → Инфраст
 ```
 coffee/
 ├── apps/
-│   ├── web/              # Frontend
-│   ├── server/           # API Gateway
-│   ├── market-data/      # Market Data Service
-│   ├── trading/          # Trading Service
-│   ├── portfolio/        # Portfolio Service
-│   ├── risk/             # Risk Management Service
-│   ├── analytics/        # Analytics Service
-│   ├── on-chain/         # On-Chain Sentiment Service
-│   ├── screener/         # Market Screener Service
-│   └── ...
+│   ├── web/                    # Frontend
+│   ├── server/                 # API Gateway
+│   ├── market-data/            # Market Data + Macro + On-Chain
+│   ├── trading/                # Trading + Strategy Executor
+│   ├── portfolio/              # Portfolio + Risk Management
+│   ├── analytics/              # Analytics + Sentiment
+│   ├── screener/               # Market Screener
+│   └── social-integrations/    # Telegram + Twitter (Telega + Twity)
 ├── packages/
-│   └── shared/           # Общие библиотеки
-├── docs/                 # Документация
-└── logs/                 # Логи сервисов
+│   ├── shared/                 # Общие библиотеки
+│   └── database/               # Prisma схемы и миграции
+├── docs/                       # Документация
+└── logs/                       # Логи сервисов
 ```
 
 ## 📖 Документация
@@ -165,10 +168,12 @@ coffee/
 bun dev              # Все сервисы
 bun dev:web          # Только Frontend
 bun dev:server       # Только Gateway
-bun dev:risk         # Только Risk Service
-bun dev:analytics    # Только Analytics Service
-bun dev:on-chain     # Только On-Chain Service
-bun dev:screener     # Только Screener Service
+bun dev:market-data  # Market Data (+ macro + on-chain)
+bun dev:trading      # Trading (+ executor)
+bun dev:portfolio    # Portfolio (+ risk)
+bun dev:analytics    # Analytics (+ sentiment)
+bun dev:screener     # Screener
+bun dev:social       # Social Integrations (telega + twity)
 
 # База данных
 bun db:push          # Миграции PostgreSQL
@@ -206,6 +211,7 @@ Docker НЕ требуется для разработки!
 
 ### Завершено ✅
 
+- [x] **Рефакторинг архитектуры** - 14 → 8 сервисов (v2.1)
 - [x] Микросервисная архитектура
 - [x] Multi-exchange support (Binance, Bybit, OKX)
 - [x] WebSocket стриминг
@@ -214,13 +220,14 @@ Docker НЕ требуется для разработки!
 - [x] Общая инфраструктура (BaseService, ServiceBootstrap)
 - [x] Безопасность (SQL injection fixes, encryption)
 - [x] Модульная структура Analytics
+- [x] Консолидация сервисов и удаление дублирования кода
 
 ### В процессе 🟡
 
-- [ ] Миграция всех сервисов на v2.0 архитектуру
 - [ ] Circuit Breaker integration в критические места
 - [ ] Comprehensive testing
-- [ ] Redis кэширование в остальных сервисах (Risk, Portfolio, On-Chain)
+- [ ] Redis кэширование в остальных сервисах
+- [ ] Полная интеграция Social services (Telegram + Twitter)
 
 ### Запланировано 🔵
 

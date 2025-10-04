@@ -10,7 +10,13 @@ await initializeService<SocialIntegrationsService>({
   serviceName: "social-integrations",
   port: PORT,
 
-  createService: (deps) => new SocialIntegrationsService(deps),
+  createService: (deps) =>
+    new SocialIntegrationsService({
+      logger: deps.logger,
+      natsClient: deps.natsClient,
+      clickhouse: deps.clickhouse,
+      prisma: deps.prisma,
+    }),
 
   setupRoutes: (app) => {
     /**

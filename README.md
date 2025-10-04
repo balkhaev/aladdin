@@ -51,16 +51,16 @@ Frontend (React) → API Gateway → 6 Backend Services → Инфраструк
 
 ### Сервисы (После рефакторинга v2.1)
 
-| Сервис               | Порт | Объединяет                     | Статус |
-| -------------------- | ---- | ------------------------------ | ------ |
-| **Web UI**           | 3001 | Frontend                       | ✅     |
-| **API Gateway**      | 3000 | Gateway                        | ✅     |
-| **Market Data**      | 3010 | market-data + macro + on-chain | ✅     |
-| **Trading**          | 3011 | trading + executor             | ✅     |
-| **Portfolio**        | 3012 | portfolio + risk               | ✅     |
-| **Analytics**        | 3014 | analytics + sentiment          | ✅     |
-| **Screener**         | 3017 | screener                       | ✅     |
-| **Social**           | 3018 | telega + twity                 | ✅     |
+| Сервис          | Порт | Объединяет                     | Статус |
+| --------------- | ---- | ------------------------------ | ------ |
+| **Web UI**      | 3001 | Frontend                       | ✅     |
+| **API Gateway** | 3000 | Gateway                        | ✅     |
+| **Market Data** | 3010 | market-data + macro + on-chain | ✅     |
+| **Trading**     | 3011 | trading + executor             | ✅     |
+| **Portfolio**   | 3012 | portfolio + risk               | ✅     |
+| **Analytics**   | 3014 | analytics + sentiment          | ✅     |
+| **Screener**    | 3017 | screener                       | ✅     |
+| **Social**      | 3018 | telega + twity                 | ✅     |
 
 **Итого:** 8 сервисов (было 14) — сокращение на 43%!
 

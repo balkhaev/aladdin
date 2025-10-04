@@ -55,7 +55,7 @@ export function useSocialSentiment(symbol: string | undefined, enabled = true) {
       if (!symbol) throw new Error("Symbol is required");
 
       const response = await fetch(
-        `${SENTIMENT_API_URL}/api/sentiment/${symbol}`
+        `${SENTIMENT_API_URL}/api/social/sentiment/${symbol}`
       );
 
       if (!response.ok) {
@@ -84,7 +84,7 @@ export function useSentimentHistory(
       if (!symbol) throw new Error("Symbol is required");
 
       const response = await fetch(
-        `${SENTIMENT_API_URL}/api/sentiment/${symbol}/history`
+        `${SENTIMENT_API_URL}/api/social/sentiment/${symbol}/history`
       );
 
       if (!response.ok) {
@@ -114,7 +114,7 @@ export function useBatchSocialSentiment(
       }
 
       const response = await fetch(
-        `${SENTIMENT_API_URL}/api/sentiment/analyze-batch`,
+        `${SENTIMENT_API_URL}/api/social/sentiment/analyze-batch`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,7 +142,7 @@ export function useSentimentServicesHealth() {
     queryKey: ["sentiment-services-health"],
     queryFn: async () => {
       const response = await fetch(
-        `${SENTIMENT_API_URL}/api/sentiment/services/health`
+        `${SENTIMENT_API_URL}/api/social/sentiment/services/health`
       );
 
       if (!response.ok) {

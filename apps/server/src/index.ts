@@ -154,6 +154,40 @@ app.use("/api/*", rateLimitMiddleware);
 
 // ====== Proxy к микросервисам ======
 
+// ====== Backward Compatibility Routes (после рефакторинга) ======
+
+// Старый /api/macro/* -> /api/market-data/macro/*
+app.use(
+  "/api/macro/*",
+  proxyToService({
+    targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
+    serviceName: "market-data",
+    rewritePath: (path) => path.replace("/api/macro", "/api/market-data/macro"),
+  })
+);
+
+// Старый /api/on-chain/* -> /api/market-data/on-chain/*
+app.use(
+  "/api/on-chain/*",
+  proxyToService({
+    targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
+    serviceName: "market-data",
+    rewritePath: (path) => path.replace("/api/on-chain", "/api/market-data/on-chain"),
+  })
+);
+
+// Старый /api/sentiment/* -> /api/analytics/sentiment/*
+app.use(
+  "/api/sentiment/*",
+  proxyToService({
+    targetUrl: process.env.ANALYTICS_URL || "http://localhost:3014",
+    serviceName: "analytics",
+    rewritePath: (path) => path.replace("/api/sentiment", "/api/analytics/sentiment"),
+  })
+);
+
+// ====== Direct Service Routes ======
+
 // Market Data Service
 app.use(
   "/api/market-data/*",
@@ -181,12 +215,13 @@ app.use(
   })
 );
 
-// Risk Service
+// Risk Service (теперь в Portfolio)
 app.use(
   "/api/risk/*",
   proxyToService({
-    targetUrl: process.env.RISK_URL || "http://localhost:3013",
-    serviceName: "risk",
+    targetUrl: process.env.PORTFOLIO_URL || "http://localhost:3012",
+    serviceName: "portfolio",
+    rewritePath: (path) => path.replace("/api/risk", "/api/portfolio/risk"),
   })
 );
 

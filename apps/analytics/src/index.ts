@@ -687,6 +687,68 @@ initializeService({
     });
 
     /**
+     * POST /api/analytics/sentiment/analyze-batch
+     * Analyze sentiment for multiple symbols (backward compatibility with old sentiment service)
+     */
+    app.post("/api/analytics/sentiment/analyze-batch", async (c: Context) => {
+      const body = await c.req.json();
+      const symbols = body.symbols as string[];
+
+      if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+        throw new ValidationError("symbols array is required in request body");
+      }
+
+      // Check if sentiment service is initialized
+      if (!sentimentService) {
+        throw new InternalServerError(
+          "Sentiment analysis service not initialized"
+        );
+      }
+
+      // Calculate sentiment for all symbols in parallel
+      const results = await Promise.allSettled(
+        symbols.map(async (symbol) => {
+          // Try cache first
+          if (cacheService) {
+            const cacheKey = `sentiment:${symbol}`;
+            const cached = await cacheService.get(cacheKey);
+            if (cached) {
+              return { symbol, ...cached, cached: true };
+            }
+          }
+
+          if (!sentimentService) {
+            throw new Error("Sentiment service not initialized");
+          }
+          const sentiment =
+            await sentimentService.getCompositeSentiment(symbol);
+
+          // Cache for 2 minutes
+          if (cacheService) {
+            const cacheKey = `sentiment:${symbol}`;
+            await cacheService.set(
+              cacheKey,
+              sentiment,
+              CACHE_MARKET_OVERVIEW_TTL
+            );
+          }
+
+          return { symbol, ...sentiment };
+        })
+      );
+
+      const sentiments = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => (r as PromiseFulfilledResult<typeof r.value>).value);
+
+      return c.json({
+        success: true,
+        data: sentiments,
+        timestamp: Date.now(),
+      });
+    });
+
+    /**
      * GET /api/analytics/sentiment/batch/combined
      * Get combined sentiment for multiple symbols
      */

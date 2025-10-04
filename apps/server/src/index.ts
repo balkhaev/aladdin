@@ -172,7 +172,8 @@ app.use(
   proxyToService({
     targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
     serviceName: "market-data",
-    rewritePath: (path) => path.replace("/api/on-chain", "/api/market-data/on-chain"),
+    rewritePath: (path) =>
+      path.replace("/api/on-chain", "/api/market-data/on-chain"),
   })
 );
 
@@ -182,7 +183,8 @@ app.use(
   proxyToService({
     targetUrl: process.env.ANALYTICS_URL || "http://localhost:3014",
     serviceName: "analytics",
-    rewritePath: (path) => path.replace("/api/sentiment", "/api/analytics/sentiment"),
+    rewritePath: (path) =>
+      path.replace("/api/sentiment", "/api/analytics/sentiment"),
   })
 );
 

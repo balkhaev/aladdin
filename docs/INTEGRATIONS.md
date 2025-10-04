@@ -48,14 +48,14 @@ nats.publish("sentiment.analysis", {
   overall: 0.65,
   telegram: { score: 0.8, signals: 13 },
   twitter: { score: 0.5, tweets: 50 },
-  confidence: 0.75
+  confidence: 0.75,
 })
 
 // On significant change (>30%)
 nats.publish("sentiment.shift", {
   symbol: "BTCUSDT",
   shift: "BULLISH",
-  magnitude: 0.45
+  magnitude: 0.45,
 })
 ```
 

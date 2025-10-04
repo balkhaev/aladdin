@@ -693,10 +693,10 @@ initializeService({
       const body = await c.req.json();
       const symbols = body.symbols as string[];
 
-      if (!symbols || !Array.isArray(symbols)) {
+      if (!(symbols && Array.isArray(symbols))) {
         throw new ValidationError("symbols array is required in request body");
       }
-      
+
       if (symbols.length === 0) {
         throw new ValidationError("symbols array cannot be empty");
       }

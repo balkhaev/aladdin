@@ -15,11 +15,15 @@ type ProxyOptions = {
 /**
  * Создает middleware для проксирования запросов к микросервисам
  */
-export function proxyToService({ targetUrl, serviceName, rewritePath }: ProxyOptions) {
+export function proxyToService({
+  targetUrl,
+  serviceName,
+  rewritePath,
+}: ProxyOptions) {
   return async (c: Context) => {
     const startTime = Date.now();
     let path = c.req.path;
-    
+
     // Применяем rewrite правило если есть
     if (rewritePath) {
       path = rewritePath(path);

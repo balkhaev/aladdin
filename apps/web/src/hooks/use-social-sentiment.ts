@@ -6,7 +6,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 // After refactoring: sentiment is now part of analytics service, use API Gateway
-const SENTIMENT_API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const SENTIMENT_API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export type SocialSentimentAnalysis = {
   symbol: string;

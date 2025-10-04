@@ -25,6 +25,10 @@ import {
   updatePositionSchema,
 } from "./validation/schemas";
 import { PortfolioWebSocketHandler } from "./websocket/handler";
+import { RiskService } from "./services/risk";
+import { CorrelationAnalysisService } from "./services/correlation-analysis";
+import { PositionMonitor } from "./services/position-monitor";
+import { PositionSizer } from "./services/position-sizer";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3012;
@@ -37,6 +41,10 @@ type WebSocketData = {
 };
 
 let wsHandler: PortfolioWebSocketHandler;
+let riskService: RiskService;
+let positionMonitor: PositionMonitor;
+let positionSizer: PositionSizer;
+let correlationAnalysis: CorrelationAnalysisService;
 
 await initializeService<PortfolioService, WebSocketData>({
   serviceName: "portfolio",
@@ -51,6 +59,17 @@ await initializeService<PortfolioService, WebSocketData>({
     }
     wsHandler = new PortfolioWebSocketHandler(deps.natsClient, deps.logger);
     await wsHandler.initialize();
+
+    // Initialize Risk services
+    riskService = new RiskService(deps);
+    if (deps.prisma && deps.natsClient) {
+      positionMonitor = new PositionMonitor(deps.prisma, deps.natsClient, deps.logger);
+      positionSizer = new PositionSizer(deps.prisma, deps.logger);
+    }
+    if (deps.clickhouse) {
+      correlationAnalysis = new CorrelationAnalysisService(deps.clickhouse, deps.logger);
+    }
+    deps.logger.info("Risk services initialized in portfolio service");
   },
 
   setupRoutes: (app, service) => {
@@ -491,6 +510,225 @@ await initializeService<PortfolioService, WebSocketData>({
             success: false,
             error: {
               code: "REBALANCING_EXECUTION_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    // Risk Management endpoints (from risk service)
+    
+    /**
+     * GET /api/portfolio/:id/risk/var - Calculate VaR for portfolio
+     */
+    app.get("/api/portfolio/:id/risk/var", async (c) => {
+      const { id: portfolioId } = c.req.param();
+      const confidence = Number(c.req.query("confidence") ?? "95");
+      const days = Number(c.req.query("days") ?? "30");
+
+      try {
+        const varResult = await riskService.calculateVaR(portfolioId, confidence, days);
+        return c.json(createSuccessResponse(varResult));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "VAR_CALCULATION_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    /**
+     * GET /api/portfolio/:id/risk/cvar - Calculate CVaR for portfolio
+     */
+    app.get("/api/portfolio/:id/risk/cvar", async (c) => {
+      const { id: portfolioId } = c.req.param();
+      const confidence = Number(c.req.query("confidence") ?? "95");
+
+      try {
+        const cvarResult = await riskService.calculateCVaR(portfolioId, confidence as 95 | 99);
+        return c.json(createSuccessResponse(cvarResult));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "CVAR_CALCULATION_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    /**
+     * GET /api/portfolio/:id/risk/exposure - Calculate portfolio exposure
+     */
+    app.get("/api/portfolio/:id/risk/exposure", async (c) => {
+      const { id: portfolioId } = c.req.param();
+
+      try {
+        const exposure = await riskService.calculateExposure(portfolioId);
+        return c.json(createSuccessResponse(exposure));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "EXPOSURE_CALCULATION_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    /**
+     * GET /api/portfolio/:id/risk/correlations - Get portfolio correlations
+     */
+    app.get("/api/portfolio/:id/risk/correlations", async (c) => {
+      const { id: portfolioId } = c.req.param();
+      const window = (c.req.query("window") ?? "30d") as "7d" | "30d" | "90d" | "1y";
+
+      try {
+        if (!riskService.prisma) {
+          throw new Error("Database not available");
+        }
+
+        const portfolio = await riskService.prisma.portfolio.findUnique({
+          where: { id: portfolioId },
+          include: { positions: true },
+        });
+
+        if (!portfolio) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: "PORTFOLIO_NOT_FOUND",
+                message: `Portfolio ${portfolioId} not found`,
+              },
+              timestamp: Date.now(),
+            },
+            HTTP_STATUS.NOT_FOUND
+          );
+        }
+
+        const symbols = portfolio.positions.map((p) => p.symbol);
+
+        if (symbols.length < 2) {
+          return c.json(
+            createSuccessResponse({
+              symbols: [],
+              matrix: [],
+              timestamp: new Date(),
+              avgCorrelation: 0,
+              maxCorrelation: 0,
+              minCorrelation: 0,
+              diversificationScore: 100,
+              highlyCorrelated: [],
+              uncorrelated: [],
+            })
+          );
+        }
+
+        const correlations = await correlationAnalysis.calculateCorrelationMatrix({
+          symbols,
+          window,
+        });
+
+        return c.json(createSuccessResponse(correlations));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "CORRELATIONS_CALCULATION_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    /**
+     * POST /api/portfolio/:id/risk/stress-test - Run stress test
+     */
+    app.post("/api/portfolio/:id/risk/stress-test", async (c) => {
+      const { id: portfolioId } = c.req.param();
+
+      try {
+        const body = await c.req.json<{
+          scenarios?: Array<{
+            name: string;
+            description: string;
+            priceShocks: Record<string, number>;
+            volumeShock?: number;
+            spreadShock?: number;
+            liquidityShock?: number;
+          }>;
+        }>();
+
+        const scenarios = body.scenarios?.map((s) => riskService.createCustomStressScenario(s));
+
+        const result = await riskService.runStressTest({
+          portfolioId,
+          scenarios,
+        });
+
+        return c.json(createSuccessResponse(result));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "STRESS_TEST_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
+
+    /**
+     * GET /api/portfolio/:id/risk/beta - Calculate portfolio beta
+     */
+    app.get("/api/portfolio/:id/risk/beta", async (c) => {
+      const { id: portfolioId } = c.req.param();
+      const days = Number(c.req.query("days") ?? "30");
+      const marketSymbol = c.req.query("market") ?? "BTCUSDT";
+
+      try {
+        const beta = await riskService.calculatePortfolioBeta({
+          portfolioId,
+          days,
+          marketSymbol,
+        });
+
+        return c.json(createSuccessResponse(beta));
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "BETA_CALCULATION_FAILED",
               message: error instanceof Error ? error.message : "Unknown error",
             },
             timestamp: Date.now(),

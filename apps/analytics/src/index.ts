@@ -50,6 +50,9 @@ let sentimentService: SentimentAnalysisService | undefined;
 // Combined sentiment service instance
 let combinedSentimentService: CombinedSentimentService | undefined;
 
+// Sentiment aggregator service (from sentiment service)
+let sentimentAggregator: any;
+
 // Helper function to format report as CSV
 function formatReportAsCSV(
   report: Awaited<ReturnType<AnalyticsService["generateReport"]>>
@@ -804,5 +807,9 @@ initializeService({
         timestamp: Date.now(),
       });
     });
+
+    // Note: Sentiment aggregator endpoints would be added here if needed
+    // The sentiment aggregator from the old sentiment service can be initialized
+    // in beforeInit and used to aggregate sentiment from multiple sources
   },
 });

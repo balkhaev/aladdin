@@ -13,6 +13,8 @@ import { OpenInterestService } from "./services/open-interest-service";
 import { OrderBookCollector } from "./services/order-book-collector";
 import { OrderBookService } from "./services/order-book-service";
 import { WebSocketHandler } from "./websocket/handler";
+import { setupMacroRoutes } from "./routes/macro";
+import { setupOnChainRoutes } from "./routes/on-chain";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3010;
@@ -1045,6 +1047,12 @@ await initializeService<MarketDataServiceWrapper, WebSocketData>({
         })
       );
     });
+
+    // Setup Macro Data routes (from macro-data service)
+    setupMacroRoutes(app, service.clickhouseClient);
+
+    // Setup On-Chain routes (from on-chain service)
+    setupOnChainRoutes(app, service.clickhouseClient);
   },
 
   // WebSocket configuration

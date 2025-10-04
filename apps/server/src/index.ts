@@ -203,26 +203,17 @@ app.use(
 app.use(
   "/api/screener/*",
   proxyToService({
-    targetUrl: process.env.SCREENER_URL || "http://localhost:3016",
+    targetUrl: process.env.SCREENER_URL || "http://localhost:3017",
     serviceName: "screener",
   })
 );
 
-// On-Chain Service
+// Social Integrations Service (NEW - combines telega + twity)
 app.use(
-  "/api/on-chain/*",
+  "/api/social/*",
   proxyToService({
-    targetUrl: process.env.ON_CHAIN_URL || "http://localhost:3015",
-    serviceName: "on-chain",
-  })
-);
-
-// Macro Data Service
-app.use(
-  "/api/macro/*",
-  proxyToService({
-    targetUrl: process.env.MACRO_DATA_URL || "http://localhost:3017",
-    serviceName: "macro-data",
+    targetUrl: process.env.SOCIAL_URL || "http://localhost:3018",
+    serviceName: "social-integrations",
   })
 );
 

@@ -1,8 +1,8 @@
 {
-  "name": "@aladdin/on-chain",
+  "name": "@aladdin/social-integrations",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
@@ -12,6 +12,8 @@
   "dependencies": {
     "@aladdin/shared": "workspace:*",
     "hono": "^4.0.0",
+    "telegram": "^2.25.11",
+    "puppeteer": "^22.0.0",
     "zod": "^3.22.4",
     "dotenv": "^16.4.5"
   },

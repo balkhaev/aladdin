@@ -1,6 +1,0 @@
-{
-  "version": "1",
-  "name": "Telega Signals API",
-  "type": "collection",
-  "ignore": ["node_modules", ".git"]
-}

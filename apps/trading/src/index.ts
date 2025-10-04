@@ -14,6 +14,8 @@ import {
   getOrdersQuerySchema,
 } from "./validation/schemas";
 import { TradingWebSocketHandler } from "./websocket/handler";
+import { setupExecutorRoutes } from "./routes/executor";
+import { type ExecutorConfig, StrategyExecutor } from "./services/executor";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3011;
@@ -30,6 +32,7 @@ type WebSocketData = {
 };
 
 let wsHandler: TradingWebSocketHandler;
+let executor: StrategyExecutor | undefined;
 
 await initializeService<TradingService, WebSocketData>({
   serviceName: "trading",
@@ -44,6 +47,19 @@ await initializeService<TradingService, WebSocketData>({
     }
     wsHandler = new TradingWebSocketHandler(deps.natsClient, deps.logger);
     await wsHandler.initialize();
+
+    // Initialize Strategy Executor
+    const executorConfig: Partial<ExecutorConfig> = {
+      mode: (process.env.EXECUTOR_MODE as "PAPER" | "LIVE") || "PAPER",
+      maxOpenPositions: Number(process.env.MAX_OPEN_POSITIONS || "5"),
+      defaultUserId: process.env.DEFAULT_USER_ID || "",
+      defaultPortfolioId: process.env.DEFAULT_PORTFOLIO_ID || "",
+      defaultExchange: process.env.DEFAULT_EXCHANGE || "binance",
+      autoExecute: process.env.AUTO_EXECUTE !== "false",
+    };
+    
+    executor = new StrategyExecutor(deps, executorConfig);
+    deps.logger.info("Strategy executor initialized", { config: executorConfig });
   },
 
   setupRoutes: (app, service) => {
@@ -412,10 +428,13 @@ await initializeService<TradingService, WebSocketData>({
             },
             timestamp: Date.now(),
           },
-          HTTP_STATUS.INTERNAL_SERVER_ERROR
-        );
-      }
-    });
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
+  });
+
+    // Setup Strategy Executor routes
+    setupExecutorRoutes(app, executor);
   },
 
   websocket: {

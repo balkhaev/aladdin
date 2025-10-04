@@ -9,11 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdvancedMetrics } from "@/hooks/use-advanced-metrics";
 
-interface TradingStatsCardProps {
+// Trading statistics thresholds
+const WIN_RATE_EXCELLENT_THRESHOLD = 60;
+const WIN_RATE_GOOD_THRESHOLD = 50;
+const PROFIT_FACTOR_EXCELLENT_THRESHOLD = 2;
+const PROFIT_FACTOR_GOOD_THRESHOLD = 1.5;
+
+type TradingStatsCardProps = {
   portfolioId: string;
   from?: Date;
   to?: Date;
-}
+};
 
 export function TradingStatsCard({
   portfolioId,
@@ -59,15 +65,18 @@ export function TradingStatsCard({
 
   const { trading } = data;
 
+  // Safe number formatting
+  const safeNumber = (value: number | null | undefined): number => value ?? 0;
+
   const getWinRateColor = (winRate: number) => {
-    if (winRate >= 60) return "bg-green-500";
-    if (winRate >= 50) return "bg-yellow-500";
+    if (winRate >= WIN_RATE_EXCELLENT_THRESHOLD) return "bg-green-500";
+    if (winRate >= WIN_RATE_GOOD_THRESHOLD) return "bg-yellow-500";
     return "bg-red-500";
   };
 
   const getProfitFactorColor = (pf: number) => {
-    if (pf >= 2) return "text-green-500";
-    if (pf >= 1.5) return "text-yellow-500";
+    if (pf >= PROFIT_FACTOR_EXCELLENT_THRESHOLD) return "text-green-500";
+    if (pf >= PROFIT_FACTOR_GOOD_THRESHOLD) return "text-yellow-500";
     return "text-red-500";
   };
 
@@ -87,8 +96,8 @@ export function TradingStatsCard({
               <Award className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">Win Rate</span>
             </div>
-            <Badge className={getWinRateColor(trading.winRate)}>
-              {trading.winRate.toFixed(1)}%
+            <Badge className={getWinRateColor(safeNumber(trading.winRate))}>
+              {safeNumber(trading.winRate).toFixed(1)}%
             </Badge>
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -115,9 +124,9 @@ export function TradingStatsCard({
               <span className="font-medium text-sm">Profit Factor</span>
             </div>
             <span
-              className={`font-bold text-xl ${getProfitFactorColor(trading.profitFactor)}`}
+              className={`font-bold text-xl ${getProfitFactorColor(safeNumber(trading.profitFactor))}`}
             >
-              {trading.profitFactor.toFixed(2)}
+              {safeNumber(trading.profitFactor).toFixed(2)}
             </span>
           </div>
           <p className="text-muted-foreground text-xs">
@@ -133,7 +142,7 @@ export function TradingStatsCard({
               <span className="text-muted-foreground">Avg Win</span>
             </div>
             <div className="font-semibold text-green-500 text-lg">
-              ${trading.avgWin.toFixed(2)}
+              ${safeNumber(trading.avgWin).toFixed(2)}
             </div>
           </div>
           <div className="space-y-1">
@@ -142,7 +151,7 @@ export function TradingStatsCard({
               <span className="text-muted-foreground">Avg Loss</span>
             </div>
             <div className="font-semibold text-lg text-red-500">
-              ${trading.avgLoss.toFixed(2)}
+              ${safeNumber(trading.avgLoss).toFixed(2)}
             </div>
           </div>
         </div>
@@ -152,13 +161,13 @@ export function TradingStatsCard({
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">Largest Win</div>
             <div className="font-semibold text-green-500 text-lg">
-              ${trading.largestWin.toFixed(2)}
+              ${safeNumber(trading.largestWin).toFixed(2)}
             </div>
           </div>
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">Largest Loss</div>
             <div className="font-semibold text-lg text-red-500">
-              ${trading.largestLoss.toFixed(2)}
+              ${safeNumber(trading.largestLoss).toFixed(2)}
             </div>
           </div>
         </div>

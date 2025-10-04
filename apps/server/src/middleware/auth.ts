@@ -15,13 +15,15 @@ const PUBLIC_PATHS = [
   "/api/auth/sign-up",
   "/api/auth/sign-out",
   "/api/market-data", // Market data доступна публично
-  "/api/on-chain", // On-chain metrics доступны публично
-  "/api/macro", // Macro data доступна публично
+  "/api/on-chain", // On-chain metrics доступны публично (backward compat)
+  "/api/macro", // Macro data доступна публично (backward compat)
+  "/api/sentiment", // Sentiment analysis доступен публично (backward compat)
   "/api/trading", // Временно для тестирования
   "/api/portfolio", // Временно для тестирования
   "/api/risk", // Временно для тестирования
   "/api/analytics", // Временно для тестирования
   "/api/exchange-credentials", // Временно для тестирования
+  "/api/social", // Social integrations доступны публично
   "/health",
   "/health/services",
 ];

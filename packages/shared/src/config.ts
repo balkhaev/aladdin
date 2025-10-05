@@ -100,10 +100,164 @@ const OnChainConfigSchema = BaseConfigSchema.extend({
 const AnalyticsConfigSchema = BaseConfigSchema.extend({
   PORT: z.coerce.number().default(3014),
 
+  // Service URLs
+  SCRAPER_URL: z.string().default("http://localhost:3018"),
+  MARKET_DATA_BASE_URL: z.string().default("http://localhost:3010"),
+
   // Settings
   MAX_BACKTEST_DAYS: z.coerce.number().default(365),
-  INDICATOR_CACHE_TTL: z.coerce.number().default(60),
+
+  // Cache TTL (seconds)
+  CACHE_INDICATORS_TTL: z.coerce.number().default(60),
+  CACHE_MARKET_OVERVIEW_TTL: z.coerce.number().default(120),
+  CACHE_COMBINED_SENTIMENT_TTL: z.coerce.number().default(120),
+  CACHE_ADVANCED_METRICS_TTL: z.coerce.number().default(300),
+  CACHE_SUMMARY_TTL: z.coerce.number().default(60),
+
+  // Defaults
+  DEFAULT_WINDOW: z.enum(["7d", "30d", "90d", "1y"]).default("30d"),
+  DEFAULT_BENCHMARK: z.string().default("BTC"),
+  DEFAULT_DAYS_LOOKBACK: z.coerce.number().default(30),
+  TOP_ITEMS_LIMIT: z.coerce.number().default(5),
+  VAR_CONFIDENCE: z.coerce.number().default(95),
+  VAR_TIME_WINDOW: z.coerce.number().default(30),
 });
+
+/**
+ * Trading конфигурация
+ */
+const TradingConfigSchema = BaseConfigSchema.extend({
+  PORT: z.coerce.number().default(3011),
+
+  // Executor configuration
+  EXECUTOR_MODE: z.enum(["PAPER", "LIVE"]).default("PAPER"),
+  MAX_OPEN_POSITIONS: z.coerce.number().default(5),
+  DEFAULT_USER_ID: z.string().default(""),
+  DEFAULT_PORTFOLIO_ID: z.string().default(""),
+  DEFAULT_EXCHANGE_CREDENTIALS_ID: z.string().default(""),
+  AUTO_EXECUTE: z.coerce.boolean().default(true),
+});
+
+/**
+ * Portfolio конфигурация
+ */
+const PortfolioConfigSchema = BaseConfigSchema.extend({
+  PORT: z.coerce.number().default(3012),
+
+  // Service URLs
+  MARKET_DATA_URL: z.string().default("http://localhost:3010"),
+});
+
+/**
+ * ML Service конфигурация
+ */
+const MLServiceConfigSchema = BaseConfigSchema.extend({
+  PORT: z.coerce.number().default(3019),
+});
+
+/**
+ * Screener конфигурация
+ */
+const ScreenerConfigSchema = BaseConfigSchema.extend({
+  PORT: z.coerce.number().default(3017),
+
+  // Scan settings
+  SCAN_INTERVAL_MS: z.coerce.number().default(60_000), // 1 minute
+  MAX_SYMBOLS_PER_SCAN: z.coerce.number().default(100),
+});
+
+/**
+ * Scraper конфигурация
+ */
+const ScraperConfigSchema = BaseConfigSchema.extend({
+  PORT: z.coerce.number().default(3018),
+
+  // Telegram settings
+  TELEGRAM_API_ID: z.string().optional(),
+  TELEGRAM_API_HASH: z.string().optional(),
+  TELEGRAM_SESSION_STRING: z.string().optional(),
+
+  // Twitter settings
+  TWITTER_USERNAME: z.string().optional(),
+  TWITTER_PASSWORD: z.string().optional(),
+  TWITTER_EMAIL: z.string().optional(),
+
+  // Reddit settings
+  REDDIT_CLIENT_ID: z.string().optional(),
+  REDDIT_CLIENT_SECRET: z.string().optional(),
+  REDDIT_USER_AGENT: z.string().optional(),
+});
+
+/**
+ * Общие константы для всех сервисов
+ */
+export const ServiceConstants = {
+  // HTTP Status Codes
+  HTTP: {
+    OK: 200,
+    CREATED: 201,
+    BAD_REQUEST: 400,
+    NOT_FOUND: 404,
+    INTERNAL_ERROR: 500,
+    SERVICE_UNAVAILABLE: 503,
+  },
+
+  // Time constants
+  TIME: {
+    MILLISECONDS_PER_SECOND: 1000,
+    MILLISECONDS_PER_MINUTE: 60_000,
+    MILLISECONDS_PER_HOUR: 3_600_000,
+    MILLISECONDS_PER_DAY: 86_400_000,
+  },
+
+  // Default limits
+  LIMITS: {
+    DEFAULT_PAGE_SIZE: 20,
+    MAX_PAGE_SIZE: 100,
+    DEFAULT_HISTORY_LIMIT: 100,
+    DEFAULT_TRADES_LIMIT: 1000,
+    DEFAULT_ARBITRAGE_LIMIT: 100,
+    DEFAULT_ORDERBOOK_LIMIT: 100,
+    MAX_MESSAGES_LIMIT: 100,
+  },
+
+  // Cache TTL defaults (seconds)
+  CACHE: {
+    SHORT: 5,
+    MEDIUM: 60,
+    LONG: 300,
+  },
+
+  // Retry configuration
+  RETRY: {
+    MAX_ATTEMPTS: 3,
+    INITIAL_DELAY: 1000,
+    MAX_DELAY: 10_000,
+    BACKOFF_FACTOR: 2,
+  },
+
+  // Circuit breaker
+  CIRCUIT_BREAKER: {
+    FAILURE_THRESHOLD: 5,
+    SUCCESS_THRESHOLD: 2,
+    TIMEOUT: 10_000,
+    RESET_TIMEOUT: 60_000,
+  },
+} as const;
+
+/**
+ * Service Ports mapping
+ */
+export const ServicePorts = {
+  SERVER: 3000,
+  MARKET_DATA: 3010,
+  TRADING: 3011,
+  PORTFOLIO: 3012,
+  ANALYTICS: 3014,
+  SCREENER: 3017,
+  SCRAPER: 3018,
+  ML_SERVICE: 3019,
+} as const;
 
 /**
  * Общие типы конфигураций
@@ -113,6 +267,11 @@ export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 export type MarketDataConfig = z.infer<typeof MarketDataConfigSchema>;
 export type OnChainConfig = z.infer<typeof OnChainConfigSchema>;
 export type AnalyticsConfig = z.infer<typeof AnalyticsConfigSchema>;
+export type TradingConfig = z.infer<typeof TradingConfigSchema>;
+export type PortfolioConfig = z.infer<typeof PortfolioConfigSchema>;
+export type MLServiceConfig = z.infer<typeof MLServiceConfigSchema>;
+export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
+export type ScraperConfig = z.infer<typeof ScraperConfigSchema>;
 
 /**
  * Загрузить и валидировать конфигурацию
@@ -207,15 +366,20 @@ export class ConfigManager {
       this.watchers.set(key, []);
     }
 
-    this.watchers.get(key)!.push(callback as (value: unknown) => void);
+    const callbacks = this.watchers.get(key);
+    if (callbacks) {
+      callbacks.push(callback as (value: unknown) => void);
+    }
 
     // Return unwatch function
     return () => {
-      const callbacks = this.watchers.get(key);
-      if (callbacks) {
-        const index = callbacks.indexOf(callback as (value: unknown) => void);
+      const watcherCallbacks = this.watchers.get(key);
+      if (watcherCallbacks) {
+        const index = watcherCallbacks.indexOf(
+          callback as (value: unknown) => void
+        );
         if (index > -1) {
-          callbacks.splice(index, 1);
+          watcherCallbacks.splice(index, 1);
         }
       }
     };
@@ -235,6 +399,11 @@ export const ConfigSchemas = {
   MarketData: MarketDataConfigSchema,
   OnChain: OnChainConfigSchema,
   Analytics: AnalyticsConfigSchema,
+  Trading: TradingConfigSchema,
+  Portfolio: PortfolioConfigSchema,
+  MLService: MLServiceConfigSchema,
+  Screener: ScreenerConfigSchema,
+  Scraper: ScraperConfigSchema,
 } as const;
 
 /**

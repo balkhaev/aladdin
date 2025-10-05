@@ -285,3 +285,92 @@ export async function getAllOpenInterest(
   const result = await response.json();
   return result.data;
 }
+
+/**
+ * Aggregated Price Types
+ */
+export type AggregatedPrice = {
+  timestamp: number;
+  symbol: string;
+  vwap: number; // Volume Weighted Average Price
+  binance_price: number | null;
+  bybit_price: number | null;
+  okx_price: number | null;
+  binance_volume: number;
+  bybit_volume: number;
+  okx_volume: number;
+  total_volume: number;
+  avg_price: number;
+  max_spread_percent: number;
+  max_spread_exchange_high: string | null;
+  max_spread_exchange_low: string | null;
+  exchanges_count: number;
+};
+
+/**
+ * Arbitrage Opportunity Types
+ */
+export type ArbitrageOpportunity = {
+  symbol: string;
+  spread_percent: number;
+  high_exchange: string;
+  low_exchange: string;
+  high_price: number;
+  low_price: number;
+  vwap: number;
+  total_volume: number;
+  timestamp: number;
+};
+
+/**
+ * Get aggregated price (VWAP across exchanges)
+ */
+export async function getAggregatedPrice(
+  symbol: string,
+  limit = 1
+): Promise<AggregatedPrice> {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+  });
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/market-data/aggregated/${symbol}?${params}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch aggregated price");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get arbitrage opportunities
+ */
+export async function getArbitrageOpportunities(
+  minSpread = 0.1,
+  limit = 20
+): Promise<ArbitrageOpportunity[]> {
+  const params = new URLSearchParams({
+    minSpread: minSpread.toString(),
+    limit: limit.toString(),
+  });
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/market-data/arbitrage?${params}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch arbitrage opportunities");
+  }
+
+  const result = await response.json();
+  return result.data;
+}

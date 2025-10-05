@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const REFETCH_INTERVAL = 120_000; // 2 minutes
+import { apiGet } from "@/lib/api/client";
+import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
+import { marketKeys } from "@/lib/query-keys";
 
 export type MarketMover = {
   symbol: string;
@@ -43,24 +43,10 @@ export type MarketOverview = {
  */
 export function useMarketOverview(enabled = true) {
   return useQuery<MarketOverview>({
-    queryKey: ["market-overview"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/analytics/market-overview`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch market overview");
-      }
-
-      const result = await response.json();
-      return result.data;
-    },
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: 60_000, // Consider data stale after 1 minute
+    queryKey: marketKeys.overview(),
+    queryFn: () => apiGet<MarketOverview>("/api/analytics/market-overview"),
+    refetchInterval: REFETCH_INTERVALS.NORMAL,
+    staleTime: STALE_TIME.NORMAL,
     enabled,
   });
 }

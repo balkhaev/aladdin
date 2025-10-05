@@ -131,7 +131,6 @@ app.get("/", (c) =>
       marketData: "/api/market-data/*",
       trading: "/api/trading/*",
       portfolio: "/api/portfolio/*",
-      risk: "/api/risk/*",
       analytics: "/api/analytics/*",
       onChain: "/api/on-chain/*",
       screener: "/api/screener/*",
@@ -209,22 +208,12 @@ app.use(
   })
 );
 
-// Portfolio Service
+// Portfolio Service (includes risk endpoints)
 app.use(
   "/api/portfolio/*",
   proxyToService({
     targetUrl: process.env.PORTFOLIO_URL || "http://localhost:3012",
     serviceName: "portfolio",
-  })
-);
-
-// Risk Service (теперь в Portfolio)
-app.use(
-  "/api/risk/*",
-  proxyToService({
-    targetUrl: process.env.PORTFOLIO_URL || "http://localhost:3012",
-    serviceName: "portfolio",
-    rewritePath: (path) => path.replace("/api/risk", "/api/portfolio/risk"),
   })
 );
 

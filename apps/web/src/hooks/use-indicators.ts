@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiGet } from "@/lib/api/client";
+import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
+import { indicatorKeys } from "@/lib/query-keys";
 
 export type TechnicalIndicators = {
   symbol: string;
@@ -43,30 +44,20 @@ export function useIndicators(
   limit = 100
 ) {
   return useQuery<TechnicalIndicators>({
-    queryKey: ["indicators", symbol, timeframe, indicators.join(","), limit],
-    queryFn: async () => {
-      const params = new URLSearchParams({
+    queryKey: indicatorKeys.detail(
+      symbol,
+      timeframe,
+      indicators.join(","),
+      limit
+    ),
+    queryFn: () =>
+      apiGet<TechnicalIndicators>(`/api/analytics/indicators/${symbol}`, {
         indicators: indicators.join(","),
         timeframe,
-        limit: limit.toString(),
-      });
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/analytics/indicators/${symbol}?${params}`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch indicators");
-      }
-
-      const result = await response.json();
-      return result.data;
-    },
-    refetchInterval: 60_000, // Update every minute
-    staleTime: 30_000,
+        limit,
+      }),
+    refetchInterval: REFETCH_INTERVALS.NORMAL,
+    staleTime: STALE_TIME.NORMAL,
     enabled: indicators.length > 0,
   });
 }

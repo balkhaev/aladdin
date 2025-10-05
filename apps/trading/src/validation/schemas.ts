@@ -170,6 +170,54 @@ export const getOrderSchema = z.object({
 });
 
 /**
+ * Get order query schema (for URL params)
+ */
+export const getOrderQuerySchema = z.object({});
+
+/**
+ * Update order request schema
+ */
+export const updateOrderSchema = z
+  .object({
+    quantity: z
+      .number()
+      .positive("Quantity must be positive")
+      .finite("Quantity must be finite")
+      .optional(),
+    price: z
+      .number()
+      .positive("Price must be positive")
+      .finite("Price must be finite")
+      .optional(),
+  })
+  .strict()
+  .refine((data) => data.quantity !== undefined || data.price !== undefined, {
+    message: "At least one of quantity or price must be provided",
+  });
+
+/**
+ * Cancel all orders request schema
+ */
+export const cancelAllOrdersSchema = z
+  .object({
+    portfolioId: z
+      .string()
+      .cuid({ message: "Invalid portfolio ID format" })
+      .optional(),
+    symbol: z
+      .string()
+      .min(MIN_SYMBOL_LENGTH, "Symbol must be at least 3 characters")
+      .max(MAX_SYMBOL_LENGTH, "Symbol must be at most 20 characters")
+      .transform((val) => val.toUpperCase())
+      .refine(
+        (val) => SYMBOL_PATTERN.test(val),
+        "Symbol must contain only uppercase letters and numbers"
+      )
+      .optional(),
+  })
+  .strict();
+
+/**
  * Sync order request schema
  */
 export const syncOrderSchema = z.object({
@@ -210,10 +258,78 @@ export const getOrdersQuerySchema = z
   .strict();
 
 /**
+ * Get balances query parameters schema
+ */
+export const getBalancesQuerySchema = z
+  .object({
+    portfolioId: z
+      .string()
+      .cuid({ message: "Invalid portfolio ID format" })
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Get trades query parameters schema
+ */
+export const getTradesQuerySchema = z
+  .object({
+    portfolioId: z
+      .string()
+      .cuid({ message: "Invalid portfolio ID format" })
+      .optional(),
+    symbol: z
+      .string()
+      .min(MIN_SYMBOL_LENGTH)
+      .max(MAX_SYMBOL_LENGTH)
+      .transform((val) => val.toUpperCase())
+      .refine(
+        (val) => SYMBOL_PATTERN.test(val),
+        "Symbol must contain only uppercase letters and numbers"
+      )
+      .optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_QUERY_LIMIT, "Limit cannot exceed 1000")
+      .optional()
+      .default(DEFAULT_QUERY_LIMIT),
+  })
+  .strict();
+
+/**
+ * Get positions query parameters schema
+ */
+export const getPositionsQuerySchema = z
+  .object({
+    portfolioId: z
+      .string()
+      .cuid({ message: "Invalid portfolio ID format" })
+      .optional(),
+    symbol: z
+      .string()
+      .min(MIN_SYMBOL_LENGTH)
+      .max(MAX_SYMBOL_LENGTH)
+      .transform((val) => val.toUpperCase())
+      .refine(
+        (val) => SYMBOL_PATTERN.test(val),
+        "Symbol must contain only uppercase letters and numbers"
+      )
+      .optional(),
+  })
+  .strict();
+
+/**
  * Export types
  */
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;
 export type GetOrderInput = z.infer<typeof getOrderSchema>;
 export type SyncOrderInput = z.infer<typeof syncOrderSchema>;
+export type UpdateOrderInput = z.infer<typeof updateOrderSchema>;
+export type CancelAllOrdersInput = z.infer<typeof cancelAllOrdersSchema>;
 export type GetOrdersQuery = z.infer<typeof getOrdersQuerySchema>;
+export type GetBalancesQuery = z.infer<typeof getBalancesQuerySchema>;
+export type GetTradesQuery = z.infer<typeof getTradesQuerySchema>;
+export type GetPositionsQuery = z.infer<typeof getPositionsQuerySchema>;

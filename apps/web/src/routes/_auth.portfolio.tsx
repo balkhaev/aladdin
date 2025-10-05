@@ -4,16 +4,19 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Briefcase, RefreshCcw } from "lucide-react";
+import { Briefcase, RefreshCcw, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { CreatePortfolioDialog } from "../components/create-portfolio-dialog";
 import { AddPositionDialog } from "../components/portfolio/add-position-dialog";
 import { CorrelationsTable } from "../components/portfolio/correlations-table";
+import { OptimizationDialog } from "../components/portfolio/optimization-dialog";
+import { OptimizationResultsCard } from "../components/portfolio/optimization-results-card";
 import { PortfolioAllocationChart } from "../components/portfolio/portfolio-allocation-chart";
 import { PortfolioMetricsGrid } from "../components/portfolio/portfolio-metrics-grid";
 import { PortfolioPerformanceChart } from "../components/portfolio/portfolio-performance-chart";
 import { PortfolioSummaryCard } from "../components/portfolio/portfolio-summary-card";
 import { PositionsTableEnhanced } from "../components/portfolio/positions-table-enhanced";
+import { RebalancingDialog } from "../components/portfolio/rebalancing-dialog";
 import { TransactionsTable } from "../components/portfolio/transactions-table";
 import { RiskCVaRCard } from "../components/risk-cvar-card";
 import { RiskExposureCard } from "../components/risk-exposure-card";
@@ -39,6 +42,7 @@ import {
   usePortfolios,
   useUpdatePositionsPrices,
 } from "../hooks/use-portfolio";
+import type { OptimizedPortfolio } from "../lib/api/portfolio";
 
 export const Route = createFileRoute("/_auth/portfolio")({
   component: PortfolioPage,
@@ -47,6 +51,10 @@ export const Route = createFileRoute("/_auth/portfolio")({
 function PortfolioPage() {
   const { data: portfolios, isLoading } = usePortfolios();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>("");
+  const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
+  const [showRebalancingDialog, setShowRebalancingDialog] = useState(false);
+  const [optimizationResult, setOptimizationResult] =
+    useState<OptimizedPortfolio | null>(null);
   const updatePricesMutation = useUpdatePositionsPrices();
   const { data: portfolio } = usePortfolio(selectedPortfolioId);
 
@@ -106,16 +114,25 @@ function PortfolioPage() {
               </div>
 
               {selectedPortfolioId && (
-                <Button
-                  disabled={updatePricesMutation.isPending}
-                  onClick={handleUpdatePrices}
-                  variant="outline"
-                >
-                  <RefreshCcw
-                    className={`mr-2 h-4 w-4 ${updatePricesMutation.isPending ? "animate-spin" : ""}`}
-                  />
-                  Обновить цены
-                </Button>
+                <>
+                  <Button
+                    disabled={updatePricesMutation.isPending}
+                    onClick={handleUpdatePrices}
+                    variant="outline"
+                  >
+                    <RefreshCcw
+                      className={`mr-2 h-4 w-4 ${updatePricesMutation.isPending ? "animate-spin" : ""}`}
+                    />
+                    Обновить цены
+                  </Button>
+                  <Button
+                    onClick={() => setShowOptimizationDialog(true)}
+                    variant="outline"
+                  >
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Optimize Portfolio
+                  </Button>
+                </>
               )}
             </div>
 
@@ -145,6 +162,9 @@ function PortfolioPage() {
                       portfolioId={selectedPortfolioId}
                     />
                   </div>
+                  {optimizationResult && (
+                    <OptimizationResultsCard result={optimizationResult} />
+                  )}
                 </TabsContent>
 
                 {/* Positions Tab */}
@@ -183,6 +203,28 @@ function PortfolioPage() {
                   <CorrelationsTable portfolioId={selectedPortfolioId} />
                 </TabsContent>
               </Tabs>
+            )}
+
+            {/* Optimization Dialog */}
+            {portfolio && (
+              <>
+                <OptimizationDialog
+                  availableAssets={portfolio.positions.map((p) => p.symbol)}
+                  onClose={() => setShowOptimizationDialog(false)}
+                  onOptimized={setOptimizationResult}
+                  open={showOptimizationDialog}
+                  portfolioId={selectedPortfolioId}
+                />
+                <RebalancingDialog
+                  currentPositions={portfolio.positions.map((p) => ({
+                    symbol: p.symbol,
+                    value: p.value,
+                  }))}
+                  onClose={() => setShowRebalancingDialog(false)}
+                  open={showRebalancingDialog}
+                  portfolioId={selectedPortfolioId}
+                />
+              </>
             )}
           </>
         );

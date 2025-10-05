@@ -339,3 +339,93 @@ export async function getHPORecommendations(
   const data = await response.json();
   return data.data;
 }
+
+// Model Management types
+export type SavedModel = {
+  symbol: string;
+  modelType: string;
+  version: string;
+  lastTrained: number;
+  size: number;
+};
+
+export type ModelStats = {
+  symbol: string;
+  modelType: string;
+  version: string;
+  trainedAt: number;
+  accuracy: number;
+  mae: number;
+  rmse: number;
+  mape: number;
+  r2Score: number;
+  directionalAccuracy: number;
+  trainingDuration: number;
+  dataPoints: number;
+};
+
+/**
+ * List all saved models
+ */
+export async function listModels(): Promise<{
+  models: SavedModel[];
+  count: number;
+}> {
+  const response = await fetch(`${ML_API_URL}/api/ml/models`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to list models: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+/**
+ * Get model statistics
+ */
+export async function getModelStats(symbol: string): Promise<ModelStats> {
+  const response = await fetch(`${ML_API_URL}/api/ml/models/${symbol}/stats`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get model stats: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+/**
+ * Delete a model
+ */
+export async function deleteModel(symbol: string): Promise<void> {
+  const response = await fetch(`${ML_API_URL}/api/ml/models/${symbol}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete model: ${response.statusText}`);
+  }
+}
+
+/**
+ * Cleanup old models
+ */
+export async function cleanupModels(
+  olderThan?: number
+): Promise<{ deleted: number }> {
+  const body = olderThan ? { olderThan } : {};
+
+  const response = await fetch(`${ML_API_URL}/api/ml/models/cleanup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to cleanup models: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}

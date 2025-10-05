@@ -4,8 +4,9 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiGet } from "@/lib/api/client";
+import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
+import { sentimentKeys } from "@/lib/query-keys";
 
 export type SentimentSignal = "BULLISH" | "BEARISH" | "NEUTRAL";
 
@@ -36,26 +37,13 @@ export type CompositeSentiment = {
  */
 export function useSentiment(symbol: string | undefined, enabled = true) {
   return useQuery<CompositeSentiment>({
-    queryKey: ["sentiment", symbol],
-    queryFn: async () => {
+    queryKey: symbol ? sentimentKeys.detail(symbol) : sentimentKeys.all,
+    queryFn: () => {
       if (!symbol) throw new Error("Symbol is required");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/analytics/sentiment/${symbol}`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch sentiment");
-      }
-
-      const result = await response.json();
-      return result.data;
+      return apiGet<CompositeSentiment>(`/api/analytics/sentiment/${symbol}`);
     },
-    refetchInterval: 120_000, // Update every 2 minutes (matches backend cache)
-    staleTime: 60_000, // Consider data stale after 1 minute
+    refetchInterval: REFETCH_INTERVALS.SLOW,
+    staleTime: STALE_TIME.SLOW,
     enabled: enabled && !!symbol,
   });
 }
@@ -68,28 +56,17 @@ export function useBatchSentiment(
   enabled = true
 ) {
   return useQuery<CompositeSentiment[]>({
-    queryKey: ["sentiment", "batch", symbols?.join(",")],
-    queryFn: async () => {
+    queryKey: symbols ? sentimentKeys.batch(symbols) : sentimentKeys.all,
+    queryFn: () => {
       if (!symbols || symbols.length === 0) {
         throw new Error("Symbols are required");
       }
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/analytics/sentiment/batch?symbols=${symbols.join(",")}`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch batch sentiment");
-      }
-
-      const result = await response.json();
-      return result.data;
+      return apiGet<CompositeSentiment[]>("/api/analytics/sentiment/batch", {
+        symbols: symbols.join(","),
+      });
     },
-    refetchInterval: 120_000, // Update every 2 minutes
-    staleTime: 60_000,
+    refetchInterval: REFETCH_INTERVALS.SLOW,
+    staleTime: STALE_TIME.SLOW,
     enabled: enabled && !!symbols && symbols.length > 0,
   });
 }

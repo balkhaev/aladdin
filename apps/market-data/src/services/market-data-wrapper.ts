@@ -40,6 +40,13 @@ export class MarketDataServiceWrapper extends BaseService {
   }
 
   /**
+   * Get cache service (публичный метод для использования в routes)
+   */
+  getCache(keyPrefix?: string, defaultTTL?: number) {
+    return this.getCacheService(keyPrefix, defaultTTL);
+  }
+
+  /**
    * Expose ClickHouse client for macro and on-chain routes
    */
   get clickhouseClient() {

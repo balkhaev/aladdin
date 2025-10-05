@@ -5,6 +5,7 @@
 
 import { ArrowDown, ArrowUp, Wifi, WifiOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { formatCurrency, formatPrice } from "@/lib/formatters";
 import { useFuturesPositions } from "../hooks/use-futures-positions";
 import { usePositionsWebSocket } from "../hooks/use-positions-ws";
 import Loader from "./loader";
@@ -22,8 +23,6 @@ import {
 type FuturesPositionsTableProps = {
   exchange?: string;
 };
-
-const PRICE_DECIMALS = 4;
 
 export function FuturesPositionsTable({
   exchange = "bybit",
@@ -73,8 +72,8 @@ export function FuturesPositionsTable({
                 totalUnrealisedPnl >= 0 ? "text-green-500" : "text-red-500"
               }`}
             >
-              {totalUnrealisedPnl >= 0 ? "+" : ""}$
-              {totalUnrealisedPnl.toFixed(2)}
+              {totalUnrealisedPnl >= 0 ? "+" : ""}
+              {formatCurrency(Math.abs(totalUnrealisedPnl))}
             </div>
           </div>
         )}
@@ -141,10 +140,10 @@ export function FuturesPositionsTable({
                     {position.size}
                   </TableCell>
                   <TableCell className="py-2 text-right font-mono text-xs">
-                    ${position.entryPrice.toFixed(PRICE_DECIMALS)}
+                    {formatPrice(position.entryPrice, 4)}
                   </TableCell>
                   <TableCell className="py-2 text-right font-mono text-xs">
-                    ${position.markPrice.toFixed(PRICE_DECIMALS)}
+                    {formatPrice(position.markPrice, 4)}
                   </TableCell>
                   <TableCell className="py-2 text-right font-mono text-xs">
                     {position.leverage}x
@@ -161,8 +160,8 @@ export function FuturesPositionsTable({
                       ) : (
                         <ArrowDown className="h-3 w-3" />
                       )}
-                      {position.unrealisedPnl >= 0 ? "+" : ""}$
-                      {position.unrealisedPnl.toFixed(2)}
+                      {position.unrealisedPnl >= 0 ? "+" : ""}
+                      {formatCurrency(Math.abs(position.unrealisedPnl))}
                     </Badge>
                   </TableCell>
                 </TableRow>

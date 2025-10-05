@@ -3,14 +3,7 @@
  * Displays active and historical orders with actions
  */
 
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Wifi,
-  WifiOff,
-  XCircle,
-} from "lucide-react";
+import { Wifi, WifiOff } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useOrdersWebSocket } from "../hooks/use-orders-ws";
@@ -24,6 +17,7 @@ import Loader from "./loader";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { StatusBadge } from "./ui/status-badge";
 import {
   Table,
   TableBody,
@@ -37,52 +31,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 type OrdersTableProps = {
   symbol?: string;
 };
-
-const STATUS_COLORS: Record<
-  OrderStatus,
-  "default" | "destructive" | "outline" | "secondary"
-> = {
-  PENDING: "default",
-  OPEN: "secondary",
-  FILLED: "default",
-  PARTIALLY_FILLED: "secondary",
-  CANCELLED: "outline",
-  REJECTED: "destructive",
-  EXPIRED: "outline",
-};
-
-const STATUS_ICONS: Record<
-  OrderStatus,
-  React.ComponentType<{ className?: string }>
-> = {
-  PENDING: Clock,
-  OPEN: Clock,
-  FILLED: CheckCircle2,
-  PARTIALLY_FILLED: Clock,
-  CANCELLED: XCircle,
-  REJECTED: AlertCircle,
-  EXPIRED: XCircle,
-};
-
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: "Ожидает",
-  OPEN: "Открыт",
-  FILLED: "Исполнен",
-  PARTIALLY_FILLED: "Частично исполнен",
-  CANCELLED: "Отменен",
-  REJECTED: "Отклонен",
-  EXPIRED: "Истек",
-};
-
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const Icon = STATUS_ICONS[status];
-  return (
-    <Badge className="h-5 gap-1 text-[10px]" variant={STATUS_COLORS[status]}>
-      <Icon className="h-3 w-3" />
-      {STATUS_LABELS[status]}
-    </Badge>
-  );
-}
 
 function OrderRow({
   order,
@@ -122,7 +70,7 @@ function OrderRow({
         {order.price ? `$${order.price.toFixed(2)}` : "Market"}
       </TableCell>
       <TableCell className="py-2">
-        <OrderStatusBadge status={order.status} />
+        <StatusBadge size="sm" status={order.status} />
       </TableCell>
       <TableCell className="py-2 text-right">
         {order.filledQuantity > 0 && (

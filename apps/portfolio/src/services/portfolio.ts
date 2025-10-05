@@ -1286,7 +1286,7 @@ export class PortfolioService extends BaseService {
     // Query ClickHouse for trades
     const query = `
       SELECT 
-        id,
+        tradeId as id,
         timestamp,
         symbol,
         side,

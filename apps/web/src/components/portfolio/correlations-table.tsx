@@ -70,7 +70,12 @@ export function CorrelationsTable({
     );
   }
 
-  if (!correlations || correlations.correlations.length === 0) {
+  const hasNoData = Boolean(
+    !(correlations && correlations.correlations) ||
+      correlations.correlations.length === 0
+  );
+
+  if (hasNoData) {
     return (
       <Card>
         <CardHeader>

@@ -4,9 +4,10 @@
  */
 
 import { AlertTriangle, TrendingDown } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 import { useVaR } from "../hooks/use-risk";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Skeleton } from "./ui/skeleton";
+import { CardSkeleton } from "./ui/card-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type RiskVaRCardProps = {
@@ -26,25 +27,13 @@ export function RiskVaRCard({ portfolioId }: RiskVaRCardProps) {
 
   if (loading95 || loading99) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingDown className="h-5 w-5" />
-            Value at Risk (VaR)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32" />
-        </CardContent>
-      </Card>
+      <CardSkeleton
+        contentHeight="h-32"
+        icon={<TrendingDown className="h-5 w-5" />}
+        title="Value at Risk (VaR)"
+      />
     );
   }
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("ru-RU", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
 
   const formatPercent = (var_value: number, currentValue: number) =>
     ((var_value / currentValue) * 100).toFixed(2);

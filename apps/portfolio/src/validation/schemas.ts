@@ -113,10 +113,12 @@ export const getTransactionsQuerySchema = z.object({
     .optional()
     .transform((val) => (val ? new Date(val) : undefined)),
   limit: z
-    .string()
+    .union([z.string(), z.number()])
     .optional()
-    .default("100")
-    .transform((val) => Number.parseInt(val, 10)),
+    .transform((val) => {
+      if (val === undefined) return 100;
+      return typeof val === "string" ? Number.parseInt(val, 10) : val;
+    }),
 });
 
 /**

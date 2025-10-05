@@ -4,9 +4,11 @@
  */
 
 import type { PrismaClient } from "@aladdin/database";
+import { CacheService } from "./cache";
 import type { ClickHouseClient } from "./clickhouse";
 import type { Logger } from "./logger";
 import type { NatsClient } from "./nats";
+import { TypedServiceClient } from "./service-client";
 
 /**
  * Base service configuration
@@ -16,6 +18,8 @@ export type BaseServiceConfig = {
   natsClient?: NatsClient;
   prisma?: PrismaClient;
   clickhouse?: ClickHouseClient;
+  enableCache?: boolean;
+  enableServiceClient?: boolean;
 };
 
 /**
@@ -42,11 +46,92 @@ export abstract class BaseService {
   protected clickhouse?: ClickHouseClient;
   protected status: ServiceStatus = ServiceStatus.INITIALIZING;
 
+  private cacheService?: CacheService;
+  private serviceClient?: TypedServiceClient;
+  private enableCache: boolean;
+  private enableServiceClient: boolean;
+
   constructor(config: BaseServiceConfig) {
     this.logger = config.logger;
     this.natsClient = config.natsClient;
     this.prisma = config.prisma;
     this.clickhouse = config.clickhouse;
+    this.enableCache = config.enableCache ?? false;
+    this.enableServiceClient = config.enableServiceClient ?? true;
+  }
+
+  /**
+   * Get CacheService instance (lazy initialization)
+   * Инициализирует Redis cache если enableCache=true
+   */
+  protected getCacheService(
+    keyPrefix?: string,
+    defaultTTL?: number
+  ): CacheService {
+    if (!this.enableCache) {
+      throw new Error(
+        "Cache is not enabled for this service. Set enableCache: true in config."
+      );
+    }
+
+    if (!this.cacheService) {
+      const redisUrl = process.env.REDIS_URL;
+      if (!redisUrl) {
+        throw new Error("REDIS_URL environment variable is not set");
+      }
+
+      this.cacheService = new CacheService({
+        redis: redisUrl,
+        logger: this.logger,
+        keyPrefix: keyPrefix ?? `${this.getServiceName()}:`,
+        defaultTTL: defaultTTL ?? 60,
+      });
+
+      this.logger.info("Cache service initialized", {
+        keyPrefix: keyPrefix ?? `${this.getServiceName()}:`,
+        defaultTTL: defaultTTL ?? 60,
+      });
+    }
+
+    return this.cacheService;
+  }
+
+  /**
+   * Get ServiceClient instance (lazy initialization)
+   * Предоставляет type-safe клиент для вызова других сервисов
+   */
+  protected getServiceClient(): TypedServiceClient {
+    if (!this.enableServiceClient) {
+      throw new Error(
+        "Service client is not enabled for this service. Set enableServiceClient: true in config."
+      );
+    }
+
+    if (!this.serviceClient) {
+      this.serviceClient = new TypedServiceClient({
+        logger: this.logger,
+        enableRetry: true,
+        enableCircuitBreaker: true,
+      });
+
+      this.logger.info("Service client initialized");
+    }
+
+    return this.serviceClient;
+  }
+
+  /**
+   * Check if cache is available
+   */
+  protected hasCacheService(): boolean {
+    return this.enableCache && this.cacheService !== undefined;
+  }
+
+  /**
+   * Check if service client is available
+   */
+  protected hasServiceClient(): boolean {
+    return this.enableServiceClient && this.serviceClient !== undefined;
   }
 
   /**
@@ -111,7 +196,20 @@ export abstract class BaseService {
     this.status = ServiceStatus.STOPPING;
 
     try {
+      // Сначала вызываем кастомный onStop
       await this.onStop();
+
+      // Затем очищаем ресурсы base service
+      if (this.cacheService) {
+        // CacheService не имеет метода close, но мы можем его добавить в будущем
+        this.logger.info("Cache service cleaned up");
+      }
+
+      if (this.serviceClient) {
+        // ServiceClient также может иметь cleanup логику в будущем
+        this.logger.info("Service client cleaned up");
+      }
+
       this.status = ServiceStatus.STOPPED;
       this.logger.info(`${this.getServiceName()} service stopped`);
     } catch (error) {

@@ -361,3 +361,30 @@ export function generateReport(params: {
     `/api/analytics/report?${searchParams.toString()}`
   );
 }
+
+/**
+ * Cache Statistics Types
+ */
+export type CacheStats = {
+  hits: number;
+  misses: number;
+  sets: number;
+  deletes: number;
+  errors: number;
+  hitRate: number;
+  enabled: boolean;
+};
+
+/**
+ * Get cache statistics
+ */
+export function getCacheStats(): Promise<CacheStats> {
+  return apiClient.get<CacheStats>("/api/analytics/cache/stats");
+}
+
+/**
+ * Flush cache
+ */
+export function flushCache(): Promise<{ message: string }> {
+  return apiClient.post<{ message: string }>("/api/analytics/cache/flush");
+}

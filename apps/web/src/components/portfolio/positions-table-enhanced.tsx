@@ -14,10 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-const QUANTITY_DECIMALS = 8;
-const PERCENT_DIVISOR = 100;
-
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -29,6 +25,12 @@ import {
 } from "@/components/ui/table";
 import { useDeletePosition } from "@/hooks/use-portfolio";
 import type { Position } from "@/lib/api/portfolio";
+import {
+  formatCurrency,
+  formatPercent,
+  formatQuantity,
+  getPnLColor,
+} from "@/lib/formatters";
 import { EditPositionDialog } from "./edit-position-dialog";
 
 type PositionsTableEnhancedProps = {
@@ -41,27 +43,6 @@ export function PositionsTableEnhanced({
   positions,
 }: PositionsTableEnhancedProps) {
   const deletePosition = useDeletePosition();
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("ru-RU", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-
-  const formatPercent = (value: number) =>
-    new Intl.NumberFormat("ru-RU", {
-      style: "percent",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value / PERCENT_DIVISOR);
-
-  const getPnlColor = (pnl: number) => {
-    if (pnl > 0) return "text-green-600";
-    if (pnl < 0) return "text-red-600";
-    return "text-muted-foreground";
-  };
 
   return (
     <div className="rounded-md border">
@@ -82,7 +63,7 @@ export function PositionsTableEnhanced({
             <TableRow key={position.symbol}>
               <TableCell className="font-medium">{position.symbol}</TableCell>
               <TableCell className="text-right">
-                {position.quantity.toFixed(QUANTITY_DECIMALS)}
+                {formatQuantity(position.quantity)}
               </TableCell>
               <TableCell className="text-right">
                 {formatCurrency(position.averagePrice)}
@@ -93,7 +74,7 @@ export function PositionsTableEnhanced({
               <TableCell className="text-right">
                 {formatCurrency(position.value)}
               </TableCell>
-              <TableCell className={`text-right ${getPnlColor(position.pnl)}`}>
+              <TableCell className={`text-right ${getPnLColor(position.pnl)}`}>
                 <div className="flex items-center justify-end gap-1">
                   {formatCurrency(position.pnl)}
                   {position.pnl !== 0 &&
@@ -104,7 +85,7 @@ export function PositionsTableEnhanced({
                     ))}
                 </div>
                 <div className="text-xs">
-                  {formatPercent(position.pnlPercent)}
+                  {formatPercent(position.pnlPercent, 2, true)}
                 </div>
               </TableCell>
               <TableCell className="text-right">

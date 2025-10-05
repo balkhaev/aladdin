@@ -4,12 +4,14 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Calendar, Loader2 } from "lucide-react";
+import { Calendar, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { HPOConfigForm } from "../components/ml/hpo-config-form";
 import { HPOOptimizationResults } from "../components/ml/hpo-optimization-results";
 import { MLBacktestResults } from "../components/ml/ml-backtest-results";
+import { ModelCleanupDialog } from "../components/ml/model-cleanup-dialog";
 import { ModelComparisonCard } from "../components/ml/model-comparison-card";
+import { ModelListCard } from "../components/ml/model-list-card";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -50,6 +52,7 @@ function MachineLearningPage() {
   const [retrainInterval, setRetrainInterval] = useState(30);
   const [days, setDays] = useState(30);
   const [includeSentiment, setIncludeSentiment] = useState(true);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
 
   // Mutations
   const runBacktestMutation = useRunBacktest();
@@ -256,10 +259,11 @@ function MachineLearningPage() {
 
       {/* Results */}
       <Tabs className="w-full" defaultValue="backtest">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="backtest">Backtest Results</TabsTrigger>
           <TabsTrigger value="comparison">Model Comparison</TabsTrigger>
           <TabsTrigger value="optimization">HPO</TabsTrigger>
+          <TabsTrigger value="models">Models</TabsTrigger>
         </TabsList>
 
         <TabsContent className="space-y-6" value="backtest">
@@ -458,7 +462,26 @@ function MachineLearningPage() {
             </Card>
           )}
         </TabsContent>
+
+        <TabsContent className="space-y-6" value="models">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setShowCleanupDialog(true)}
+              variant="outline"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Cleanup Old Models
+            </Button>
+          </div>
+          <ModelListCard />
+        </TabsContent>
       </Tabs>
+
+      {/* Model Cleanup Dialog */}
+      <ModelCleanupDialog
+        onClose={() => setShowCleanupDialog(false)}
+        open={showCleanupDialog}
+      />
     </div>
   );
 }

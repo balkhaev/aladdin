@@ -13,34 +13,15 @@ import {
   Volume2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@/components/ui/card-skeleton";
 import { useMarketOverview } from "@/hooks/use-market-overview";
-
-const MILLION = 1_000_000;
-const BILLION = 1_000_000_000;
-const PRICE_THRESHOLD = 1;
-const PRICE_DECIMALS_LARGE = 2;
-const PRICE_DECIMALS_SMALL = 6;
-const PERCENT_DECIMALS = 2;
+import { formatPrice, formatVolume } from "@/lib/formatters";
 
 export function MarketOverview() {
   const { data: overview, isLoading, error } = useMarketOverview();
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Market Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <CardSkeleton contentHeight="h-96" title="Market Overview" />;
   }
 
   if (error || !overview) {
@@ -58,26 +39,9 @@ export function MarketOverview() {
     );
   }
 
-  const formatVolume = (volume: number): string => {
-    if (volume >= BILLION) {
-      return `$${(volume / BILLION).toFixed(PRICE_DECIMALS_LARGE)}B`;
-    }
-    if (volume >= MILLION) {
-      return `$${(volume / MILLION).toFixed(PRICE_DECIMALS_LARGE)}M`;
-    }
-    return `$${volume.toFixed(PRICE_DECIMALS_LARGE)}`;
-  };
-
-  const formatPrice = (price: number): string => {
-    if (price >= PRICE_THRESHOLD) {
-      return `$${price.toFixed(PRICE_DECIMALS_LARGE)}`;
-    }
-    return `$${price.toFixed(PRICE_DECIMALS_SMALL)}`;
-  };
-
   const formatPercent = (percent: number): string => {
     const sign = percent >= 0 ? "+" : "";
-    return `${sign}${percent.toFixed(PERCENT_DECIMALS)}%`;
+    return `${sign}${percent.toFixed(2)}%`;
   };
 
   return (

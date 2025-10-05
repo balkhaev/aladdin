@@ -1,8 +1,69 @@
 # API Reference
 
-Руководство по REST API и WebSocket эндпоинтам платформы Aladdin.
+Полное руководство по REST API и WebSocket эндпоинтам платформы Aladdin.
 
-**Base URL:** `http://localhost:3000`
+**Base URL:** `http://localhost:3000` (Gateway) или напрямую к сервисам
+
+---
+
+## 🎯 Общие правила
+
+### Response Format
+
+**Success:**
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "timestamp": 1696248000000
+}
+```
+
+**Error:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Resource not found",
+    "details": {}
+  },
+  "timestamp": 1696248000000
+}
+```
+
+### Error Codes
+
+- `NOT_FOUND` (404) - ресурс не найден
+- `VALIDATION_ERROR` (400) - ошибка валидации
+- `UNAUTHORIZED` (401) - не авторизован
+- `FORBIDDEN` (403) - нет доступа
+- `INTERNAL_ERROR` (500) - внутренняя ошибка
+
+### Rate Limits
+
+- **100 запросов/минуту** на IP
+- **1000 запросов/час** на пользователя
+
+Headers:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1696248060
+```
+
+### Authentication
+
+Для защищенных эндпоинтов используйте JWT токен:
+
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:3000/api/...
+```
+
+---
 
 ## 🔌 Market Data Service (3010)
 
@@ -157,17 +218,37 @@ GET /api/risk/exposure
 
 ## 📊 Analytics Service (3014)
 
+### Технические индикаторы
+
 ```bash
-# Технические индикаторы
-GET /api/analytics/indicators/:symbol?indicator=RSI&period=14&interval=1h
+# Общий формат
+GET /api/analytics/indicators/:symbol?indicator=<IND>&period=<N>&interval=<T>
 
-# Поддерживаемые индикаторы: RSI, MACD, EMA, SMA, BOLLINGER
+# Поддерживаемые индикаторы
+- RSI (period: 14)
+- MACD (fast: 12, slow: 26, signal: 9)
+- EMA (period: 20, 50, 200)
+- SMA (period: 20, 50, 200)
+- BOLLINGER (period: 20, stdDev: 2)
 
-# Бэктестинг
+# Примеры
+GET /api/analytics/indicators/BTCUSDT?indicator=RSI&period=14&interval=1h
+GET /api/analytics/indicators/ETHUSDT?indicator=MACD&interval=4h
+GET /api/analytics/indicators/BTCUSDT?indicator=BOLLINGER&period=20&interval=1d
+```
+
+### Бэктестинг
+
+```bash
 POST /api/analytics/backtest
-Body: {
+```
+
+**Body:**
+
+```json
+{
   "symbol": "BTCUSDT",
-  "strategy": "RSI",           # RSI, MACD, BOLLINGER
+  "strategy": "RSI",
   "params": {
     "period": 14,
     "oversold": 30,
@@ -177,19 +258,107 @@ Body: {
   "to": "2024-10-01",
   "initialCapital": 10000
 }
+```
 
-Response: {
+**Strategies:**
+
+- `RSI` - RSI oversold/overbought
+- `MACD` - MACD cross
+- `BOLLINGER` - Bollinger Bands breakout
+- `EMA_CROSS` - EMA crossover
+
+**Response:**
+
+```json
+{
   "totalReturn": 25.5,
   "trades": 45,
   "winRate": 62.2,
   "sharpeRatio": 1.8,
+  "sortinoRatio": 2.1,
+  "calmarRatio": 1.5,
   "maxDrawdown": -15.2,
-  "finalCapital": 12550
+  "finalCapital": 12550,
+  "profitFactor": 1.8,
+  "avgTrade": 56.7
 }
-
-# Sentiment анализ
-GET /api/analytics/sentiment/:symbol
 ```
+
+### Sentiment Analysis
+
+```bash
+# Combined sentiment (все источники)
+GET /api/analytics/sentiment/:symbol/combined
+
+# Batch analysis
+GET /api/analytics/sentiment/batch/combined?symbols=BTCUSDT,ETHUSDT,SOLUSDT
+
+# Social media sentiment
+GET /api/analytics/sentiment/:symbol/social
+
+# Futures sentiment (funding rates + OI)
+GET /api/analytics/sentiment/:symbol/futures
+```
+
+**Combined Sentiment Response:**
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "combinedScore": 45.2,
+  "combinedSignal": "BULLISH",
+  "confidence": 0.87,
+  "strength": "MODERATE",
+  "components": {
+    "analytics": {
+      "score": 52.1,
+      "confidence": 0.92,
+      "indicators": {
+        "rsi": 58.5,
+        "macd": "BULLISH",
+        "fearGreed": 68
+      }
+    },
+    "futures": {
+      "score": 38.5,
+      "confidence": 0.81,
+      "fundingRate": 0.008,
+      "oiChange": 12.5
+    },
+    "orderBook": {
+      "score": 41.2,
+      "confidence": 0.75,
+      "bidAskRatio": 1.15
+    },
+    "social": {
+      "score": 48.0,
+      "confidence": 0.8,
+      "twitter": 0.6,
+      "reddit": 0.4,
+      "telegram": 0.5
+    }
+  },
+  "recommendation": {
+    "action": "BUY",
+    "reasoning": "Strong bullish consensus across all metrics",
+    "riskLevel": "LOW"
+  },
+  "insights": [
+    "🎯 Strong bullish consensus across all metrics",
+    "📈 Futures market showing positive positioning"
+  ]
+}
+```
+
+**Signal Classification:**
+
+| Score Range | Signal  | Strength | Action      |
+| ----------- | ------- | -------- | ----------- |
+| +60 to +100 | BULLISH | STRONG   | STRONG_BUY  |
+| +30 to +59  | BULLISH | MODERATE | BUY         |
+| -29 to +29  | NEUTRAL | WEAK     | HOLD        |
+| -59 to -30  | BEARISH | MODERATE | SELL        |
+| -100 to -60 | BEARISH | STRONG   | STRONG_SELL |
 
 ## ⛓️ On-Chain Service (3015)
 
@@ -303,69 +472,146 @@ ws.onmessage = (event) => {
 }
 ```
 
-## 🔐 Authentication
+## 🤖 ML Service (3014)
 
-Для защищенных эндпоинтов требуется JWT токен:
+### Price Prediction
 
 ```bash
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/trading/orders
+# LSTM prediction
+GET /api/ml/predict/lstm?symbol=BTCUSDT&horizon=24h
+
+# Hybrid prediction (linear + exponential smoothing)
+GET /api/ml/predict/hybrid?symbol=BTCUSDT&horizon=24h
+
+# Ensemble (LSTM + Hybrid)
+GET /api/ml/predict/ensemble?symbol=BTCUSDT&horizon=24h&strategy=stacking
 ```
 
-**Защищенные эндпоинты:**
+**Response:**
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "predictions": [
+    {
+      "timestamp": "2025-10-06T12:00:00Z",
+      "price": 52500,
+      "confidence": 0.85,
+      "lowerBound": 51000,
+      "upperBound": 54000
+    }
+  ],
+  "model": "LSTM",
+  "accuracy": 0.75,
+  "modelAgreement": 0.92
+}
+```
+
+### Anomaly Detection
+
+```bash
+# Detect anomalies
+GET /api/ml/anomalies/detect?symbol=BTCUSDT
+
+# Pump & dump detection
+GET /api/ml/anomalies/pump-dump?symbol=BTCUSDT&window=24h
+
+# Flash crash prediction
+GET /api/ml/anomalies/flash-crash?symbol=BTCUSDT
+```
+
+**Response:**
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "anomalies": [
+    {
+      "type": "PUMP_DUMP",
+      "severity": "HIGH",
+      "confidence": 0.85,
+      "indicators": {
+        "volumeSpike": 150,
+        "priceChange": 12.5,
+        "rapidityScore": 0.9
+      },
+      "recommendation": "CAUTION"
+    }
+  ]
+}
+```
+
+### Backtesting (ML Models)
+
+```bash
+# Simple backtest
+POST /api/ml/backtest/simple
+
+# Walk-forward testing
+POST /api/ml/backtest/walk-forward
+
+# Model comparison
+POST /api/ml/backtest/compare
+```
+
+**Body:**
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "model": "LSTM",
+  "trainStart": "2024-01-01",
+  "trainEnd": "2024-09-01",
+  "testStart": "2024-09-01",
+  "testEnd": "2024-10-01",
+  "features": ["rsi", "macd", "volume"]
+}
+```
+
+**Response:**
+
+```json
+{
+  "metrics": {
+    "mae": 250.5,
+    "rmse": 380.2,
+    "mape": 0.5,
+    "r2": 0.85,
+    "directionalAccuracy": 0.72
+  },
+  "predictions": [...],
+  "backtestDuration": "30 days"
+}
+```
+
+### Hyperparameter Optimization
+
+```bash
+# Start optimization
+POST /api/ml/hpo/optimize
+
+# Get optimization results
+GET /api/ml/hpo/results/:jobId
+
+# List all optimizations
+GET /api/ml/hpo/list
+```
+
+---
+
+## 🔐 Protected Endpoints
+
+Требуют JWT токен в header `Authorization: Bearer <token>`:
 
 - `POST /api/trading/orders`
+- `PUT /api/trading/orders/:id`
+- `DELETE /api/trading/orders/:id`
+- `POST /api/portfolio/*`
 - `PUT /api/portfolio/*`
+- `DELETE /api/portfolio/*`
 - `POST /api/screener/strategies`
-
-## 📝 Response Format
-
-### Success
-
-```json
-{
-  "success": true,
-  "data": { ... },
-  "timestamp": 1696248000000
-}
-```
-
-### Error
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Order not found",
-    "details": { "orderId": "123" }
-  },
-  "timestamp": 1696248000000
-}
-```
-
-**Error Codes:**
-
-- `NOT_FOUND` - ресурс не найден (404)
-- `VALIDATION_ERROR` - ошибка валидации (400)
-- `UNAUTHORIZED` - не авторизован (401)
-- `FORBIDDEN` - нет доступа (403)
-- `INTERNAL_ERROR` - внутренняя ошибка (500)
-
-## ⚡ Rate Limits
-
-**По умолчанию:**
-
-- 100 запросов/минуту на IP
-- 1000 запросов/час на пользователя
-
-**Headers:**
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1696248060
-```
+- `PUT /api/screener/strategies/:id`
+- `DELETE /api/screener/strategies/:id`
 
 ## 🏥 Health Checks
 

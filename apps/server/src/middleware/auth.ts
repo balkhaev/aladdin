@@ -19,8 +19,7 @@ const PUBLIC_PATHS = [
   "/api/macro", // Macro data доступна публично (backward compat)
   "/api/sentiment", // Sentiment analysis доступен публично (backward compat)
   "/api/trading", // Временно для тестирования
-  "/api/portfolio", // Временно для тестирования
-  "/api/risk", // Временно для тестирования
+  "/api/portfolio", // Временно для тестирования (includes risk endpoints)
   "/api/analytics", // Временно для тестирования
   "/api/exchange-credentials", // Временно для тестирования
   "/api/social", // Social integrations доступны публично

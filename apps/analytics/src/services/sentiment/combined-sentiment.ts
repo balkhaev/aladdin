@@ -8,6 +8,7 @@
  */
 
 import type { Logger } from "@aladdin/shared/logger";
+import type { SentimentAnalysisService } from "./sentiment-analysis";
 
 type SentimentSignal = "BULLISH" | "BEARISH" | "NEUTRAL";
 
@@ -103,13 +104,25 @@ export class CombinedSentimentService {
   };
 
   private marketDataBaseUrl: string;
+  private scraperBaseUrl: string;
+  private sentimentService: SentimentAnalysisService | null = null;
 
   constructor(
     private logger: Logger,
-    private analyticsBaseUrl: string,
-    marketDataBaseUrl: string
+    _analyticsBaseUrl: string,
+    marketDataBaseUrl: string,
+    scraperBaseUrl: string
   ) {
     this.marketDataBaseUrl = marketDataBaseUrl;
+    this.scraperBaseUrl = scraperBaseUrl;
+    // _analyticsBaseUrl не используется, т.к. Combined Sentiment работает в самом analytics сервисе
+  }
+
+  /**
+   * Set the sentiment analysis service (to avoid circular dependency in constructor)
+   */
+  setSentimentService(service: SentimentAnalysisService): void {
+    this.sentimentService = service;
   }
 
   /**
@@ -205,20 +218,20 @@ export class CombinedSentimentService {
   }
 
   /**
-   * Fetch analytics sentiment from Analytics service
+   * Fetch analytics sentiment from SentimentAnalysisService
    */
   private async fetchAnalyticsSentiment(symbol: string) {
+    if (!this.sentimentService) {
+      this.logger.debug("Analytics sentiment service not set", { symbol });
+      return null;
+    }
+
     try {
-      const response = await fetch(
-        `${this.analyticsBaseUrl}/api/analytics/sentiment/${symbol}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Analytics API error: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data;
+      const result = await this.sentimentService.getCompositeSentiment(symbol);
+      return {
+        compositeScore: result.compositeScore,
+        confidence: result.confidence,
+      };
     } catch (error) {
       this.logger.error("Failed to fetch analytics sentiment", {
         symbol,
@@ -330,12 +343,12 @@ export class CombinedSentimentService {
         return null;
       }
 
-      const { analysis } = result.data;
+      const { snapshot, analysis } = result.data;
 
       return {
-        bidAskImbalance: analysis.imbalance ?? 0,
-        spread: analysis.spread ?? 0,
-        liquidityScore: analysis.liquidityScore ?? 0,
+        bidAskImbalance: snapshot.bidAskImbalance ?? 0,
+        spread: snapshot.spread ?? 0,
+        liquidityScore: analysis.details?.liquidityScore ?? 0,
       };
     } catch (error) {
       this.logger.error("Failed to fetch order book data", { symbol, error });
@@ -350,9 +363,9 @@ export class CombinedSentimentService {
     symbol: string
   ): Promise<SocialSentimentData | null> {
     try {
-      // Social sentiment is available through analytics service's sentiment endpoint
+      // Social sentiment is available through scraper service
       const response = await fetch(
-        `${this.analyticsBaseUrl}/api/analytics/social-sentiment/${symbol}`
+        `${this.scraperBaseUrl}/api/social/sentiment/${symbol}`
       );
 
       if (!response.ok) {

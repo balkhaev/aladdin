@@ -26,7 +26,7 @@ import {
  */
 export function usePortfolioCorrelations(
   portfolioId: string,
-  params?: { window?: "7d" | "30d" | "90d" }
+  params?: { window?: "7d" | "30d" | "90d" | "1y" }
 ) {
   return useQuery({
     queryKey: ["risk", "correlations", portfolioId, params?.window],

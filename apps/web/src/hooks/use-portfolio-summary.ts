@@ -48,8 +48,8 @@ export function usePortfolioSummary(
         benchmark,
       });
     },
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: 120_000, // Consider data stale after 2 minutes
+    refetchInterval: REFETCH_INTERVALS.SLOW,
+    staleTime: STALE_TIME.SLOW,
     enabled: enabled && !!portfolioId,
   });
 }

@@ -123,14 +123,14 @@ export type StressTestSummary = {
  */
 export function getPortfolioCorrelations(
   portfolioId: string,
-  params?: { window?: "7d" | "30d" | "90d" }
+  params?: { window?: "7d" | "30d" | "90d" | "1y" }
 ): Promise<PortfolioCorrelations> {
   const searchParams = new URLSearchParams();
   if (params?.window) searchParams.set("window", params.window);
 
   const query = searchParams.toString();
   return apiClient.get<PortfolioCorrelations>(
-    `/api/risk/portfolio/${portfolioId}/correlations${query ? `?${query}` : ""}`
+    `/api/portfolio/${portfolioId}/risk/correlations${query ? `?${query}` : ""}`
   );
 }
 
@@ -141,7 +141,7 @@ export function getPortfolioExposure(
   portfolioId: string
 ): Promise<PortfolioExposure> {
   return apiClient.get<PortfolioExposure>(
-    `/api/risk/portfolio/${portfolioId}/exposure`
+    `/api/portfolio/${portfolioId}/risk/exposure`
   );
 }
 
@@ -153,15 +153,16 @@ export function getVaR(params: {
   confidenceLevel?: number;
   timeHorizon?: number;
 }): Promise<VaRResult> {
-  const searchParams = new URLSearchParams({
-    portfolioId: params.portfolioId,
-  });
+  const searchParams = new URLSearchParams();
   if (params.confidenceLevel)
-    searchParams.set("confidenceLevel", params.confidenceLevel.toString());
+    searchParams.set("confidence", params.confidenceLevel.toString());
   if (params.timeHorizon)
-    searchParams.set("timeHorizon", params.timeHorizon.toString());
+    searchParams.set("days", params.timeHorizon.toString());
 
-  return apiClient.get<VaRResult>(`/api/risk/var?${searchParams.toString()}`);
+  const query = searchParams.toString();
+  return apiClient.get<VaRResult>(
+    `/api/portfolio/${params.portfolioId}/risk/var${query ? `?${query}` : ""}`
+  );
 }
 
 /**
@@ -178,7 +179,7 @@ export function getRiskLimits(params?: {
 
   const query = searchParams.toString();
   return apiClient.get<RiskLimit[]>(
-    `/api/risk/limits${query ? `?${query}` : ""}`
+    `/api/portfolio/risk/limits${query ? `?${query}` : ""}`
   );
 }
 
@@ -188,7 +189,7 @@ export function getRiskLimits(params?: {
 export function createRiskLimit(
   data: CreateRiskLimitInput
 ): Promise<RiskLimit> {
-  return apiClient.post<RiskLimit>("/api/risk/limits", data);
+  return apiClient.post<RiskLimit>("/api/portfolio/risk/limits", data);
 }
 
 /**
@@ -198,14 +199,17 @@ export function updateRiskLimit(
   limitId: string,
   data: UpdateRiskLimitInput
 ): Promise<RiskLimit> {
-  return apiClient.patch<RiskLimit>(`/api/risk/limits/${limitId}`, data);
+  return apiClient.patch<RiskLimit>(
+    `/api/portfolio/risk/limits/${limitId}`,
+    data
+  );
 }
 
 /**
  * Delete risk limit
  */
 export function deleteRiskLimit(limitId: string): Promise<void> {
-  return apiClient.delete<void>(`/api/risk/limits/${limitId}`);
+  return apiClient.delete<void>(`/api/portfolio/risk/limits/${limitId}`);
 }
 
 /**
@@ -220,7 +224,7 @@ export function getCVaR(
 
   const query = searchParams.toString();
   return apiClient.get<CVaRResult>(
-    `/api/risk/cvar/${portfolioId}${query ? `?${query}` : ""}`
+    `/api/portfolio/${portfolioId}/risk/cvar${query ? `?${query}` : ""}`
   );
 }
 
@@ -232,7 +236,7 @@ export function runStressTest(
   scenarios?: StressScenario[]
 ): Promise<StressTestSummary> {
   return apiClient.post<StressTestSummary>(
-    `/api/risk/stress-test/${portfolioId}`,
+    `/api/portfolio/${portfolioId}/risk/stress-test`,
     { scenarios }
   );
 }
@@ -241,5 +245,5 @@ export function runStressTest(
  * Get available stress test scenarios
  */
 export function getStressTestScenarios(): Promise<StressScenario[]> {
-  return apiClient.get<StressScenario[]>("/api/risk/stress-test/scenarios");
+  return apiClient.get<StressScenario[]>("/api/portfolio/risk/scenarios");
 }

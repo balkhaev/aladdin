@@ -4,9 +4,10 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, Brain, TrendingUp } from "lucide-react";
+import { BarChart3, Brain, Database, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { PortfolioSummaryDashboard } from "@/components/analytics/portfolio-summary-dashboard";
+import { CacheMonitoringCard } from "@/components/cache-monitoring-card";
 import { DivergenceAlerts } from "@/components/intelligence/divergence-alerts";
 import { PortfolioSentimentTable } from "@/components/intelligence/portfolio-sentiment-table";
 import { SmartSignalsCard } from "@/components/intelligence/smart-signals-card";
@@ -118,7 +119,7 @@ function UnifiedAnalyticsPage() {
 
       {/* Main Content Tabs */}
       <Tabs className="space-y-6" defaultValue="performance">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[500px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[660px]">
           <TabsTrigger className="gap-2" value="performance">
             <BarChart3 className="size-4" />
             <span className="hidden sm:inline">Метрики</span>
@@ -130,6 +131,10 @@ function UnifiedAnalyticsPage() {
           <TabsTrigger className="gap-2" value="signals">
             <TrendingUp className="size-4" />
             <span className="hidden sm:inline">Сигналы</span>
+          </TabsTrigger>
+          <TabsTrigger className="gap-2" value="admin">
+            <Database className="size-4" />
+            <span className="hidden sm:inline">Admin</span>
           </TabsTrigger>
         </TabsList>
 
@@ -191,9 +196,18 @@ function UnifiedAnalyticsPage() {
           </div>
           <SmartSignalsCard portfolioId={selectedPortfolioId} />
         </TabsContent>
+
+        {/* Admin Tab */}
+        <TabsContent className="space-y-6" value="admin">
+          <div className="space-y-3">
+            <h2 className="font-semibold text-xl">System Administration</h2>
+            <p className="text-muted-foreground text-sm">
+              Мониторинг кэша и системные настройки
+            </p>
+          </div>
+          <CacheMonitoringCard />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-

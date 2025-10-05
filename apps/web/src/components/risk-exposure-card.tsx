@@ -4,10 +4,12 @@
  */
 
 import { Activity, TrendingDown, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 import { useExposure } from "../hooks/use-risk";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { CardSkeleton } from "./ui/card-skeleton";
+import { EmptyState } from "./ui/empty-state";
 import { Progress } from "./ui/progress";
-import { Skeleton } from "./ui/skeleton";
 
 type RiskExposureCardProps = {
   portfolioId: string;
@@ -18,43 +20,17 @@ export function RiskExposureCard({ portfolioId }: RiskExposureCardProps) {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Экспозиция портфеля
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64" />
-        </CardContent>
-      </Card>
+      <CardSkeleton
+        contentHeight="h-64"
+        icon={<Activity className="h-5 w-5" />}
+        title="Экспозиция портфеля"
+      />
     );
   }
 
   if (!exposure) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Экспозиция портфеля
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Нет данных об экспозиции
-          </p>
-        </CardContent>
-      </Card>
-    );
+    return <EmptyState icon={Activity} title="Нет данных об экспозиции" />;
   }
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("ru-RU", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
 
   const getLeverageColor = (leverage: number) => {
     if (leverage < 2) return "text-green-600";

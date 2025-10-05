@@ -4,8 +4,17 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, BarChart3, Brain, Link2, TrendingUp } from "lucide-react";
+import {
+  Activity,
+  ArrowLeftRight,
+  BarChart3,
+  Brain,
+  Link2,
+  TrendingUp,
+} from "lucide-react";
+import { AggregatedPriceCard } from "@/components/aggregated-price-card";
 import { MarketSentimentGrid } from "@/components/analytics/market-sentiment-grid";
+import { ArbitrageOpportunitiesCard } from "@/components/arbitrage-opportunities-card";
 import { CategoryPerformance } from "@/components/macro/category-performance";
 import { CorrelationMatrix } from "@/components/macro/correlation-matrix";
 import { DominanceChart } from "@/components/macro/dominance-chart";
@@ -54,10 +63,14 @@ function MarketOverviewPage() {
 
       {/* Main Content Tabs */}
       <Tabs className="space-y-6" defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[720px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[900px]">
           <TabsTrigger className="gap-2" value="overview">
             <Activity className="size-4" />
             <span className="hidden sm:inline">Обзор</span>
+          </TabsTrigger>
+          <TabsTrigger className="gap-2" value="arbitrage">
+            <ArrowLeftRight className="size-4" />
+            <span className="hidden sm:inline">Arbitrage</span>
           </TabsTrigger>
           <TabsTrigger className="gap-2" value="sentiment">
             <Brain className="size-4" />
@@ -77,6 +90,34 @@ function MarketOverviewPage() {
         <TabsContent className="space-y-6" value="overview">
           {/* Market Overview - Top Movers */}
           <MarketOverview />
+        </TabsContent>
+
+        {/* Arbitrage Tab */}
+        <TabsContent className="space-y-6" value="arbitrage">
+          <div className="space-y-3">
+            <div>
+              <h2 className="font-semibold text-xl">
+                Aggregated Prices (VWAP)
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Volume-weighted average price across multiple exchanges
+              </p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <AggregatedPriceCard symbol="BTCUSDT" />
+              <AggregatedPriceCard symbol="ETHUSDT" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <h2 className="font-semibold text-xl">Arbitrage Opportunities</h2>
+              <p className="text-muted-foreground text-sm">
+                Real-time price spreads across exchanges
+              </p>
+            </div>
+            <ArbitrageOpportunitiesCard />
+          </div>
         </TabsContent>
 
         {/* Sentiment Tab */}

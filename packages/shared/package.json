@@ -12,6 +12,7 @@
     "./retry": "./src/retry.ts",
     "./cache": "./src/cache.ts",
     "./config": "./src/config.ts",
+    "./service-client": "./src/service-client.ts",
     "./types": "./src/types.ts",
     "./http": "./src/http.ts",
     "./errors": "./src/errors.ts",
@@ -19,7 +20,13 @@
     "./service-bootstrap": "./src/service-bootstrap.ts",
     "./telemetry": "./src/telemetry.ts",
     "./middleware/validation": "./src/middleware/validation.ts",
-    "./middleware/auth": "./src/middleware/auth.ts"
+    "./middleware/auth": "./src/middleware/auth.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./schemas/common": "./src/schemas/common.ts",
+    "./schemas/market-data": "./src/schemas/market-data.ts",
+    "./schemas/trading": "./src/schemas/trading.ts",
+    "./schemas/analytics": "./src/schemas/analytics.ts",
+    "./websocket": "./src/websocket/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

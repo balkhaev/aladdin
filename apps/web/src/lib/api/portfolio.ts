@@ -197,3 +197,126 @@ export function deletePosition(
     `/api/portfolio/${portfolioId}/positions/${positionId}`
   );
 }
+
+/**
+ * Portfolio Optimization Types
+ */
+export type OptimizationConstraints = {
+  minWeight?: number;
+  maxWeight?: number;
+  targetReturn?: number;
+  maxRisk?: number;
+  allowShorts?: boolean;
+};
+
+export type EfficientFrontierPoint = {
+  risk: number;
+  return: number;
+  weights: Record<string, number>;
+};
+
+export type OptimizedPortfolio = {
+  weights: Record<string, number>;
+  expectedReturn: number;
+  expectedRisk: number;
+  sharpeRatio: number;
+  efficientFrontier: EfficientFrontierPoint[];
+};
+
+/**
+ * Optimize portfolio weights
+ */
+export function optimizePortfolio(
+  portfolioId: string,
+  data: {
+    assets: string[];
+    days?: number;
+    constraints?: OptimizationConstraints;
+  }
+): Promise<OptimizedPortfolio> {
+  return apiClient.post(`/api/portfolio/${portfolioId}/optimize`, data);
+}
+
+/**
+ * Portfolio Rebalancing Types
+ */
+export type RebalancingStrategy =
+  | "periodic"
+  | "threshold"
+  | "opportunistic"
+  | "hybrid";
+
+export type RebalancingFrequency = "daily" | "weekly" | "monthly" | "quarterly";
+
+export type RebalancingConfig = {
+  strategy: RebalancingStrategy;
+  frequency?: RebalancingFrequency;
+  thresholdPercent?: number;
+  minTradeSize?: number;
+  maxTransactionCost?: number;
+  allowPartialRebalance?: boolean;
+};
+
+export type RebalancingAction = {
+  symbol: string;
+  action: "buy" | "sell" | "hold";
+  currentWeight: number;
+  targetWeight: number;
+  currentValue: number;
+  targetValue: number;
+  deltaValue: number;
+  deltaQuantity: number;
+  estimatedCost: number;
+};
+
+export type RebalancingPlan = {
+  needsRebalancing: boolean;
+  reason: string;
+  totalValue: number;
+  actions: RebalancingAction[];
+  totalTransactionCost: number;
+  estimatedSlippage: number;
+  netBenefit: number;
+  priority: "low" | "medium" | "high";
+};
+
+/**
+ * Analyze portfolio rebalancing needs
+ */
+export function analyzeRebalancing(
+  portfolioId: string,
+  data: {
+    targetWeights: Record<string, number>;
+    config: RebalancingConfig;
+  }
+): Promise<RebalancingPlan> {
+  return apiClient.post(
+    `/api/portfolio/${portfolioId}/rebalancing/analyze`,
+    data
+  );
+}
+
+/**
+ * Execute portfolio rebalancing
+ */
+export function executeRebalancing(
+  portfolioId: string,
+  data: {
+    plan: RebalancingPlan;
+    dryRun?: boolean;
+  }
+): Promise<{
+  orders: Array<{
+    symbol: string;
+    side: "BUY" | "SELL";
+    quantity: number;
+    type: "LIMIT" | "MARKET";
+    price?: number;
+  }>;
+  dryRun: boolean;
+}> {
+  return apiClient.post(
+    `/api/portfolio/${portfolioId}/rebalancing/execute`,
+    data
+  );
+}

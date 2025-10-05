@@ -21,7 +21,7 @@ const HTTP_STATUS = {
   OK: 200,
   BAD_REQUEST: 400,
   INTERNAL_ERROR: 500,
-};
+} as const;
 
 export function setupMLRoutes(
   app: Hono,
@@ -111,8 +111,7 @@ export function setupMLRoutes(
       const results = await predictionService.batchPredict(
         body.symbols,
         body.horizon,
-        body.confidence,
-        body.includeSentiment ?? true
+        body.confidence
       );
 
       return c.json({
@@ -598,8 +597,7 @@ export function setupMLRoutes(
       const predictions = await ensembleService.predict(
         validation.data.symbol,
         validation.data.horizon,
-        validation.data.strategy,
-        validation.data.includeSentiment
+        validation.data.strategy
       );
 
       return c.json({

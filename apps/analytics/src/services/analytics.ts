@@ -1,7 +1,4 @@
-import {
-  BaseService,
-  type BaseServiceConfig,
-} from "@aladdin/shared/base-service";
+import { BaseService } from "@aladdin/shared/base-service";
 import { NotFoundError } from "@aladdin/shared/errors";
 import type { Candle } from "@aladdin/shared/types";
 
@@ -83,6 +80,13 @@ export type BacktestResult = {
 export class AnalyticsService extends BaseService {
   getServiceName(): string {
     return "analytics";
+  }
+
+  /**
+   * Get cache service (публичный метод для использования в routes)
+   */
+  getCache(keyPrefix?: string, defaultTTL?: number) {
+    return this.getCacheService(keyPrefix, defaultTTL);
   }
 
   protected onInit(): Promise<void> {
@@ -208,7 +212,7 @@ export class AnalyticsService extends BaseService {
 
     // Signal line - 9-period EMA of MACD values
     const signal = this.calculateEMAValue(macdValues, 9);
-    const macd = macdValues[macdValues.length - 1];
+    const macd = macdValues.at(-1) ?? 0;
 
     // Histogram = MACD - Signal
     const histogram = macd - signal;
@@ -628,7 +632,7 @@ export class AnalyticsService extends BaseService {
   private generateStrategySignal(
     strategy: string,
     candles: Candle[],
-    parameters?: Record<string, string | number>
+    _parameters?: Record<string, string | number>
   ): "BUY" | "SELL" | "HOLD" {
     if (strategy === "SMA_CROSS") {
       // SMA crossover strategy

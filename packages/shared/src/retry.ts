@@ -425,3 +425,9 @@ export function createHttpRetryPolicy(
     return isRetryableError(error);
   };
 }
+
+/**
+ * Alias for retry function for backward compatibility
+ * @deprecated Use retry() instead
+ */
+export const retryWithBackoff = retry;

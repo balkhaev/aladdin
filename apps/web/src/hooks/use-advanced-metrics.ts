@@ -4,8 +4,9 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiGet } from "@/lib/api/client";
+import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
+import { portfolioKeys } from "@/lib/query-keys";
 
 export type AdvancedPerformanceMetrics = {
   sharpeRatio: number;
@@ -54,38 +55,23 @@ export function useAdvancedMetrics(
   enabled = true
 ) {
   return useQuery<AdvancedMetricsResponse>({
-    queryKey: ["advanced-metrics", portfolioId, params],
-    queryFn: async () => {
+    queryKey: portfolioId
+      ? portfolioKeys.advancedMetrics(portfolioId, params)
+      : portfolioKeys.all,
+    queryFn: () => {
       if (!portfolioId) throw new Error("Portfolio ID is required");
 
-      const searchParams = new URLSearchParams();
-      if (params?.from) {
-        searchParams.append("from", params.from.toISOString());
-      }
-      if (params?.to) {
-        searchParams.append("to", params.to.toISOString());
-      }
-      if (params?.benchmark) {
-        searchParams.append("benchmark", params.benchmark);
-      }
-
-      const url = `${API_BASE_URL}/api/analytics/portfolio/${portfolioId}/advanced-metrics${
-        searchParams.toString() ? `?${searchParams.toString()}` : ""
-      }`;
-
-      const response = await fetch(url, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch advanced metrics");
-      }
-
-      const result = await response.json();
-      return result.data;
+      return apiGet<AdvancedMetricsResponse>(
+        `/api/analytics/portfolio/${portfolioId}/advanced-metrics`,
+        {
+          from: params?.from?.toISOString(),
+          to: params?.to?.toISOString(),
+          benchmark: params?.benchmark,
+        }
+      );
     },
-    refetchInterval: 300_000, // Update every 5 minutes (matches backend cache)
-    staleTime: 120_000, // Consider data stale after 2 minutes
+    refetchInterval: REFETCH_INTERVALS.VERY_SLOW,
+    staleTime: STALE_TIME.VERY_SLOW,
     enabled: enabled && !!portfolioId,
   });
 }

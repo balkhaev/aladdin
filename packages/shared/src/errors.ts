@@ -8,6 +8,9 @@ import { ZodError } from "zod";
 import { createErrorResponse, ErrorCode, HTTP_STATUS } from "./http";
 import type { Logger } from "./logger";
 
+// Re-export ErrorCode for convenience
+export { ErrorCode } from "./http";
+
 /**
  * Base application error
  */

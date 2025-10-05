@@ -1,14 +1,21 @@
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  formatAddress,
+  formatNumber,
+  formatRelativeTime,
+  formatTxHash,
+} from "@/lib/formatters";
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { CardSkeleton } from "./ui/card-skeleton";
+import { EmptyState } from "./ui/empty-state";
 import { ScrollArea } from "./ui/scroll-area";
-import { Skeleton } from "./ui/skeleton";
 
 type WhaleTransaction = {
   timestamp: number;
@@ -26,13 +33,6 @@ type WhaleTransactionsListProps = {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const REFRESH_INTERVAL = 60_000; // 1 minute
-const ADDRESS_PREFIX_LENGTH = 6;
-const ADDRESS_SUFFIX_LENGTH = 4;
-const MINUTES_IN_HOUR = 60;
-const HOURS_IN_DAY = 24;
-const MILLISECONDS_IN_MINUTE = 60_000;
-const MILLISECONDS_IN_HOUR = 3_600_000;
-const MILLISECONDS_IN_DAY = 86_400_000;
 
 const EXPLORER_URLS: Record<string, string> = {
   BTC: "https://mempool.space/tx",
@@ -83,34 +83,7 @@ export const WhaleTransactionsList = ({
     return () => clearInterval(interval);
   }, [blockchain, limit]);
 
-  const formatValue = (value: number): string =>
-    value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-  const formatAddress = (address: string): string => {
-    if (address === "multiple") {
-      return "Multiple";
-    }
-    return `${address.slice(0, ADDRESS_PREFIX_LENGTH)}...${address.slice(-ADDRESS_SUFFIX_LENGTH)}`;
-  };
-
-  const formatTime = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const minutes = Math.floor(diff / MILLISECONDS_IN_MINUTE);
-    const hours = Math.floor(diff / MILLISECONDS_IN_HOUR);
-    const days = Math.floor(diff / MILLISECONDS_IN_DAY);
-
-    if (minutes < MINUTES_IN_HOUR) {
-      return `${minutes}m ago`;
-    }
-    if (hours < HOURS_IN_DAY) {
-      return `${hours}h ago`;
-    }
-    return `${days}d ago`;
-  };
+  const formatValue = (value: number): string => formatNumber(value, 2);
 
   const getExplorerUrl = (hash: string): string => {
     const baseUrl = EXPLORER_URLS[blockchain];
@@ -131,32 +104,15 @@ export const WhaleTransactionsList = ({
   }
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Whale Transactions</CardTitle>
-          <CardDescription>Recent large transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64" />
-        </CardContent>
-      </Card>
-    );
+    return <CardSkeleton contentHeight="h-64" title="Whale Transactions" />;
   }
 
   if (transactions.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Whale Transactions</CardTitle>
-          <CardDescription>Recent large transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            No whale transactions found
-          </p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        description="Recent large transactions"
+        title="No whale transactions found"
+      />
     );
   }
 
@@ -184,7 +140,7 @@ export const WhaleTransactionsList = ({
                         {formatValue(tx.value)} {blockchain}
                       </span>
                       <span className="text-muted-foreground text-xs">
-                        {formatTime(tx.timestamp)}
+                        {formatRelativeTime(tx.timestamp)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground text-xs">

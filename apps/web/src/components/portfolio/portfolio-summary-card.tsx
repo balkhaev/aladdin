@@ -60,11 +60,26 @@ export function PortfolioSummaryCard({
     );
   }
 
-  const formatPercent = (value: number): string =>
-    `${value.toFixed(PERCENT_DECIMALS)}%`;
+  const formatPercent = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+    return `${value.toFixed(PERCENT_DECIMALS)}%`;
+  };
 
-  const formatMetric = (value: number): string =>
-    value.toFixed(METRIC_DECIMALS);
+  const formatMetric = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+    return value.toFixed(METRIC_DECIMALS);
+  };
+
+  const formatNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+    return value.toFixed(PERCENT_DECIMALS);
+  };
 
   return (
     <Card>
@@ -256,7 +271,7 @@ export function PortfolioSummaryCard({
                     >
                       <span>{gainer.symbol.replace("USDT", "")}</span>
                       <span className="font-semibold text-green-500">
-                        +{gainer.changePercent24h.toFixed(PERCENT_DECIMALS)}%
+                        +{formatNumber(gainer.changePercent24h)}%
                       </span>
                     </div>
                   ))}
@@ -272,7 +287,7 @@ export function PortfolioSummaryCard({
                     >
                       <span>{loser.symbol.replace("USDT", "")}</span>
                       <span className="font-semibold text-red-500">
-                        {loser.changePercent24h.toFixed(PERCENT_DECIMALS)}%
+                        {formatPercent(loser.changePercent24h)}
                       </span>
                     </div>
                   ))}

@@ -3,7 +3,13 @@
  * Dropdown menu for exporting optimization results
  */
 
-import { Check, Download, FileJson, FileSpreadsheet, FileText } from "lucide-react";
+import {
+  Check,
+  Download,
+  FileJson,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
 import { useState } from "react";
 import type { OptimizationResult } from "../../lib/api/ml";
 import {
@@ -118,4 +124,3 @@ export function HPOExportMenu({ result }: HPOExportMenuProps) {
     </DropdownMenu>
   );
 }
-

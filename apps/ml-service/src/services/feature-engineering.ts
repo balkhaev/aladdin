@@ -86,13 +86,12 @@ export class FeatureEngineeringService {
       ORDER BY timestamp ASC
     `;
 
-    const result = await this.clickhouse.query({
-      query,
-      query_params: { symbol, lookback },
-      format: "JSONEachRow",
+    const result = await this.clickhouse.query<CandleData>(query, {
+      symbol,
+      lookback,
     });
 
-    return result as CandleData[];
+    return result;
   }
 
   /**

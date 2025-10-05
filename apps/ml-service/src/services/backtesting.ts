@@ -406,17 +406,16 @@ export class BacktestingService {
       ORDER BY timestamp ASC
     `;
 
-    const result = await this.clickhouse.query({
-      query,
-      query_params: {
-        symbol,
-        startDate: Math.floor(startDate / 1000),
-        endDate: Math.floor(endDate / 1000),
-      },
-      format: "JSONEachRow",
+    const result = await this.clickhouse.query<{
+      timestamp: number;
+      close: number;
+    }>(query, {
+      symbol,
+      startDate: Math.floor(startDate / 1000),
+      endDate: Math.floor(endDate / 1000),
     });
 
-    return result as Array<{ timestamp: number; close: number }>;
+    return result;
   }
 
   /**

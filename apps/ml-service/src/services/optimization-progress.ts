@@ -25,10 +25,7 @@ export class OptimizationProgressService {
   /**
    * Start tracking optimization
    */
-  startOptimization(
-    optimizationId: string,
-    totalTrials: number
-  ): void {
+  startOptimization(optimizationId: string, totalTrials: number): void {
     this.progressMap.set(optimizationId, {
       optimizationId,
       status: "RUNNING",
@@ -49,7 +46,9 @@ export class OptimizationProgressService {
   updateProgress(optimizationId: string, trial: OptimizationTrial): void {
     const progress = this.progressMap.get(optimizationId);
     if (!progress) {
-      this.logger.warn(`Optimization ${optimizationId} not found in progress map`);
+      this.logger.warn(
+        `Optimization ${optimizationId} not found in progress map`
+      );
       return;
     }
 
@@ -82,10 +81,15 @@ export class OptimizationProgressService {
     this.logger.info(`Optimization ${optimizationId} completed`);
 
     // Clean up after 1 hour
-    setTimeout(() => {
-      this.progressMap.delete(optimizationId);
-      this.logger.debug(`Cleaned up optimization ${optimizationId} from progress map`);
-    }, 60 * 60 * 1000);
+    setTimeout(
+      () => {
+        this.progressMap.delete(optimizationId);
+        this.logger.debug(
+          `Cleaned up optimization ${optimizationId} from progress map`
+        );
+      },
+      60 * 60 * 1000
+    );
   }
 
   /**
@@ -104,9 +108,12 @@ export class OptimizationProgressService {
     this.logger.error(`Optimization ${optimizationId} failed: ${error}`);
 
     // Clean up after 1 hour
-    setTimeout(() => {
-      this.progressMap.delete(optimizationId);
-    }, 60 * 60 * 1000);
+    setTimeout(
+      () => {
+        this.progressMap.delete(optimizationId);
+      },
+      60 * 60 * 1000
+    );
   }
 
   /**
@@ -151,4 +158,3 @@ export class OptimizationProgressService {
     }
   }
 }
-

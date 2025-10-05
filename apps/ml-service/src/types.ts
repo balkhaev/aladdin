@@ -202,3 +202,12 @@ export const OptimizationConfigSchema = z.object({
   ]),
   crossValidationFolds: z.number().min(2).max(10).optional().default(3),
 });
+
+
+// Anomaly Detection
+export const AnomalyDetectionRequestSchema = z.object({
+  symbol: z.string().min(1),
+  lookbackMinutes: z.number().min(5).max(1440).optional().default(60),
+});
+
+export type AnomalyDetectionRequest = z.infer<typeof AnomalyDetectionRequestSchema>;

@@ -132,8 +132,13 @@ export function exportOptimizationSummary(result: OptimizationResult): {
     };
   }>;
 } {
-  const { config, bestHyperparameters, bestTrial, improvementPercentage, trials } =
-    result;
+  const {
+    config,
+    bestHyperparameters,
+    bestTrial,
+    improvementPercentage,
+    trials,
+  } = result;
 
   const summary = `
 Hyperparameter Optimization Results
@@ -194,4 +199,3 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return success;
   }
 }
-

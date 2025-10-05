@@ -240,7 +240,12 @@ export type HyperparameterSpace = {
   retrainInterval?: number[];
 };
 
-export type OptimizationMetric = "mae" | "rmse" | "mape" | "r2Score" | "directionalAccuracy";
+export type OptimizationMetric =
+  | "mae"
+  | "rmse"
+  | "mape"
+  | "r2Score"
+  | "directionalAccuracy";
 
 export type TrialResult = {
   trialId: number;

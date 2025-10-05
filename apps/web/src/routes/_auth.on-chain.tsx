@@ -13,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import { OnChainComparisonTable } from "@/components/on-chain-comparison-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,7 +38,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { OnChainComparisonTable } from "@/components/on-chain-comparison-table";
 import { getMetricDescription, getMetricStatus } from "@/lib/api/on-chain";
 
 const REFETCH_INTERVAL_MINUTE = 60_000;

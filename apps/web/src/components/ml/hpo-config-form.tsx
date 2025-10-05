@@ -5,6 +5,7 @@
 
 import { Info } from "lucide-react";
 import { useState } from "react";
+import { useHPORecommendations } from "../../hooks/use-hpo";
 import type {
   HyperparameterSpace,
   ModelType,
@@ -22,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useHPORecommendations } from "../../hooks/use-hpo";
 
 type HPOConfigFormProps = {
   onSubmit: (config: {
@@ -45,7 +45,9 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
   const [method, setMethod] = useState<"GRID" | "RANDOM">("RANDOM");
   const [nTrials, setNTrials] = useState(20);
   const [days, setDays] = useState(30);
-  const [metric, setMetric] = useState<OptimizationMetric>("directionalAccuracy");
+  const [metric, setMetric] = useState<OptimizationMetric>(
+    "directionalAccuracy"
+  );
 
   // Hyperparameter space (LSTM)
   const [hiddenSizes, setHiddenSizes] = useState("16,32,64");
@@ -67,23 +69,35 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
 
     if (modelType === "LSTM") {
       if (hiddenSizes) {
-        space.hiddenSize = hiddenSizes.split(",").map((v) => Number.parseInt(v.trim(), 10));
+        space.hiddenSize = hiddenSizes
+          .split(",")
+          .map((v) => Number.parseInt(v.trim(), 10));
       }
       if (sequenceLengths) {
-        space.sequenceLength = sequenceLengths.split(",").map((v) => Number.parseInt(v.trim(), 10));
+        space.sequenceLength = sequenceLengths
+          .split(",")
+          .map((v) => Number.parseInt(v.trim(), 10));
       }
       if (learningRates) {
-        space.learningRate = learningRates.split(",").map((v) => Number.parseFloat(v.trim()));
+        space.learningRate = learningRates
+          .split(",")
+          .map((v) => Number.parseFloat(v.trim()));
       }
       if (epochs) {
-        space.epochs = epochs.split(",").map((v) => Number.parseInt(v.trim(), 10));
+        space.epochs = epochs
+          .split(",")
+          .map((v) => Number.parseInt(v.trim(), 10));
       }
     } else {
       if (lookbackWindows) {
-        space.lookbackWindow = lookbackWindows.split(",").map((v) => Number.parseInt(v.trim(), 10));
+        space.lookbackWindow = lookbackWindows
+          .split(",")
+          .map((v) => Number.parseInt(v.trim(), 10));
       }
       if (smoothingFactors) {
-        space.smoothingFactor = smoothingFactors.split(",").map((v) => Number.parseFloat(v.trim()));
+        space.smoothingFactor = smoothingFactors
+          .split(",")
+          .map((v) => Number.parseFloat(v.trim()));
       }
     }
 
@@ -207,7 +221,9 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
                   id="nTrials"
                   max={100}
                   min={5}
-                  onChange={(e) => setNTrials(Number.parseInt(e.target.value, 10))}
+                  onChange={(e) =>
+                    setNTrials(Number.parseInt(e.target.value, 10))
+                  }
                   type="number"
                   value={nTrials}
                 />
@@ -242,8 +258,12 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
                   Directional Accuracy (Best for Trading)
                 </SelectItem>
                 <SelectItem value="mae">MAE (Mean Absolute Error)</SelectItem>
-                <SelectItem value="rmse">RMSE (Root Mean Squared Error)</SelectItem>
-                <SelectItem value="mape">MAPE (Mean Absolute Percentage Error)</SelectItem>
+                <SelectItem value="rmse">
+                  RMSE (Root Mean Squared Error)
+                </SelectItem>
+                <SelectItem value="mape">
+                  MAPE (Mean Absolute Percentage Error)
+                </SelectItem>
                 <SelectItem value="r2Score">R² Score (Overall Fit)</SelectItem>
               </SelectContent>
             </Select>
@@ -254,7 +274,12 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Hyperparameter Space</h3>
               {recommendations && (
-                <Button onClick={useRecommended} size="sm" type="button" variant="outline">
+                <Button
+                  onClick={useRecommended}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
                   Use Recommended
                 </Button>
               )}
@@ -264,7 +289,9 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
               <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3">
                 <div className="flex gap-2">
                   <Info className="h-4 w-4 text-blue-400" />
-                  <p className="text-blue-100 text-sm">{recommendations.reasoning}</p>
+                  <p className="text-blue-100 text-sm">
+                    {recommendations.reasoning}
+                  </p>
                 </div>
               </div>
             )}
@@ -347,7 +374,12 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
           </div>
 
           {/* Submit Button */}
-          <Button className="w-full" disabled={isLoading} size="lg" type="submit">
+          <Button
+            className="w-full"
+            disabled={isLoading}
+            size="lg"
+            type="submit"
+          >
             {isLoading ? "Running Optimization..." : "Start Optimization"}
           </Button>
         </form>
@@ -355,4 +387,3 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
     </Card>
   );
 }
-

@@ -6,6 +6,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { HPOConfigForm } from "../components/ml/hpo-config-form";
+import { HPOOptimizationResults } from "../components/ml/hpo-optimization-results";
 import { MLBacktestResults } from "../components/ml/ml-backtest-results";
 import { ModelComparisonCard } from "../components/ml/model-comparison-card";
 import { Button } from "../components/ui/button";
@@ -30,6 +32,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs";
+import { useRunOptimization } from "../hooks/use-hpo";
 import { useCompareModels, useRunBacktest } from "../hooks/use-ml-backtest";
 import type { ModelType, PredictionHorizon } from "../lib/api/ml";
 
@@ -49,6 +52,7 @@ function MachineLearningPage() {
   // Mutations
   const runBacktestMutation = useRunBacktest();
   const compareModelsMutation = useCompareModels();
+  const runOptimizationMutation = useRunOptimization();
 
   // Handle run backtest
   const handleRunBacktest = () => {
@@ -233,9 +237,10 @@ function MachineLearningPage() {
 
       {/* Results */}
       <Tabs className="w-full" defaultValue="backtest">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="backtest">Backtest Results</TabsTrigger>
           <TabsTrigger value="comparison">Model Comparison</TabsTrigger>
+          <TabsTrigger value="optimization">HPO</TabsTrigger>
         </TabsList>
 
         <TabsContent className="space-y-6" value="backtest">
@@ -338,6 +343,95 @@ function MachineLearningPage() {
               <CardContent className="py-12">
                 <div className="text-center text-slate-400">
                   <p>Run model comparison to see results</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent className="space-y-6" value="optimization">
+          {!runOptimizationMutation.isSuccess && (
+            <HPOConfigForm
+              isLoading={runOptimizationMutation.isPending}
+              onSubmit={(config) => {
+                const endDate = Date.now();
+                const startDate = endDate - config.days * 24 * 60 * 60 * 1000;
+
+                runOptimizationMutation.mutate({
+                  symbol: config.symbol,
+                  modelType: config.modelType,
+                  horizon: config.horizon,
+                  method: config.method,
+                  nTrials: config.nTrials,
+                  startDate,
+                  endDate,
+                  optimizationMetric: config.optimizationMetric,
+                  hyperparameterSpace: config.hyperparameterSpace,
+                });
+              }}
+            />
+          )}
+
+          {runOptimizationMutation.isPending && (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="text-slate-400">
+                    Running hyperparameter optimization... This may take 20-40
+                    minutes depending on the number of trials.
+                  </p>
+                  <p className="text-slate-500 text-sm">
+                    Each trial includes full backtesting with walk-forward
+                    testing
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {runOptimizationMutation.isError && (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <p className="text-red-400">
+                    Error: {runOptimizationMutation.error.message}
+                  </p>
+                  <Button
+                    className="mt-4"
+                    onClick={() => runOptimizationMutation.reset()}
+                    variant="outline"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {runOptimizationMutation.isSuccess && runOptimizationMutation.data && (
+            <>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => runOptimizationMutation.reset()}
+                  variant="outline"
+                >
+                  Run New Optimization
+                </Button>
+              </div>
+              <HPOOptimizationResults result={runOptimizationMutation.data} />
+            </>
+          )}
+
+          {!(
+            runOptimizationMutation.isPending ||
+            runOptimizationMutation.isSuccess ||
+            runOptimizationMutation.isError
+          ) && (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-slate-400">
+                  <p>Configure and start hyperparameter optimization</p>
                 </div>
               </CardContent>
             </Card>

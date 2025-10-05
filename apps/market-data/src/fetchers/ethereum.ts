@@ -1,13 +1,10 @@
-import type { Logger } from "@aladdin/logger";
 import type {
   ExchangeFlowDetail,
   OnChainMetrics,
   WhaleTransaction,
 } from "@aladdin/core";
-import {
-  getExchangeAddresses,
-  isExchangeAddress,
-} from "../data/exchange-addresses";
+import type { Logger } from "@aladdin/logger";
+import { getExchangeAddresses } from "../data/exchange-addresses";
 import { BaseFetcher } from "./base";
 
 const ETHERSCAN_API = "https://api.etherscan.io/api";
@@ -506,21 +503,95 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchNVTRatio");
   }
 
+  // Cache for exchange reserve (1 hour TTL)
+  private reserveCache?: {
+    value: number;
+    timestamp: number;
+  };
+  private readonly RESERVE_CACHE_TTL = 3_600_000; // 1 hour
+
   /**
    * Estimate Exchange Reserve for Ethereum
+   * Improved: Batch requests, more addresses, caching
    */
   async fetchExchangeReserve(): Promise<number | undefined> {
     try {
+      // Check cache first
+      if (this.reserveCache) {
+        const age = Date.now() - this.reserveCache.timestamp;
+        if (age < this.RESERVE_CACHE_TTL) {
+          this.logger.debug("Using cached Ethereum exchange reserve", {
+            value: this.reserveCache.value,
+            ageMs: age,
+          });
+          return this.reserveCache.value;
+        }
+      }
+
       const exchangeAddresses = getExchangeAddresses("ETH");
       let totalReserve = 0;
       let checkedAddresses = 0;
 
-      // Sample addresses from exchanges
-      for (const ex of exchangeAddresses.slice(0, 3)) {
-        for (const addr of ex.addresses.slice(0, 2)) {
+      // Sample more addresses: 5 exchanges, 4 addresses each = 20 total
+      const maxExchanges = 5;
+      const maxAddressesPerExchange = 4;
+
+      // Collect addresses to check
+      const addressesToCheck: Array<{ address: string; exchange: string }> = [];
+      for (const ex of exchangeAddresses.slice(0, maxExchanges)) {
+        for (const addr of ex.addresses.slice(0, maxAddressesPerExchange)) {
+          addressesToCheck.push({ address: addr, exchange: ex.exchange });
+        }
+      }
+
+      // Process in batches using Etherscan's multi-address API
+      const batchAddresses = addressesToCheck
+        .map((item) => item.address)
+        .join(",");
+
+      try {
+        const response = await fetch(
+          `${ETHERSCAN_API}?module=account&action=balancemulti&address=${batchAddresses}&tag=latest&apikey=${this.apiKey}`
+        );
+
+        if (response.ok) {
+          const data = (await response.json()) as {
+            result?: Array<{
+              account: string;
+              balance: string;
+            }>;
+          };
+
+          if (data.result && Array.isArray(data.result)) {
+            for (const item of data.result) {
+              const balance = Number(item.balance) / WEI_TO_ETH;
+              if (balance > 0) {
+                totalReserve += balance;
+                checkedAddresses++;
+
+                const addressInfo = addressesToCheck.find(
+                  (a) => a.address.toLowerCase() === item.account.toLowerCase()
+                );
+
+                this.logger.debug("Checked Ethereum exchange address", {
+                  exchange: addressInfo?.exchange,
+                  balance: balance.toFixed(2),
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.warn(
+          "Batch balance check failed, falling back to individual",
+          error
+        );
+
+        // Fallback: check addresses individually
+        for (const item of addressesToCheck) {
           try {
             const response = await fetch(
-              `${ETHERSCAN_API}?module=account&action=balance&address=${addr}&tag=latest&apikey=${this.apiKey}`
+              `${ETHERSCAN_API}?module=account&action=balance&address=${item.address}&tag=latest&apikey=${this.apiKey}`
             );
 
             if (response.ok) {
@@ -543,18 +614,35 @@ export class EthereumFetcher extends BaseFetcher {
       }
 
       if (checkedAddresses > 0) {
-        // Extrapolate from sample
+        // Extrapolate from sample with weighted average
         const totalKnownAddresses = exchangeAddresses.reduce(
           (sum, ex) => sum + ex.addresses.length,
           0
         );
-        const estimatedReserve =
-          (totalReserve / checkedAddresses) * totalKnownAddresses;
 
-        this.logger.debug("Estimated Ethereum exchange reserve", {
-          totalReserve,
+        // Use more conservative extrapolation factor
+        const sampledRatio =
+          checkedAddresses /
+          Math.min(addressesToCheck.length, totalKnownAddresses);
+        const extrapolationFactor = Math.min(
+          totalKnownAddresses / checkedAddresses,
+          10 // Cap at 10x to avoid wild estimates
+        );
+
+        const estimatedReserve = totalReserve * extrapolationFactor;
+
+        // Cache the result
+        this.reserveCache = {
+          value: estimatedReserve,
+          timestamp: Date.now(),
+        };
+
+        this.logger.info("Estimated Ethereum exchange reserve", {
+          totalReserve: totalReserve.toFixed(2),
           checkedAddresses,
-          estimatedReserve,
+          sampledRatio: sampledRatio.toFixed(2),
+          extrapolationFactor: extrapolationFactor.toFixed(2),
+          estimatedReserve: estimatedReserve.toFixed(2),
         });
 
         return estimatedReserve;
@@ -563,6 +651,70 @@ export class EthereumFetcher extends BaseFetcher {
       return;
     } catch (error) {
       this.logger.error("Failed to fetch Ethereum exchange reserve", error);
+      // Return cached value on error if available
+      if (this.reserveCache) {
+        this.logger.warn("Returning stale cached reserve due to error");
+        return this.reserveCache.value;
+      }
+      return;
+    }
+  }
+
+  /**
+   * Fetch MVRV Ratio for Ethereum (estimation)
+   * MVRV = Market Cap / Realized Cap
+   * >3.7 = overvalued, <1.0 = undervalued
+   */
+  async fetchMVRV(): Promise<number | undefined> {
+    try {
+      // Get market cap
+      const marketCap = await this.fetchMarketCap();
+      if (!marketCap) {
+        return;
+      }
+
+      // For Ethereum, estimate Realized Cap
+      // Use ~65% of current market cap as proxy (ETH historical average)
+      const estimatedRealizedCap = marketCap * 0.65;
+
+      const mvrv = marketCap / estimatedRealizedCap;
+
+      this.logger.debug("Calculated Ethereum MVRV", {
+        marketCap,
+        estimatedRealizedCap,
+        mvrv,
+      });
+
+      return mvrv;
+    } catch (error) {
+      this.logger.error("Failed to calculate Ethereum MVRV", error);
+      return;
+    }
+  }
+
+  /**
+   * Fetch NUPL for Ethereum
+   * NUPL = (Market Cap - Realized Cap) / Market Cap
+   * >0.75 = euphoria, <0 = capitulation
+   */
+  async fetchNUPL(): Promise<number | undefined> {
+    try {
+      const mvrv = await this.fetchMVRV();
+      if (!mvrv) {
+        return;
+      }
+
+      // NUPL = (MVRV - 1) / MVRV
+      const nupl = (mvrv - 1) / mvrv;
+
+      this.logger.debug("Calculated Ethereum NUPL", {
+        mvrv,
+        nupl,
+      });
+
+      return nupl;
+    } catch (error) {
+      this.logger.error("Failed to calculate Ethereum NUPL", error);
       return;
     }
   }
@@ -646,6 +798,10 @@ export class EthereumFetcher extends BaseFetcher {
       const exchangeReserve = await this.fetchExchangeReserve();
       const sopr = await this.fetchSOPR();
 
+      // Fetch new advanced metrics
+      const mvrvRatio = await this.fetchMVRV();
+      const nupl = await this.fetchNUPL();
+
       const metrics: OnChainMetrics = {
         timestamp: Date.now(),
         blockchain: "ETH",
@@ -660,13 +816,17 @@ export class EthereumFetcher extends BaseFetcher {
         transactionVolume: txVolume,
         exchangeReserve,
         sopr,
-        // Note: Stock-to-Flow not applicable to Ethereum (no fixed supply)
+        mvrvRatio,
+        nupl,
+        // Note: Stock-to-Flow and Puell not applicable to Ethereum (no fixed supply/mining)
       };
 
       this.logger.info("Ethereum metrics fetched successfully", {
         whaleCount: metrics.whaleTransactions.count,
         activeAddresses: metrics.activeAddresses,
         exchangeReserve: metrics.exchangeReserve,
+        mvrvRatio: metrics.mvrvRatio,
+        nupl: metrics.nupl,
       });
 
       return metrics;

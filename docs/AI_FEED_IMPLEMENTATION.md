@@ -20,7 +20,7 @@ CREATE TABLE aladdin.ai_analyzed_content (
     id String,
     content_type String,  -- tweet, reddit_post, telegram_message, news
     source String,
-    
+
     -- Контент
     title Nullable(String),
     text String,
@@ -29,20 +29,20 @@ CREATE TABLE aladdin.ai_analyzed_content (
     symbols Array(String),
     published_at DateTime,
     engagement Int32,
-    
+
     -- AI анализ
     ai_sentiment_score Float32,
     ai_confidence Float32,
     ai_method String,  -- keyword, gpt, hybrid
     ai_positive/negative/neutral Int32,
     ai_magnitude Float32,
-    
+
     -- Дополнительно для новостей
     ai_market_impact Nullable(String),
     ai_summary Nullable(String),
     ai_key_points Array(String),
     ai_affected_coins Array(String),
-    
+
     analyzed_at DateTime,
     created_at DateTime
 ) ENGINE = ReplacingMergeTree(created_at)
@@ -50,11 +50,13 @@ TTL analyzed_at + INTERVAL 30 DAY;
 ```
 
 #### Индексы
+
 - `idx_analyzed_content_type` - быстрый поиск по типу (bloom_filter)
 - `idx_analyzed_symbols` - поиск по символам (bloom_filter)
 - `idx_analyzed_sentiment` - фильтрация по sentiment (minmax)
 
 #### Materialized View
+
 - `ai_analyzed_stats` - статистика по типам контента и методам анализа
 
 **Статус:** ✅ Миграция применена
@@ -118,9 +120,9 @@ Promise.all(
       sentiment: result.sentiment,
       method: result.method,
       // ...
-    });
+    })
   })
-);
+)
 ```
 
 #### Вспомогательный метод `extractSymbols()`
@@ -139,22 +141,30 @@ Promise.all(
 
 ```typescript
 app.get("/api/social/feed", async (c) => {
-  const limit = Number(c.req.query("limit") || 50);
-  const offset = Number(c.req.query("offset") || 0);
-  const contentType = c.req.query("contentType");
-  const symbol = c.req.query("symbol");
+  const limit = Number(c.req.query("limit") || 50)
+  const offset = Number(c.req.query("offset") || 0)
+  const contentType = c.req.query("contentType")
+  const symbol = c.req.query("symbol")
   // ...
 
   const feed = await service.getAnalyzedFeed({
-    limit, offset, contentType, symbol, minSentiment, maxSentiment
-  });
+    limit,
+    offset,
+    contentType,
+    symbol,
+    minSentiment,
+    maxSentiment,
+  })
 
-  return c.json(createSuccessResponse({
-    items: feed,
-    count: feed.length,
-    limit, offset
-  }));
-});
+  return c.json(
+    createSuccessResponse({
+      items: feed,
+      count: feed.length,
+      limit,
+      offset,
+    })
+  )
+})
 ```
 
 **Примеры использования:**
@@ -183,12 +193,16 @@ GET /api/social/feed?contentType=news
 
 Полнофункциональная лента с:
 
-- **3 вкладки:**
+- **5 вкладок:**
+
   - All - все типы контента
   - Tweets - только Twitter
+  - Reddit - только Reddit посты
+  - Telegram - только Telegram сообщения
   - News - только новости
 
 - **Отображение для каждого элемента:**
+
   - Иконка типа контента (Twitter, Reddit, Telegram, News)
   - GPT badge (если анализировался через GPT)
   - Sentiment badge (Bullish/Bearish/Neutral)
@@ -208,6 +222,7 @@ GET /api/social/feed?contentType=news
   - Responsive дизайн
 
 **Вспомогательные компоненты:**
+
 - `ContentIcon` - иконки для разных типов контента
 - `SentimentBadge` - цветные badges для sentiment
 - `FeedItem` - карточка контента
@@ -226,7 +241,7 @@ GET /api/social/feed?contentType=news
   <TabsList>
     <TabsTrigger value="overview">Overview</TabsTrigger>
     <TabsTrigger value="detail">Detailed Analysis</TabsTrigger>
-    <TabsTrigger value="ai-feed">AI Feed</TabsTrigger>  {/* ← Новая вкладка */}
+    <TabsTrigger value="ai-feed">AI Feed</TabsTrigger> {/* ← Новая вкладка */}
   </TabsList>
 
   <TabsContent value="ai-feed">
@@ -352,23 +367,27 @@ Backend → getAnalyzedFeed() → ClickHouse
 ## 🎯 Ключевые особенности
 
 ### Автоматизация
+
 - ✅ Автоматическое сохранение при каждом анализе
 - ✅ Асинхронное сохранение (не блокирует основной процесс)
 - ✅ Дедупликация через ReplacingMergeTree
 
 ### Производительность
+
 - ✅ Партиционирование по месяцам
 - ✅ Bloom filter индексы для быстрого поиска
 - ✅ TTL 30 дней для автоочистки
 - ✅ React Query кэширование на клиенте
 
 ### Функциональность
+
 - ✅ Фильтрация по типу, символу, sentiment
 - ✅ Пагинация (limit/offset)
 - ✅ Автообновление каждые 30 секунд
 - ✅ Поддержка всех типов контента (tweets, Reddit, Telegram, news)
 
 ### UX
+
 - ✅ Красивые badges для sentiment и методов
 - ✅ Иконки для разных типов контента
 - ✅ Skeleton loaders
@@ -381,7 +400,7 @@ Backend → getAnalyzedFeed() → ClickHouse
 
 ```sql
 -- Статистика по типам контента
-SELECT 
+SELECT
     content_type,
     count() as total,
     countIf(ai_method = 'gpt') as gpt_count,
@@ -390,7 +409,7 @@ FROM aladdin.ai_analyzed_content
 GROUP BY content_type;
 
 -- Последние записи
-SELECT 
+SELECT
     content_type, text, ai_sentiment_score, ai_method, analyzed_at
 FROM aladdin.ai_analyzed_content
 ORDER BY analyzed_at DESC
@@ -418,6 +437,7 @@ curl http://localhost:3000/api/social/feed?contentType=tweet&limit=5
 Для использования:
 
 1. **Убедитесь, что ClickHouse работает:**
+
    ```bash
    # Проверка соединения
    curl http://49.13.216.63:8123/ping
@@ -426,6 +446,7 @@ curl http://localhost:3000/api/social/feed?contentType=tweet&limit=5
 2. **Миграция уже применена** ✅
 
 3. **Запустите сервисы:**
+
    ```bash
    cd /Users/balkhaev/mycode/coffee
    bun dev  # или turbo dev
@@ -439,17 +460,21 @@ curl http://localhost:3000/api/social/feed?contentType=tweet&limit=5
 ## 📝 Файлы изменены/созданы
 
 ### База данных
+
 - ✅ `docs/migrations/ai-analyzed-content.sql` - миграция (применена)
 
 ### Backend
+
 - ✅ `apps/scraper/src/service.ts` - методы saveToAnalyzedFeed() и getAnalyzedFeed()
 - ✅ `apps/scraper/src/index.ts` - endpoint GET /api/social/feed
 
 ### Frontend
+
 - ✅ `apps/web/src/components/ai-analyzed-feed.tsx` - компонент ленты
 - ✅ `apps/web/src/routes/_auth.sentiment.tsx` - интеграция в страницу
 
 ### Документация
+
 - ✅ `docs/AI_FEED_GUIDE.md` - полное руководство
 - ✅ `AI_FEED_IMPLEMENTATION.md` - этот файл (summary)
 
@@ -465,4 +490,3 @@ curl http://localhost:3000/api/social/feed?contentType=tweet&limit=5
 6. ✅ Полная документация
 
 **Готово к использованию!** 🎉
-

@@ -53,9 +53,7 @@ async function fetchAnalyzedFeed(params: {
   if (params.offset) searchParams.set("offset", params.offset.toString());
   if (params.contentType) searchParams.set("contentType", params.contentType);
 
-  const response = await fetch(
-    `/api/social/feed?${searchParams.toString()}`
-  );
+  const response = await fetch(`/api/social/feed?${searchParams.toString()}`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch analyzed feed");
@@ -80,7 +78,9 @@ function ContentIcon({ type }: { type: string }) {
   }
 }
 
-function getConfidenceBadgeVariant(confidence: number): "default" | "secondary" | "outline" {
+function getConfidenceBadgeVariant(
+  confidence: number
+): "default" | "secondary" | "outline" {
   if (confidence > 0.7) {
     return "default";
   }
@@ -191,7 +191,7 @@ function FeedItem({ item }: { item: AnalyzedContent }) {
         )}
 
         {/* Footer */}
-          <div className="flex items-center justify-between pt-2 text-muted-foreground text-xs">
+        <div className="flex items-center justify-between pt-2 text-muted-foreground text-xs">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <ThumbsUp className="h-3 w-3" />
@@ -209,11 +209,7 @@ function FeedItem({ item }: { item: AnalyzedContent }) {
           </div>
           {item.url && (
             <Button asChild size="sm" variant="ghost">
-              <a
-                href={item.url}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <a href={item.url} rel="noopener noreferrer" target="_blank">
                 <ExternalLink className="h-3 w-3" />
               </a>
             </Button>
@@ -260,6 +256,19 @@ export function AIAnalyzedFeed() {
     refetchInterval: 30_000,
   });
 
+  const { data: redditItems } = useQuery({
+    queryKey: ["analyzed-feed", "reddit_post"],
+    queryFn: () => fetchAnalyzedFeed({ limit: 50, contentType: "reddit_post" }),
+    refetchInterval: 30_000,
+  });
+
+  const { data: telegramItems } = useQuery({
+    queryKey: ["analyzed-feed", "telegram_message"],
+    queryFn: () =>
+      fetchAnalyzedFeed({ limit: 50, contentType: "telegram_message" }),
+    refetchInterval: 30_000,
+  });
+
   const { data: newsItems } = useQuery({
     queryKey: ["analyzed-feed", "news"],
     queryFn: () => fetchAnalyzedFeed({ limit: 50, contentType: "news" }),
@@ -295,6 +304,22 @@ export function AIAnalyzedFeed() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="reddit">
+            Reddit
+            {redditItems && (
+              <Badge className="ml-2" variant="secondary">
+                {redditItems.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="telegram">
+            Telegram
+            {telegramItems && (
+              <Badge className="ml-2" variant="secondary">
+                {telegramItems.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="news">
             News
             {newsItems && (
@@ -315,9 +340,10 @@ export function AIAnalyzedFeed() {
                   <FeedSkeleton />
                 </>
               )}
-              {!isLoadingAll && allItems && allItems.length > 0 && (
-                allItems.map((item) => <FeedItem item={item} key={item.id} />)
-              )}
+              {!isLoadingAll &&
+                allItems &&
+                allItems.length > 0 &&
+                allItems.map((item) => <FeedItem item={item} key={item.id} />)}
               {!isLoadingAll && (!allItems || allItems.length === 0) && (
                 <Card>
                   <CardContent className="py-8 text-center">
@@ -342,7 +368,49 @@ export function AIAnalyzedFeed() {
               ) : (
                 <Card>
                   <CardContent className="py-8 text-center">
-                    <p className="text-muted-foreground">No tweets analyzed yet</p>
+                    <p className="text-muted-foreground">
+                      No tweets analyzed yet
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="reddit">
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="space-y-4">
+              {redditItems && redditItems.length > 0 ? (
+                redditItems.map((item) => (
+                  <FeedItem item={item} key={item.id} />
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <p className="text-muted-foreground">
+                      No Reddit posts analyzed yet
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="telegram">
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="space-y-4">
+              {telegramItems && telegramItems.length > 0 ? (
+                telegramItems.map((item) => (
+                  <FeedItem item={item} key={item.id} />
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <p className="text-muted-foreground">
+                      No Telegram messages analyzed yet
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -358,7 +426,9 @@ export function AIAnalyzedFeed() {
               ) : (
                 <Card>
                   <CardContent className="py-8 text-center">
-                    <p className="text-muted-foreground">No news analyzed yet</p>
+                    <p className="text-muted-foreground">
+                      No news analyzed yet
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -369,4 +439,3 @@ export function AIAnalyzedFeed() {
     </div>
   );
 }
-

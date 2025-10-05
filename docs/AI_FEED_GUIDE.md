@@ -18,18 +18,18 @@ CREATE TABLE IF NOT EXISTS aladdin.ai_analyzed_content (
     id String,
     content_type String,  -- tweet, reddit_post, telegram_message, news
     source String,        -- twitter, reddit, telegram, news source
-    
+
     -- Оригинальный контент
     title Nullable(String),
     text String,
     url Nullable(String),
     author Nullable(String),
-    
+
     -- Метаданные
     symbols Array(String),
     published_at DateTime,
     engagement Int32 DEFAULT 0,  -- likes, upvotes, etc
-    
+
     -- Результаты AI анализа
     ai_sentiment_score Float32,  -- -1 to 1
     ai_confidence Float32,       -- 0 to 1
@@ -38,17 +38,17 @@ CREATE TABLE IF NOT EXISTS aladdin.ai_analyzed_content (
     ai_negative Int32,
     ai_neutral Int32,
     ai_magnitude Float32,
-    
+
     -- Дополнительные поля для новостей
     ai_market_impact Nullable(String),  -- bullish, bearish, neutral, mixed
     ai_summary Nullable(String),
     ai_key_points Array(String),
     ai_affected_coins Array(String),
-    
+
     -- Системные поля
     analyzed_at DateTime DEFAULT now(),
     created_at DateTime DEFAULT now(),
-    
+
     PRIMARY KEY (id, analyzed_at)
 ) ENGINE = ReplacingMergeTree(created_at)
 PARTITION BY toYYYYMM(analyzed_at)
@@ -60,18 +60,18 @@ TTL analyzed_at + INTERVAL 30 DAY;
 
 ```sql
 -- Быстрый поиск по типу контента
-ALTER TABLE aladdin.ai_analyzed_content 
-ADD INDEX idx_analyzed_content_type content_type 
+ALTER TABLE aladdin.ai_analyzed_content
+ADD INDEX idx_analyzed_content_type content_type
 TYPE bloom_filter GRANULARITY 1;
 
 -- Поиск по символам
-ALTER TABLE aladdin.ai_analyzed_content 
-ADD INDEX idx_analyzed_symbols symbols 
+ALTER TABLE aladdin.ai_analyzed_content
+ADD INDEX idx_analyzed_symbols symbols
 TYPE bloom_filter GRANULARITY 1;
 
 -- Фильтрация по sentiment score
-ALTER TABLE aladdin.ai_analyzed_content 
-ADD INDEX idx_analyzed_sentiment ai_sentiment_score 
+ALTER TABLE aladdin.ai_analyzed_content
+ADD INDEX idx_analyzed_sentiment ai_sentiment_score
 TYPE minmax GRANULARITY 1;
 ```
 
@@ -123,7 +123,7 @@ await scraperService.saveToAnalyzedFeed({
   summary: "Breaking: Bitcoin ETF approved...",
   keyPoints: ["ETF approval", "Institutional adoption"],
   affectedCoins: ["BTC", "ETH"],
-});
+})
 ```
 
 ### Интеграция в Twitter анализ
@@ -132,7 +132,7 @@ await scraperService.saveToAnalyzedFeed({
 // В analyzeTwitterSentiment автоматически сохраняется:
 Promise.all(
   tweets.map(async (tweet, i) => {
-    const result = hybridResults[i];
+    const result = hybridResults[i]
     await this.saveToAnalyzedFeed({
       id: `tweet_${tweet.datetime}_${random}`,
       contentType: "tweet",
@@ -145,9 +145,9 @@ Promise.all(
       engagement: tweet.likes + tweet.retweets,
       sentiment: result.sentiment,
       method: result.method,
-    });
+    })
   })
-);
+)
 ```
 
 ## 📡 API Endpoints
@@ -233,11 +233,15 @@ GET /api/social/feed?contentType=news
 ### Возможности
 
 1. **Фильтрация по типу контента:**
+
    - All - все типы
    - Tweets - только Twitter
+   - Reddit - только Reddit посты
+   - Telegram - только Telegram сообщения
    - News - только новости
 
 2. **Отображение информации:**
+
    - Оригинальный текст или summary (для новостей)
    - Sentiment badge (Bullish/Bearish/Neutral)
    - GPT badge (если анализировался через GPT)
@@ -253,14 +257,14 @@ GET /api/social/feed?contentType=news
 ### Использование в React
 
 ```typescript
-import { AIAnalyzedFeed } from "@/components/ai-analyzed-feed";
+import { AIAnalyzedFeed } from "@/components/ai-analyzed-feed"
 
 function MyPage() {
   return (
     <div>
       <AIAnalyzedFeed />
     </div>
-  );
+  )
 }
 ```
 
@@ -297,7 +301,7 @@ GET /api/social/feed?symbol=BTC&limit=100
 
 ```sql
 -- Количество записей по типам
-SELECT 
+SELECT
     content_type,
     count() as total,
     countIf(ai_method = 'gpt') as gpt_analyzed,
@@ -306,7 +310,7 @@ FROM aladdin.ai_analyzed_content
 GROUP BY content_type;
 
 -- Последние записи
-SELECT 
+SELECT
     content_type,
     text,
     ai_sentiment_score,
@@ -317,7 +321,7 @@ ORDER BY analyzed_at DESC
 LIMIT 10;
 
 -- Статистика по символам
-SELECT 
+SELECT
     arrayJoin(symbols) as symbol,
     count() as mentions,
     avg(ai_sentiment_score) as avg_sentiment
@@ -350,4 +354,3 @@ ORDER BY mentions DESC;
 - Для новостей сохраняются дополнительные поля: `summary`, `keyPoints`, `marketImpact`
 - Frontend автоматически обновляется каждые 30 секунд
 - Используется React Query для кэширования на клиенте
-

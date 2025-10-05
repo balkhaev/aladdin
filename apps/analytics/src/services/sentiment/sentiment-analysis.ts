@@ -116,8 +116,9 @@ export class SentimentAnalysisService {
       fearGreedData.status === "fulfilled" ? fearGreedData.value : null
     );
 
-    const onChainSentiment = this.calculateOnChainSentiment(
-      onChainData.status === "fulfilled" ? onChainData.value : null
+    const onChainSentiment = await this.calculateOnChainSentiment(
+      onChainData.status === "fulfilled" ? onChainData.value : null,
+      symbol
     );
 
     const technicalSentiment = this.calculateTechnicalSentiment(
@@ -204,7 +205,7 @@ export class SentimentAnalysisService {
   }
 
   /**
-   * Fetch On-Chain metrics from ClickHouse
+   * Fetch On-Chain metrics from ClickHouse (with historical data for trends)
    */
   private async getOnChainData(symbol: string): Promise<OnChainMetrics | null> {
     try {
@@ -218,7 +219,13 @@ export class SentimentAnalysisService {
           whale_tx_volume,
           exchange_net_flow,
           active_addresses,
-          nvt_ratio
+          nvt_ratio,
+          mvrv_ratio,
+          nupl,
+          sopr,
+          puell_multiple,
+          stock_to_flow,
+          exchange_reserve
         FROM on_chain_metrics
         WHERE blockchain = {blockchain:String}
         ORDER BY timestamp DESC
@@ -236,6 +243,88 @@ export class SentimentAnalysisService {
       this.logger.error("Failed to fetch on-chain data", error);
       return null;
     }
+  }
+
+  /**
+   * Fetch historical On-Chain metrics for trend analysis (last 7 days)
+   */
+  private async getOnChainHistoricalData(
+    symbol: string
+  ): Promise<OnChainMetrics[]> {
+    try {
+      const blockchain = symbol.startsWith("BTC") ? "BTC" : "ETH";
+
+      const result = await this.clickhouse.query<OnChainMetrics>(
+        `
+        SELECT 
+          timestamp,
+          whale_tx_count,
+          exchange_net_flow,
+          active_addresses,
+          mvrv_ratio,
+          nupl,
+          exchange_reserve
+        FROM on_chain_metrics
+        WHERE blockchain = {blockchain:String}
+          AND timestamp >= now() - INTERVAL 7 DAY
+        ORDER BY timestamp DESC
+        LIMIT 7
+      `,
+        { blockchain }
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error("Failed to fetch historical on-chain data", error);
+      return [];
+    }
+  }
+
+  /**
+   * Calculate trend/momentum from historical data
+   * Returns value between -1 (strong downtrend) and +1 (strong uptrend)
+   */
+  private calculateTrend(values: number[]): number {
+    if (values.length < 2) {
+      return 0;
+    }
+
+    // Simple linear regression slope
+    const n = values.length;
+    const sumX = (n * (n - 1)) / 2;
+    const sumY = values.reduce((sum, val) => sum + val, 0);
+    const sumXY = values.reduce((sum, val, idx) => sum + idx * val, 0);
+    const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const avgValue = sumY / n;
+
+    // Normalize slope relative to average value
+    const normalizedSlope = avgValue !== 0 ? slope / Math.abs(avgValue) : 0;
+
+    // Clamp between -1 and +1
+    return Math.max(-1, Math.min(1, normalizedSlope * 10));
+  }
+
+  /**
+   * Calculate percentile for dynamic thresholds
+   */
+  private calculatePercentile(
+    value: number,
+    historicalValues: number[]
+  ): number {
+    if (historicalValues.length === 0) {
+      return 0.5;
+    }
+
+    const sorted = [...historicalValues].sort((a, b) => a - b);
+    const index = sorted.findIndex((v) => v >= value);
+
+    if (index === -1) {
+      return 1.0; // Value is above all historical values
+    }
+
+    return index / sorted.length;
   }
 
   /**
@@ -331,11 +420,17 @@ export class SentimentAnalysisService {
   }
 
   /**
-   * Calculate On-Chain sentiment component
+   * Calculate On-Chain sentiment component with advanced metrics and trends
+   *
+   * Weight distribution:
+   * - Basic metrics: 40% (whale_tx, exchange_flow, active_addr)
+   * - Advanced metrics: 40% (MVRV, NUPL, SOPR, Puell)
+   * - Trend indicators: 20% (7-day momentum)
    */
-  private calculateOnChainSentiment(
-    data: OnChainMetrics | null
-  ): ComponentSentiment {
+  private async calculateOnChainSentiment(
+    data: OnChainMetrics | null,
+    symbol: string
+  ): Promise<ComponentSentiment> {
     if (!data) {
       return {
         score: 0,
@@ -346,39 +441,187 @@ export class SentimentAnalysisService {
     }
 
     let score = 0;
-    const confidence = 80;
+    let confidence = 70;
 
-    // Whale activity (30% of on-chain score)
-    const WHALE_HIGH_THRESHOLD = 50;
-    const WHALE_LOW_THRESHOLD = 10;
-    if (data.whale_tx_count > WHALE_HIGH_THRESHOLD) {
-      score += 30; // High whale activity = bullish
-    } else if (data.whale_tx_count < WHALE_LOW_THRESHOLD) {
-      score -= 15; // Low activity = bearish
+    // Get historical data for trend analysis
+    const historicalData = await this.getOnChainHistoricalData(symbol);
+
+    // ===== BASIC METRICS (40% weight) =====
+    let basicScore = 0;
+
+    // 1. Whale activity (dynamic thresholds based on percentile)
+    if (historicalData.length > 0) {
+      const whaleValues = historicalData.map((d) => d.whale_tx_count);
+      const whalePercentile = this.calculatePercentile(
+        data.whale_tx_count,
+        whaleValues
+      );
+
+      if (whalePercentile > 0.8) {
+        basicScore += 15; // Top 20% whale activity = bullish
+      } else if (whalePercentile < 0.2) {
+        basicScore -= 10; // Bottom 20% = bearish
+      }
+
+      // Whale trend
+      const whaleTrend = this.calculateTrend(whaleValues);
+      basicScore += whaleTrend * 5; // ±5 points based on trend
+    } else if (data.whale_tx_count > 50) {
+      // Fallback to static thresholds
+      basicScore += 15;
+    } else if (data.whale_tx_count < 10) {
+      basicScore -= 10;
     }
 
-    // Exchange net flow (40% of on-chain score)
-    // Negative flow (outflow) = bullish (accumulation)
-    // Positive flow (inflow) = bearish (distribution)
+    // 2. Exchange net flow (negative = bullish accumulation)
     const FLOW_THRESHOLD = 1000;
     if (data.exchange_net_flow < -FLOW_THRESHOLD) {
-      score += 40; // Strong outflow = very bullish
+      basicScore += 20; // Strong outflow = very bullish
     } else if (data.exchange_net_flow < 0) {
-      score += 20; // Moderate outflow = bullish
+      basicScore += 10; // Moderate outflow = bullish
     } else if (data.exchange_net_flow > FLOW_THRESHOLD) {
-      score -= 40; // Strong inflow = very bearish
+      basicScore -= 20; // Strong inflow = very bearish
     } else if (data.exchange_net_flow > 0) {
-      score -= 20; // Moderate inflow = bearish
+      basicScore -= 10; // Moderate inflow = bearish
     }
 
-    // Active addresses (30% of on-chain score)
-    const ACTIVE_HIGH_THRESHOLD = 100_000;
-    const ACTIVE_LOW_THRESHOLD = 50_000;
-    if (data.active_addresses > ACTIVE_HIGH_THRESHOLD) {
-      score += 30; // High activity = bullish
-    } else if (data.active_addresses < ACTIVE_LOW_THRESHOLD) {
-      score -= 15; // Low activity = bearish
+    // Exchange flow trend
+    if (historicalData.length > 0) {
+      const flowValues = historicalData.map((d) => d.exchange_net_flow);
+      const flowTrend = this.calculateTrend(flowValues);
+      // Negative trend (increasing outflow) = bullish
+      basicScore -= flowTrend * 5;
     }
+
+    // 3. Active addresses (dynamic thresholds)
+    if (historicalData.length > 0) {
+      const addressValues = historicalData.map((d) => d.active_addresses);
+      const addressPercentile = this.calculatePercentile(
+        data.active_addresses,
+        addressValues
+      );
+
+      if (addressPercentile > 0.8) {
+        basicScore += 10; // High activity = bullish
+      } else if (addressPercentile < 0.2) {
+        basicScore -= 5; // Low activity = bearish
+      }
+    }
+
+    // Apply weight to basic score (40% of total)
+    score += basicScore * 0.4;
+
+    // ===== ADVANCED METRICS (40% weight) =====
+    let advancedScore = 0;
+
+    // 1. MVRV Ratio
+    if (data.mvrvRatio !== undefined && data.mvrvRatio !== null) {
+      if (data.mvrvRatio > 3.7) {
+        advancedScore -= 20; // Overvalued = bearish
+        confidence += 5;
+      } else if (data.mvrvRatio < 1.0) {
+        advancedScore += 30; // Undervalued = bullish
+        confidence += 10;
+      } else if (data.mvrvRatio >= 1.0 && data.mvrvRatio <= 1.5) {
+        advancedScore += 15; // Fair value zone = slightly bullish
+      }
+    }
+
+    // 2. NUPL (Net Unrealized Profit/Loss)
+    if (data.nupl !== undefined && data.nupl !== null) {
+      if (data.nupl > 0.75) {
+        advancedScore -= 25; // Euphoria = bearish
+        confidence += 5;
+      } else if (data.nupl < 0) {
+        advancedScore += 35; // Capitulation = very bullish
+        confidence += 10;
+      } else if (data.nupl >= 0 && data.nupl <= 0.25) {
+        advancedScore += 20; // Early accumulation = bullish
+      }
+    }
+
+    // 3. SOPR (Spent Output Profit Ratio)
+    if (data.sopr !== undefined && data.sopr !== null) {
+      if (data.sopr > 1.05) {
+        advancedScore -= 5; // Heavy profit-taking = bearish
+      } else if (data.sopr < 0.95) {
+        advancedScore += 10; // Selling at loss = bullish (capitulation)
+      }
+    }
+
+    // 4. Puell Multiple (BTC only)
+    if (data.puellMultiple !== undefined && data.puellMultiple !== null) {
+      if (data.puellMultiple > 4) {
+        advancedScore -= 15; // Cycle top = bearish
+        confidence += 5;
+      } else if (data.puellMultiple < 0.5) {
+        advancedScore += 25; // Cycle bottom = very bullish
+        confidence += 10;
+      }
+    }
+
+    // 5. Exchange Reserve (lower = less selling pressure)
+    if (
+      data.exchangeReserve !== undefined &&
+      data.exchangeReserve !== null &&
+      historicalData.length > 0
+    ) {
+      const reserveValues = historicalData
+        .map((d) => d.exchangeReserve)
+        .filter((v): v is number => v !== undefined && v !== null);
+
+      if (reserveValues.length > 0) {
+        const reserveTrend = this.calculateTrend(reserveValues);
+        // Negative trend (decreasing reserve) = bullish
+        advancedScore -= reserveTrend * 5;
+      }
+    }
+
+    // Apply weight to advanced score (40% of total)
+    score += advancedScore * 0.4;
+
+    // ===== TREND INDICATORS (20% weight) =====
+    if (historicalData.length >= 3) {
+      let trendScore = 0;
+
+      // Calculate overall momentum from multiple metrics
+      const metricTrends: number[] = [];
+
+      // MVRV trend
+      const mvrvValues = historicalData
+        .map((d) => d.mvrvRatio)
+        .filter((v): v is number => v !== undefined && v !== null);
+      if (mvrvValues.length >= 2) {
+        metricTrends.push(this.calculateTrend(mvrvValues));
+      }
+
+      // NUPL trend
+      const nuplValues = historicalData
+        .map((d) => d.nupl)
+        .filter((v): v is number => v !== undefined && v !== null);
+      if (nuplValues.length >= 2) {
+        metricTrends.push(this.calculateTrend(nuplValues));
+      }
+
+      if (metricTrends.length > 0) {
+        const avgTrend =
+          metricTrends.reduce((sum, t) => sum + t, 0) / metricTrends.length;
+
+        // Positive trend in value metrics = bullish
+        trendScore = avgTrend * 50; // ±50 points based on average trend
+
+        confidence += Math.abs(avgTrend) * 10; // Higher confidence with stronger trends
+      }
+
+      // Apply weight to trend score (20% of total)
+      score += trendScore * 0.2;
+    }
+
+    // Clamp score between -100 and +100
+    score = Math.max(-100, Math.min(100, score));
+
+    // Clamp confidence between 0 and 100
+    confidence = Math.max(0, Math.min(100, confidence));
 
     return {
       score,
@@ -647,7 +890,7 @@ export class SentimentAnalysisService {
     }
 
     const multiplier = 2 / (period + 1);
-    let ema = closes[closes.length - 1]; // Start with first close
+    let ema = closes.at(-1) ?? 0; // Start with first close
 
     for (let i = closes.length - 2; i >= 0; i--) {
       ema = (closes[i] - ema) * multiplier + ema;

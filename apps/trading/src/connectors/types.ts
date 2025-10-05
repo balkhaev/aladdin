@@ -1,4 +1,4 @@
-import type { Order, OrderSide, OrderType, Trade } from "@aladdin/shared/types";
+import type { Order, OrderSide, OrderType, Trade } from "@aladdin/core";
 
 /**
  * Interface for exchange connectors

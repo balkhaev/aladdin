@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import { LSTMNetwork } from "../models/lstm";
 
 const MODELS_DIR = "./models";

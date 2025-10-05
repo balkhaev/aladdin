@@ -8,7 +8,7 @@ import {
   loadConfig,
   type PortfolioConfig,
   ServiceConstants,
-} from "@aladdin/shared/config";
+} from "@aladdin/core/config";
 
 /**
  * Загрузить и валидировать конфигурацию portfolio service

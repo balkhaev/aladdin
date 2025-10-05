@@ -12,9 +12,17 @@ export type FuturesPosition = {
 };
 
 /**
+ * Response type for positions endpoint
+ */
+type PositionsResponse = {
+  positions: FuturesPosition[];
+  count: number;
+};
+
+/**
  * Get futures positions from exchange
  */
-export function getFuturesPositions(params?: {
+export async function getFuturesPositions(params?: {
   exchange?: string;
   symbol?: string;
 }): Promise<FuturesPosition[]> {
@@ -23,7 +31,10 @@ export function getFuturesPositions(params?: {
   if (params?.symbol) searchParams.set("symbol", params.symbol);
 
   const url = `/api/trading/positions${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-  return apiRequest<FuturesPosition[]>(url);
+  const response = await apiRequest<PositionsResponse>(url);
+
+  // Проверяем, что positions является массивом
+  return Array.isArray(response?.positions) ? response.positions : [];
 }
 
 /**

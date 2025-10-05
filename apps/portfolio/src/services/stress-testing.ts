@@ -9,7 +9,7 @@
  * Helps answer: "What would happen to my portfolio if...?"
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type StressScenario = {
   name: string;

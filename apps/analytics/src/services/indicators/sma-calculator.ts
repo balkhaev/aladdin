@@ -3,7 +3,7 @@
  * Arithmetic mean of prices over a period
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { BaseIndicator, type IndicatorResult } from "./base-indicator";
 
 export type SMAParams = {

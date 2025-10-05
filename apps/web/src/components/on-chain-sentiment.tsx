@@ -1,4 +1,4 @@
-import type { OnChainMetrics } from "@aladdin/shared/types";
+import type { OnChainMetrics } from "@aladdin/core";
 import {
   Activity,
   ArrowDownCircle,

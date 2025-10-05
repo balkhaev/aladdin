@@ -1,4 +1,4 @@
-import { createLogger } from "@aladdin/shared/logger";
+import { createLogger } from "@aladdin/logger";
 
 const logger = createLogger({ service: "gateway-health" });
 

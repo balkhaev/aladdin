@@ -1,5 +1,5 @@
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import { NotFoundError } from "@aladdin/shared/errors";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import { NotFoundError } from "@aladdin/http/errors";
 import type { Context, Hono } from "hono";
 
 const DEFAULT_LIMIT = 1;

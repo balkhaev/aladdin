@@ -3,7 +3,7 @@
  * Gives more weight to recent prices
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { BaseIndicator, type IndicatorResult } from "./base-indicator";
 
 export type EMAParams = {

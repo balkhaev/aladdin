@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import { Queue, QueueEvents, Worker } from "bullmq";
 import Redis from "ioredis";
 import { BinanceAPI } from "../services/binance-api";

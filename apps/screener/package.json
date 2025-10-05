@@ -10,8 +10,13 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@aladdin/shared": "workspace:*",
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/clickhouse": "workspace:*",
+    "@aladdin/core": "workspace:*",
     "@aladdin/database": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/service": "workspace:*",
     "hono": "^4.7.14",
     "bullmq": "^5.30.9",
     "ioredis": "^5.4.2",

@@ -3,8 +3,8 @@
  * Detect market anomalies: Pump & Dump, Flash Crash, etc.
  */
 
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 import { SentimentIntegrationService } from "./sentiment-integration";
 
 export type AnomalyType =

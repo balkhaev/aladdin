@@ -3,8 +3,8 @@
  * Собирает все роуты воедино
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { HTTP_STATUS } from "@aladdin/shared/http";
+import type { CacheService } from "@aladdin/cache";
+import { HTTP_STATUS } from "@aladdin/http/responses";
 import type { Hono } from "hono";
 import type { FundingRateService } from "../services/funding-rate-service";
 import type { MarketDataServiceWrapper } from "../services/market-data-wrapper";

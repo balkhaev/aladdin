@@ -3,7 +3,7 @@
  * Runs trading strategies against historical data
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import type { BaseStrategy, StrategyTrade } from "./base-strategy";
 
 /**

@@ -4,7 +4,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useDialog } from "@/hooks/use-dialog";
 import { useUpdatePosition } from "@/hooks/use-portfolio";
 import type { Position } from "@/lib/api/portfolio";
 
@@ -43,7 +44,7 @@ export function EditPositionDialog({
   portfolioId,
   position,
 }: EditPositionDialogProps) {
-  const [open, setOpen] = useState(false);
+  const { dialogProps, closeDialog } = useDialog();
   const updatePosition = useUpdatePosition();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,13 +56,13 @@ export function EditPositionDialog({
   });
 
   useEffect(() => {
-    if (open) {
+    if (dialogProps.open) {
       form.reset({
         quantity: position.quantity,
         entryPrice: position.entryPrice,
       });
     }
-  }, [open, position, form]);
+  }, [dialogProps.open, position, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     updatePosition.mutate(
@@ -72,14 +73,14 @@ export function EditPositionDialog({
       },
       {
         onSuccess: () => {
-          setOpen(false);
+          closeDialog();
         },
       }
     );
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog {...dialogProps}>
       <DialogTrigger asChild>
         <Button size="sm" variant="ghost">
           <Edit className="h-4 w-4" />

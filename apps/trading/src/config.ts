@@ -8,7 +8,7 @@ import {
   loadConfig,
   ServiceConstants,
   type TradingConfig,
-} from "@aladdin/shared/config";
+} from "@aladdin/core/config";
 
 /**
  * Загрузить и валидировать конфигурацию trading service

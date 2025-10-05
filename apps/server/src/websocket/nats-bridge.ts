@@ -1,5 +1,5 @@
-import { getLogger } from "@aladdin/shared/logger";
-import { getNatsClient } from "@aladdin/shared/nats";
+import { getLogger } from "@aladdin/logger";
+import { getNatsClient } from "@aladdin/messaging";
 import type { ServerWebSocket } from "bun";
 import type { Subscription } from "nats";
 

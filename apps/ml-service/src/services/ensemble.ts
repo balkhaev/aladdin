@@ -3,8 +3,8 @@
  * Combine multiple models for better predictions
  */
 
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 import type { PredictionHorizon } from "../types";
 import type { FeatureEngineeringService } from "./feature-engineering";
 import type { LSTMPredictionService } from "./lstm-prediction";

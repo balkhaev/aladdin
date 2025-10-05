@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type { Logger } from "@aladdin/shared/logger";
-import type { OrderSide, OrderType } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { OrderSide, OrderType } from "@aladdin/core";
 import { retryWithBackoff } from "../utils/retry";
 import type {
   Balance,

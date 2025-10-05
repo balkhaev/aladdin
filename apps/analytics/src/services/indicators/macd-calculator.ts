@@ -3,7 +3,7 @@
  * Trend-following momentum indicator
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { BaseIndicator, type IndicatorResult } from "./base-indicator";
 import { EMACalculator } from "./ema-calculator";
 

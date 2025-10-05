@@ -1,5 +1,5 @@
-import type { BaseServiceConfig } from "@aladdin/shared/base-service";
-import { BaseService } from "@aladdin/shared/base-service";
+import type { BaseServiceConfig } from "@aladdin/service";
+import { BaseService } from "@aladdin/service";
 import { AnomalyDetectionService } from "./anomaly-detection";
 import { BacktestingService } from "./backtesting";
 import { EnsembleService } from "./ensemble";
@@ -51,9 +51,6 @@ export class MLService extends BaseService {
     this.persistenceService = new ModelPersistenceService(this.logger);
     this.backtestingService = new BacktestingService(
       this.clickhouse,
-      this.lstmService,
-      this.predictionService,
-      this.featureService,
       this.logger
     );
     this.hpoService = new HyperparameterOptimizationService(

@@ -1,0 +1,26 @@
+{
+  "name": "@aladdin/http",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./errors": "./src/errors.ts",
+    "./responses": "./src/responses.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aladdin/core": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/resilience": "workspace:*",
+    "hono": "^4.6.14",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.8.2"
+  }
+}

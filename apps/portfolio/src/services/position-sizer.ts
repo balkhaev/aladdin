@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { PrismaClient } from "@prisma/client";
 
 const PERCENT_MULTIPLIER = 100;

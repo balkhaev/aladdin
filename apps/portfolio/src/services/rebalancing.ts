@@ -10,7 +10,7 @@
  * Интеграция с Portfolio Optimizer для получения оптимальных весов
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type RebalancingStrategy =
   | "periodic" // Календарная (раз в месяц/квартал)

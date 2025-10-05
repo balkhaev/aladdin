@@ -2,7 +2,7 @@
  * Risk Management Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
 import type { Hono } from "hono";
 import type { CorrelationAnalysisService } from "../services/correlation-analysis";
 import type { RiskService } from "../services/risk";

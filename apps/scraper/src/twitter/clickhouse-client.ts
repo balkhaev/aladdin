@@ -2,7 +2,7 @@
  * ClickHouse Client for Twitter data storage
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import { type ClickHouseClient, createClient } from "@clickhouse/client";
 import type { Tweet } from "./types";
 

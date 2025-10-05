@@ -3,7 +3,7 @@
  * Track real-time progress of hyperparameter optimization
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { OptimizationTrial } from "../types";
 
 export type OptimizationProgress = {

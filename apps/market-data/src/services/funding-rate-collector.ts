@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { FundingRateService } from "./funding-rate-service";
 
 // Constants

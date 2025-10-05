@@ -1,7 +1,7 @@
-import type { ClickHouseService } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
-import type { AggTrade, Candle, Tick } from "@aladdin/shared/types";
+import type { ClickHouseService } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
+import type { AggTrade, Candle, Tick } from "@aladdin/core";
 import type { ExchangeConnector } from "../connectors/types";
 
 type MarketDataServiceOptions = {

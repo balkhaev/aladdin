@@ -2,11 +2,11 @@
  * Futures Data Routes (Funding Rate, Open Interest)
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
 import {
   getFundingRateQuerySchema,
   getOpenInterestQuerySchema,
-} from "@aladdin/shared/schemas/market-data";
+} from "@aladdin/validation/schemas/market-data";
 import type { Hono } from "hono";
 import type { FundingRateService } from "../services/funding-rate-service";
 import type { OpenInterestService } from "../services/open-interest-service";

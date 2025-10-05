@@ -2,7 +2,7 @@
  * Snapshot Routes
  */
 
-import { createSuccessResponse } from "@aladdin/shared/http";
+import { createSuccessResponse } from "@aladdin/http/responses";
 import type { Hono } from "hono";
 import type { PortfolioService } from "../services/portfolio";
 

@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { OpenInterestService } from "./open-interest-service";
 
 // Constants

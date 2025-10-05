@@ -3,7 +3,7 @@
  * Buy when RSI is oversold, sell when RSI is overbought
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { RSICalculator } from "../../indicators/rsi-calculator";
 import { BaseStrategy, type TradeSignal } from "../base-strategy";
 

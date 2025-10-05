@@ -1,4 +1,4 @@
-import { BaseService } from "@aladdin/shared/base-service";
+import { BaseService } from "@aladdin/service";
 import { closeBrowser, initBrowser } from "./browser";
 import { TwitterClickHouseClient } from "./clickhouse-client";
 import { scrapeTweetsByUser } from "./scraper";

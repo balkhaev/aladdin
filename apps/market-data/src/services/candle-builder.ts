@@ -1,7 +1,7 @@
 import type { ClickHouseService } from "@aladdin/database";
-import type { Logger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
-import type { AggTrade, Candle, Timeframe } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
+import type { AggTrade, Candle, Timeframe } from "@aladdin/core";
 import type { Subscription } from "nats";
 
 const MILLISECONDS_IN_SECOND = 1000;

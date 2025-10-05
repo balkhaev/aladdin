@@ -1,4 +1,4 @@
-import type { Candle, Tick } from "@aladdin/shared/types";
+import type { Candle, Tick } from "@aladdin/core";
 
 export type ExchangeConnectorEvent =
   | "tick"

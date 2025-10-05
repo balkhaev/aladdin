@@ -1,4 +1,4 @@
-import { BaseService } from "@aladdin/shared/base-service";
+import { BaseService } from "@aladdin/service";
 import { TelegramClient } from "./telegram-client";
 import { type Tweet, TwitterClient } from "./twitter-client";
 

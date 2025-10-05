@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import type { PrismaClient } from "@aladdin/database";
-import type { Logger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
+import type { Logger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
 import { TradingService } from "./trading";
 
 // Mock dependencies

@@ -1,4 +1,4 @@
-import { getLogger } from "@aladdin/shared/logger";
+import { getLogger } from "@aladdin/logger";
 import { initBrowser, preparePage } from "../twitter/browser";
 import type { RedditComment, RedditPost, RedditSearchResult } from "./types";
 

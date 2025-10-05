@@ -3,7 +3,7 @@
  * Volatility indicator with upper and lower bands
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { BaseIndicator, type IndicatorResult } from "./base-indicator";
 import { SMACalculator } from "./sma-calculator";
 

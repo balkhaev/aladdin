@@ -1,4 +1,4 @@
-import { getLogger } from "@aladdin/shared/logger";
+import { getLogger } from "@aladdin/logger";
 import dotenv from "dotenv";
 import { TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";

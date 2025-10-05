@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@aladdin/database";
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export interface CreateAuditLogParams {
   userId: string;

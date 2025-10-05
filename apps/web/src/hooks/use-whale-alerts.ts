@@ -1,4 +1,4 @@
-import type { WhaleAlert } from "@aladdin/shared/types";
+import type { WhaleAlert } from "@aladdin/core";
 import { useCallback, useEffect, useState } from "react";
 import { useWebSocket } from "./use-websocket";
 

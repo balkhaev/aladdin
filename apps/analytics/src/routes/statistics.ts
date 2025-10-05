@@ -2,12 +2,12 @@
  * Statistics and Metrics Routes
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { validateQuery } from "@aladdin/shared/middleware/validation";
+import type { CacheService } from "@aladdin/cache";
+import { validateQuery } from "@aladdin/validation/middleware";
 import {
   type GetStatisticsQuery,
   getStatisticsQuerySchema,
-} from "@aladdin/shared/schemas/analytics";
+} from "@aladdin/validation/schemas/analytics";
 import type { Hono } from "hono";
 import { CACHE_TTL, DEFAULTS, SERVICES, TIME } from "../config";
 import type { AnalyticsService } from "../services/analytics";

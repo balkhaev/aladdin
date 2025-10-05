@@ -1,5 +1,5 @@
-import type { Logger } from "@aladdin/shared/logger";
-import type { Candle, Tick } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { Candle, Tick } from "@aladdin/core";
 import WebSocket from "ws";
 import type { ExchangeConnector, OrderBook, RecentTrade } from "./types";
 

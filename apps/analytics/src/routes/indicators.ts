@@ -2,9 +2,9 @@
  * Indicators Routes
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { validateQuery } from "@aladdin/shared/middleware/validation";
-import { getIndicatorsQuerySchema } from "@aladdin/shared/schemas/analytics";
+import type { CacheService } from "@aladdin/cache";
+import { validateQuery } from "@aladdin/validation/middleware";
+import { getIndicatorsQuerySchema } from "@aladdin/validation/schemas/analytics";
 import type { Context, Hono } from "hono";
 import { CACHE_TTL } from "../config";
 import type { AnalyticsService } from "../services/analytics";

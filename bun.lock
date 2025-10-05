@@ -17,8 +17,14 @@
       "name": "@aladdin/analytics",
       "version": "1.0.0",
       "dependencies": {
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/service": "workspace:*",
+        "@aladdin/validation": "workspace:*",
         "dotenv": "^16.4.7",
         "hono": "^4.7.12",
         "zod": "^4.1.11",
@@ -31,7 +37,16 @@
       "name": "@aladdin/market-data",
       "version": "0.0.1",
       "dependencies": {
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
+        "@aladdin/database": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/service": "workspace:*",
+        "@aladdin/validation": "workspace:*",
+        "@aladdin/websocket": "workspace:*",
         "@hono/node-server": "^1.13.7",
         "dotenv": "^17.2.3",
         "hono": "^4.7.8",
@@ -49,8 +64,12 @@
       "name": "@aladdin/ml-service",
       "version": "1.0.0",
       "dependencies": {
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/service": "workspace:*",
         "dotenv": "^17.2.3",
         "hono": "^4.7.11",
         "zod": "^3.23.8",
@@ -64,8 +83,16 @@
       "name": "@aladdin/portfolio",
       "version": "1.0.0",
       "dependencies": {
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/service": "workspace:*",
+        "@aladdin/validation": "workspace:*",
+        "@aladdin/websocket": "workspace:*",
         "bullmq": "^5.29.3",
         "dotenv": "^16.4.7",
         "hono": "^4.7.12",
@@ -80,7 +107,13 @@
       "name": "@aladdin/scraper",
       "version": "1.0.0",
       "dependencies": {
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
+        "@aladdin/database": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/service": "workspace:*",
         "dotenv": "^16.4.5",
         "hono": "^4.0.0",
         "input": "^1.0.1",
@@ -97,8 +130,13 @@
       "name": "@aladdin/screener",
       "version": "0.0.1",
       "dependencies": {
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/service": "workspace:*",
         "bullmq": "^5.30.9",
         "dotenv": "^16.4.7",
         "hono": "^4.7.14",
@@ -113,12 +151,18 @@
     "apps/server": {
       "name": "@aladdin/server",
       "dependencies": {
+        "@aladdin/auth": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/validation": "workspace:*",
         "better-auth": "^1.3.13",
         "dotenv": "^17.2.1",
         "hono": "^4.8.2",
         "hono-rate-limiter": "^0.4.2",
+        "nats": "^2.28.2",
         "zod": "^4.0.2",
       },
       "devDependencies": {
@@ -131,8 +175,17 @@
       "name": "@aladdin/trading",
       "version": "1.0.0",
       "dependencies": {
+        "@aladdin/auth": "workspace:*",
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@aladdin/shared": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/service": "workspace:*",
+        "@aladdin/validation": "workspace:*",
+        "@aladdin/websocket": "workspace:*",
         "dotenv": "^16.4.7",
         "hono": "^4.7.12",
         "zod": "^4.1.11",
@@ -213,6 +266,54 @@
         "vite": "^6.2.2",
       },
     },
+    "packages/auth": {
+      "name": "@aladdin/auth",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/database": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "hono": "^4.6.14",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/cache": {
+      "name": "@aladdin/cache",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
+        "ioredis": "^5.4.1",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/clickhouse": {
+      "name": "@aladdin/clickhouse",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
+        "@clickhouse/client": "^1.10.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/core": {
+      "name": "@aladdin/core",
+      "version": "0.0.1",
+      "dependencies": {
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
     "packages/database": {
       "name": "@aladdin/database",
       "version": "0.0.1",
@@ -226,12 +327,81 @@
         "typescript": "^5.8.2",
       },
     },
-    "packages/shared": {
-      "name": "@aladdin/shared",
+    "packages/http": {
+      "name": "@aladdin/http",
       "version": "0.0.1",
       "dependencies": {
+        "@aladdin/core": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/resilience": "workspace:*",
+        "hono": "^4.6.14",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/logger": {
+      "name": "@aladdin/logger",
+      "version": "0.0.1",
+      "dependencies": {
+        "winston": "^3.17.0",
+        "winston-daily-rotate-file": "^5.0.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/messaging": {
+      "name": "@aladdin/messaging",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
+        "nats": "^2.28.2",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/resilience": {
+      "name": "@aladdin/resilience",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/service": {
+      "name": "@aladdin/service",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/clickhouse": "workspace:*",
+        "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
-        "@clickhouse/client": "^1.10.0",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/resilience": "workspace:*",
+        "@aladdin/telemetry": "workspace:*",
+        "hono": "^4.6.14",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/telemetry": {
+      "name": "@aladdin/telemetry",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
         "@opentelemetry/api": "^1.9.0",
         "@opentelemetry/auto-instrumentations-node": "^0.64.6",
         "@opentelemetry/exporter-jaeger": "^2.1.0",
@@ -241,29 +411,63 @@
         "@opentelemetry/resources": "^2.1.0",
         "@opentelemetry/sdk-node": "^0.205.0",
         "@opentelemetry/semantic-conventions": "^1.37.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/validation": {
+      "name": "@aladdin/validation",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/http": "workspace:*",
         "hono": "^4.6.14",
-        "ioredis": "^5.4.1",
-        "nats": "^2.28.2",
-        "winston": "^3.17.0",
-        "winston-daily-rotate-file": "^5.0.0",
         "zod": "^3.23.8",
       },
       "devDependencies": {
         "@types/node": "^22.10.5",
-        "typescript": "^5.7.3",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/websocket": {
+      "name": "@aladdin/websocket",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aladdin/logger": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.8.2",
       },
     },
   },
   "packages": {
     "@aladdin/analytics": ["@aladdin/analytics@workspace:apps/analytics"],
 
+    "@aladdin/auth": ["@aladdin/auth@workspace:packages/auth"],
+
+    "@aladdin/cache": ["@aladdin/cache@workspace:packages/cache"],
+
+    "@aladdin/clickhouse": ["@aladdin/clickhouse@workspace:packages/clickhouse"],
+
+    "@aladdin/core": ["@aladdin/core@workspace:packages/core"],
+
     "@aladdin/database": ["@aladdin/database@workspace:packages/database"],
 
+    "@aladdin/http": ["@aladdin/http@workspace:packages/http"],
+
+    "@aladdin/logger": ["@aladdin/logger@workspace:packages/logger"],
+
     "@aladdin/market-data": ["@aladdin/market-data@workspace:apps/market-data"],
+
+    "@aladdin/messaging": ["@aladdin/messaging@workspace:packages/messaging"],
 
     "@aladdin/ml-service": ["@aladdin/ml-service@workspace:apps/ml-service"],
 
     "@aladdin/portfolio": ["@aladdin/portfolio@workspace:apps/portfolio"],
+
+    "@aladdin/resilience": ["@aladdin/resilience@workspace:packages/resilience"],
 
     "@aladdin/scraper": ["@aladdin/scraper@workspace:apps/scraper"],
 
@@ -271,11 +475,17 @@
 
     "@aladdin/server": ["@aladdin/server@workspace:apps/server"],
 
-    "@aladdin/shared": ["@aladdin/shared@workspace:packages/shared"],
+    "@aladdin/service": ["@aladdin/service@workspace:packages/service"],
+
+    "@aladdin/telemetry": ["@aladdin/telemetry@workspace:packages/telemetry"],
 
     "@aladdin/trading": ["@aladdin/trading@workspace:apps/trading"],
 
+    "@aladdin/validation": ["@aladdin/validation@workspace:packages/validation"],
+
     "@aladdin/web": ["@aladdin/web@workspace:apps/web"],
+
+    "@aladdin/websocket": ["@aladdin/websocket@workspace:packages/websocket"],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 
@@ -2065,6 +2275,10 @@
 
     "zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
+    "@aladdin/core/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
+    "@aladdin/http/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
     "@aladdin/market-data/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
     "@aladdin/market-data/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
@@ -2077,7 +2291,7 @@
 
     "@aladdin/server/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
-    "@aladdin/shared/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+    "@aladdin/validation/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 

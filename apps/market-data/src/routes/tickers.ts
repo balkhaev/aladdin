@@ -2,8 +2,8 @@
  * Tickers and Subscriptions Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
-import { subscribeSymbolsBodySchema } from "@aladdin/shared/schemas/market-data";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { subscribeSymbolsBodySchema } from "@aladdin/validation/schemas/market-data";
 import type { Hono } from "hono";
 import type { MarketDataServiceWrapper } from "../services/market-data-wrapper";
 

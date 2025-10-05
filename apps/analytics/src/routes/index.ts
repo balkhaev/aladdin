@@ -3,8 +3,8 @@
  * Собирает все роуты воедино
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { errorHandlerMiddleware } from "@aladdin/shared/errors";
+import type { CacheService } from "@aladdin/cache";
+import { errorHandlerMiddleware } from "@aladdin/http/errors";
 import type { Hono } from "hono";
 import type { AnalyticsService } from "../services/analytics";
 import type { CombinedSentimentService } from "../services/sentiment/combined-sentiment";

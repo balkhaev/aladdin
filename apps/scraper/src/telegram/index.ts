@@ -1,4 +1,4 @@
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { initializeService } from "@aladdin/service/bootstrap";
 import type { Context } from "hono";
 import {
   activateSubscription,

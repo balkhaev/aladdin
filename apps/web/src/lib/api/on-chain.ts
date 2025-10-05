@@ -3,7 +3,7 @@
  * Provides access to blockchain metrics and analytics
  */
 
-import type { OnChainMetrics } from "@aladdin/shared/types";
+import type { OnChainMetrics } from "@aladdin/core";
 import { apiGet } from "./client";
 
 const ON_CHAIN_BASE = "/api/on-chain";

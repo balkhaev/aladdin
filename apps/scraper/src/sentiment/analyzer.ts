@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 /**
  * Sentiment Score: -1 (very bearish) to +1 (very bullish)

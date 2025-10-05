@@ -1,4 +1,4 @@
-import { getLogger } from "@aladdin/shared/logger";
+import { getLogger } from "@aladdin/logger";
 import { initBrowser, preparePage } from "./browser.js";
 import type { Tweet } from "./types.js";
 import { autoScroll, scrollUntilEnough } from "./utils.js";

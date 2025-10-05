@@ -2,8 +2,8 @@
  * Positions Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
-import { validateBody } from "@aladdin/shared/middleware/validation";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { validateBody } from "@aladdin/validation/middleware";
 import type { Hono } from "hono";
 import type { PortfolioService } from "../services/portfolio";
 import {

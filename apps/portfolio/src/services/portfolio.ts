@@ -1,5 +1,5 @@
-import { BaseService } from "@aladdin/shared/base-service";
-import type { Portfolio, Position } from "@aladdin/shared/types";
+import { BaseService } from "@aladdin/service";
+import type { Portfolio, Position } from "@aladdin/core";
 import { PortfolioQueue } from "../queue/portfolio-queue";
 import {
   type AssetStatistics,

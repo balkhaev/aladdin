@@ -7,7 +7,7 @@
  * 4. Social (Telegram + Twitter sentiment)
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { SentimentAnalysisService } from "./sentiment-analysis";
 
 type SentimentSignal = "BULLISH" | "BEARISH" | "NEUTRAL";

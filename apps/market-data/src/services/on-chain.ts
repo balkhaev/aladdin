@@ -1,7 +1,7 @@
 import {
   BaseService,
   type BaseServiceConfig,
-} from "@aladdin/shared/base-service";
+} from "@aladdin/service";
 import { BitcoinFetcher } from "../fetchers/bitcoin";
 import { BitcoinMempoolFetcher } from "../fetchers/bitcoin-mempool";
 import { EthereumFetcher } from "../fetchers/ethereum";

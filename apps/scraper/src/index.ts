@@ -1,5 +1,5 @@
-import { createSuccessResponse } from "@aladdin/shared/http";
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { createSuccessResponse } from "@aladdin/http/responses";
+import { initializeService } from "@aladdin/service/bootstrap";
 import { SocialIntegrationsService } from "./service";
 import "dotenv/config";
 

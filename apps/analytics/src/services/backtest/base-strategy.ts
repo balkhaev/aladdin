@@ -3,7 +3,7 @@
  * All trading strategies should extend this class
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 
 /**
  * Trade signal

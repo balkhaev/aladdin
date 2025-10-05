@@ -6,7 +6,7 @@
  */
 
 import path from "node:path";
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { config } from "dotenv";
 import { ClickHouseService } from "../../../packages/shared/src/clickhouse";
 

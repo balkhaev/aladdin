@@ -1,7 +1,7 @@
-import type { ClickHouseService } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
-import type { WhaleAlert, WhaleTransaction } from "@aladdin/shared/types";
+import type { ClickHouseService } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
+import type { WhaleAlert, WhaleTransaction } from "@aladdin/core";
 import { isExchangeAddress } from "../data/exchange-addresses";
 
 type WhaleAlertConfig = {

@@ -2,12 +2,9 @@
  * Orders Management Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
-import {
-  validateBody,
-  validateQuery,
-} from "@aladdin/shared/middleware/validation";
-import type { OrderStatus } from "@aladdin/shared/types";
+import type { OrderStatus } from "@aladdin/core";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { validateBody, validateQuery } from "@aladdin/validation/middleware";
 import type { Hono } from "hono";
 import type { TradingService } from "../services/trading";
 import {
@@ -75,18 +72,21 @@ export function setupOrdersRoutes(app: Hono, service: TradingService): void {
       const userId = c.req.header("x-user-id") ?? "test-user";
       const query = c.get("validatedQuery") as GetOrdersQuery;
 
-      const orders = await service.getOrders(
+      const result = await service.getOrders({
         userId,
-        query.portfolioId,
-        query.status as OrderStatus | undefined,
-        query.symbol,
-        query.limit
-      );
+        portfolioId: query.portfolioId,
+        status: query.status as OrderStatus | undefined,
+        symbol: query.symbol,
+        exchange: query.exchange,
+        limit: query.limit,
+        offset: query.offset,
+      });
 
       return c.json(
         createSuccessResponse({
-          orders,
-          count: orders.length,
+          orders: result.orders,
+          total: result.total,
+          count: result.orders.length,
         })
       );
     }

@@ -1,8 +1,9 @@
 /**
  * ML Service API Client
+ * Routes through API Gateway (port 3000)
  */
 
-const ML_API_URL = import.meta.env.VITE_ML_API_URL || "http://localhost:3019";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export type PredictionHorizon = "1h" | "4h" | "1d" | "7d";
 export type ModelType = "LSTM" | "HYBRID";
@@ -104,7 +105,7 @@ export async function predictPrice(params: {
   confidence?: number;
   includeSentiment?: boolean;
 }): Promise<PredictionResult> {
-  const response = await fetch(`${ML_API_URL}/api/ml/predict`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -127,7 +128,7 @@ export async function predictPriceLSTM(params: {
   confidence?: number;
   includeSentiment?: boolean;
 }): Promise<PredictionResult> {
-  const response = await fetch(`${ML_API_URL}/api/ml/predict/lstm`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/predict/lstm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -154,7 +155,7 @@ export async function runBacktest(config: {
   retrainInterval?: number;
   includeSentiment?: boolean;
 }): Promise<BacktestResult> {
-  const response = await fetch(`${ML_API_URL}/api/ml/backtest`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/backtest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
@@ -180,7 +181,7 @@ export async function compareModels(config: {
   retrainInterval?: number;
   includeSentiment?: boolean;
 }): Promise<ComparisonResult> {
-  const response = await fetch(`${ML_API_URL}/api/ml/backtest/compare`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/backtest/compare`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
@@ -224,7 +225,7 @@ export async function getMarketRegime(params: {
   includeSentiment?: boolean;
   generatedAt: number;
 }> {
-  const response = await fetch(`${ML_API_URL}/api/ml/regime`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/regime`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -307,7 +308,7 @@ export async function runOptimization(config: {
   crossValidationFolds?: number;
   includeSentiment?: boolean;
 }): Promise<OptimizationResult> {
-  const response = await fetch(`${ML_API_URL}/api/ml/optimize`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/optimize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
@@ -329,7 +330,7 @@ export async function getHPORecommendations(
   modelType: ModelType
 ): Promise<OptimizationRecommendations> {
   const response = await fetch(
-    `${ML_API_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`
+    `${API_BASE_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`
   );
 
   if (!response.ok) {
@@ -371,7 +372,7 @@ export async function listModels(): Promise<{
   models: SavedModel[];
   count: number;
 }> {
-  const response = await fetch(`${ML_API_URL}/api/ml/models`);
+  const response = await fetch(`${API_BASE_URL}/api/ml/models`);
 
   if (!response.ok) {
     throw new Error(`Failed to list models: ${response.statusText}`);
@@ -385,7 +386,7 @@ export async function listModels(): Promise<{
  * Get model statistics
  */
 export async function getModelStats(symbol: string): Promise<ModelStats> {
-  const response = await fetch(`${ML_API_URL}/api/ml/models/${symbol}/stats`);
+  const response = await fetch(`${API_BASE_URL}/api/ml/models/${symbol}/stats`);
 
   if (!response.ok) {
     throw new Error(`Failed to get model stats: ${response.statusText}`);
@@ -399,7 +400,7 @@ export async function getModelStats(symbol: string): Promise<ModelStats> {
  * Delete a model
  */
 export async function deleteModel(symbol: string): Promise<void> {
-  const response = await fetch(`${ML_API_URL}/api/ml/models/${symbol}`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/models/${symbol}`, {
     method: "DELETE",
   });
 
@@ -416,7 +417,7 @@ export async function cleanupModels(
 ): Promise<{ deleted: number }> {
   const body = olderThan ? { olderThan } : {};
 
-  const response = await fetch(`${ML_API_URL}/api/ml/models/cleanup`, {
+  const response = await fetch(`${API_BASE_URL}/api/ml/models/cleanup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

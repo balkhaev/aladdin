@@ -229,6 +229,10 @@ export const syncOrderSchema = z.object({
  */
 export const getOrdersQuerySchema = z
   .object({
+    portfolioId: z
+      .string()
+      .cuid({ message: "Invalid portfolio ID format" })
+      .optional(),
     status: orderStatusSchema.optional(),
     symbol: z
       .string()
@@ -317,6 +321,7 @@ export const getPositionsQuerySchema = z
         "Symbol must contain only uppercase letters and numbers"
       )
       .optional(),
+    exchange: exchangeSchema.optional(),
   })
   .strict();
 

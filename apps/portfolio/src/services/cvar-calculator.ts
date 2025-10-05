@@ -15,7 +15,7 @@
  * - Preferred by Basel III and modern risk management
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type CVaRResult = {
   /** Conditional VaR at 95% confidence level */

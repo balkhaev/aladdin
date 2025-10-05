@@ -3,7 +3,7 @@
  * Buy on bullish crossover, sell on bearish crossover
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 import { MACDCalculator } from "../../indicators/macd-calculator";
 import { BaseStrategy, type TradeSignal } from "../base-strategy";
 

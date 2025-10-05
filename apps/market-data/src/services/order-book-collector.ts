@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger"
+import type { Logger } from "@aladdin/logger"
 import type { OrderBookService } from "./order-book-service"
 
 // Constants

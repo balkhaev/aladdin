@@ -1,8 +1,5 @@
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
-import type { FeatureEngineeringService } from "./feature-engineering";
-import type { LSTMPredictionService } from "./lstm-prediction";
-import type { PricePredictionService } from "./price-prediction";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 
 /**
  * Evaluation Metrics
@@ -70,9 +67,6 @@ const HORIZON_TO_HOURS: Record<string, number> = {
 export class BacktestingService {
   constructor(
     private readonly clickhouse: ClickHouseClient,
-    private readonly lstmService: LSTMPredictionService,
-    private readonly hybridService: PricePredictionService,
-    _featureService: FeatureEngineeringService,
     private readonly logger: Logger
   ) {}
 
@@ -101,8 +95,8 @@ export class BacktestingService {
 
       // Run predictions and compare with actuals
       const predictions = config.walkForward
-        ? await this.walkForwardBacktest(config, historicalData)
-        : await this.simpleBacktest(config, historicalData);
+        ? this.walkForwardBacktest(config, historicalData)
+        : this.simpleBacktest(config, historicalData);
 
       // Calculate metrics
       const metrics = this.calculateMetrics(predictions);
@@ -155,10 +149,10 @@ export class BacktestingService {
   /**
    * Simple backtest (single model, no retraining)
    */
-  private async simpleBacktest(
+  private simpleBacktest(
     config: BacktestConfig,
     historicalData: Array<{ timestamp: number; close: number }>
-  ): Promise<BacktestResult["predictions"]> {
+  ): BacktestResult["predictions"] {
     const predictions: BacktestResult["predictions"] = [];
     const horizonHours = HORIZON_TO_HOURS[config.horizon];
 
@@ -175,14 +169,13 @@ export class BacktestingService {
 
       try {
         // Make prediction (using features up to current time)
-        const predictionResult = await this.makePrediction(
+        const predictionResult = this.makePrediction(
           config,
           currentTime,
           historicalData.slice(0, i + 1)
         );
 
-        const predictedPrice =
-          predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
+        const predictedPrice = predictionResult?.predictions[0]?.predictedPrice;
 
         if (!predictedPrice || Number.isNaN(predictedPrice)) {
           this.logger.warn("Invalid prediction", { timestamp: currentTime });
@@ -220,10 +213,10 @@ export class BacktestingService {
   /**
    * Walk-forward backtest (retrain model periodically)
    */
-  private async walkForwardBacktest(
+  private walkForwardBacktest(
     config: BacktestConfig,
     historicalData: Array<{ timestamp: number; close: number }>
-  ): Promise<BacktestResult["predictions"]> {
+  ): BacktestResult["predictions"] {
     const predictions: BacktestResult["predictions"] = [];
     const horizonHours = HORIZON_TO_HOURS[config.horizon];
     const retrainIntervalMs = (config.retrainInterval || 30) * 86_400_000;
@@ -253,14 +246,13 @@ export class BacktestingService {
 
       try {
         // Make prediction
-        const predictionResult = await this.makePrediction(
+        const predictionResult = this.makePrediction(
           config,
           currentTime,
           historicalData.slice(0, i + 1)
         );
 
-        const predictedPrice =
-          predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
+        const predictedPrice = predictionResult?.predictions[0]?.predictedPrice;
 
         if (!predictedPrice || Number.isNaN(predictedPrice)) continue;
 
@@ -292,22 +284,34 @@ export class BacktestingService {
   }
 
   /**
-   * Make prediction using specified model
+   * Make prediction using simple moving average (for backtesting)
+   * Uses historical data instead of calling ML services
    */
-  private async makePrediction(
+  private makePrediction(
     config: BacktestConfig,
     _timestamp: number,
-    _historicalData: Array<{ timestamp: number; close: number }>
-  ) {
+    historicalData: Array<{ timestamp: number; close: number }>
+  ): { predictions: Array<{ predictedPrice: number }> } | null {
     try {
-      const service =
-        config.modelType === "LSTM" ? this.lstmService : this.hybridService;
+      // Use simple moving average for prediction
+      const lookback = Math.min(20, historicalData.length);
+      const recentPrices = historicalData.slice(-lookback).map((d) => d.close);
 
-      return await service.predictPrice({
-        symbol: config.symbol,
-        horizon: config.horizon,
-        confidence: 0.95,
-      });
+      const sma =
+        recentPrices.reduce((sum, price) => sum + price, 0) / lookback;
+
+      // Calculate trend (momentum)
+      const oldPrice = recentPrices[0];
+      const currentPrice = recentPrices.at(-1) || oldPrice;
+      const momentum = (currentPrice - oldPrice) / oldPrice;
+
+      // Simple prediction: SMA + momentum
+      const horizonHours = HORIZON_TO_HOURS[config.horizon];
+      const predictedPrice = sma * (1 + (momentum * horizonHours) / 24);
+
+      return {
+        predictions: [{ predictedPrice }],
+      };
     } catch (error) {
       this.logger.error("Prediction failed", { error });
       return null;
@@ -395,93 +399,73 @@ export class BacktestingService {
     startDate: number,
     endDate: number
   ): Promise<Array<{ timestamp: number; close: number }>> {
-    const startDateSeconds = Math.floor(startDate / 1000);
-    const endDateSeconds = Math.floor(endDate / 1000);
-
     this.logger.info("Fetching historical data", {
       symbol,
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
+    });
+
+    // Query historical candles from aladdin database
+    // Use DateTime comparison instead of unix timestamp for better accuracy
+    // Aggregate data from multiple exchanges using AVG
+    const startDateSeconds = Math.floor(startDate / 1000);
+    const endDateSeconds = Math.floor(endDate / 1000);
+
+    this.logger.info("Query parameters", {
+      symbol,
       startDateSeconds,
       endDateSeconds,
     });
 
-    // Query historical candles from aladdin database
-    const queryParams = {
-      symbol,
-      startDate: startDateSeconds,
-      endDate: endDateSeconds,
-    };
+    const query = `
+      SELECT 
+        toUnixTimestamp(timestamp) * 1000 as ts,
+        AVG(close) as close
+      FROM aladdin.candles 
+      WHERE symbol = '${symbol}'
+        AND timeframe = '1h'
+        AND timestamp >= toDateTime(${startDateSeconds})
+        AND timestamp <= toDateTime(${endDateSeconds})
+      GROUP BY timestamp
+      ORDER BY timestamp ASC
+    `;
 
-    this.logger.info("Query parameters", queryParams);
+    this.logger.info("Executing query", { query: query.trim() });
 
-    const query = `SELECT toUnixTimestamp(timestamp) * 1000 as timestamp, close FROM aladdin.candles WHERE symbol = '${symbol}' AND timeframe = '1h' AND toUnixTimestamp(timestamp) >= ${startDateSeconds} AND toUnixTimestamp(timestamp) <= ${endDateSeconds} ORDER BY timestamp ASC FORMAT JSONEachRow`;
-
-    // Use direct HTTP instead of @clickhouse/client due to database connection issues
-    // Hardcoded credentials because env doesn't reload with hot reload
-    const username = "default";
-    const password =
-      "j6tiT8DWCzoG7V4PiGxHptP6clqT20jlcerSFTIUdod2be4yz3WM4y0nwS1hUM1T";
-    const host = "49.13.216.63:8123";
-    const fullUrl = `http://${host}/`;
-
-    this.logger.info("Sending ClickHouse HTTP request", {
-      url: fullUrl,
-      username,
-      queryLength: query.length,
-    });
-
-    // Use fetch with X-ClickHouse headers
-    const headers = {
-      "X-ClickHouse-User": username,
-      "X-ClickHouse-Key": password,
-    };
-
-    this.logger.info("Sending request with headers", {
-      headers: Object.keys(headers),
-      hasUser: !!headers["X-ClickHouse-User"],
-      hasKey: !!headers["X-ClickHouse-Key"],
-      userLength: headers["X-ClickHouse-User"]?.length,
-      keyLength: headers["X-ClickHouse-Key"]?.length,
-    });
-
-    const response = await fetch(fullUrl, {
-      method: "POST",
-      headers,
-      body: query,
-    });
-
-    this.logger.info("ClickHouse HTTP response received", {
-      status: response.status,
-      statusText: response.statusText,
-      contentType: response.headers.get("content-type"),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      this.logger.error("ClickHouse HTTP query failed", new Error(error));
-      throw new Error(`ClickHouse query failed: ${error}`);
-    }
-
-    const text = await response.text();
-
-    this.logger.info("ClickHouse HTTP response body", {
-      textLength: text.length,
-      firstChars: text.substring(0, 200),
-    });
-
-    const result = text
-      .trim()
-      .split("\n")
-      .filter((line) => line.trim())
-      .map((line) => JSON.parse(line)) as Array<{
-      timestamp: number;
+    const rawResult = await this.clickhouse.query<{
+      ts: number;
       close: number;
-    }>;
+    }>(query);
+
+    this.logger.info("Raw result from ClickHouse", {
+      rowCount: rawResult.length,
+      sample: rawResult.slice(0, 2),
+    });
+
+    // Map ts to timestamp for consistency
+    const result = rawResult.map((row) => ({
+      timestamp: Number(row.ts),
+      close: Number(row.close),
+    }));
+
+    const firstItem = result.at(0);
+    const lastItem = result.at(-1);
 
     this.logger.info("Historical data fetched", {
       symbol,
       rowCount: result.length,
+      firstItem: firstItem
+        ? { ts: firstItem.timestamp, close: firstItem.close }
+        : null,
+      lastItem: lastItem
+        ? { ts: lastItem.timestamp, close: lastItem.close }
+        : null,
+      firstTimestamp: firstItem?.timestamp
+        ? new Date(firstItem.timestamp).toISOString()
+        : null,
+      lastTimestamp: lastItem?.timestamp
+        ? new Date(lastItem.timestamp).toISOString()
+        : null,
     });
 
     return result;

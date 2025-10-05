@@ -1,4 +1,4 @@
-import type { WhaleAlert } from "@aladdin/shared/types";
+import type { WhaleAlert } from "@aladdin/core";
 import { Bell, BellOff, Check, ExternalLink, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {

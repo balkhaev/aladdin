@@ -1,4 +1,4 @@
-import { getLogger } from "@aladdin/shared/logger";
+import { getLogger } from "@aladdin/logger";
 import Redis from "ioredis";
 
 const logger = getLogger("telega-subscriptions");

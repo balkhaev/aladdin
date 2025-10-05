@@ -13,7 +13,7 @@
  * - Empirical market microstructure research
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type MarketImpactParams = {
   symbol: string;

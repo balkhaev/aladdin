@@ -1,4 +1,4 @@
-import type { AggTrade, Candle, Timeframe } from "@aladdin/shared/types";
+import type { AggTrade, Candle, Timeframe } from "@aladdin/core";
 import { useCallback, useEffect, useState } from "react";
 import { useCandleBuilder } from "./use-candle-builder";
 import { useWebSocket } from "./use-websocket";

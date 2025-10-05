@@ -1,4 +1,4 @@
-import type { AggTrade } from "@aladdin/shared/types";
+import type { AggTrade } from "@aladdin/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { RecentTrade } from "../lib/api/market-data";

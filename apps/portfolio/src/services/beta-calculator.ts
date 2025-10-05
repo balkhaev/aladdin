@@ -11,8 +11,8 @@
  * For crypto, we use BTC as market proxy (like S&P 500 in traditional finance).
  */
 
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 
 export type BetaResult = {
   /** Beta coefficient */

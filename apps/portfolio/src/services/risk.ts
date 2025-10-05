@@ -1,6 +1,6 @@
-import { BaseService } from "@aladdin/shared/base-service";
-import { NotFoundError } from "@aladdin/shared/errors";
-import type { RiskLimit, RiskMetrics } from "@aladdin/shared/types";
+import { BaseService } from "@aladdin/service";
+import { NotFoundError } from "@aladdin/http/errors";
+import type { RiskLimit, RiskMetrics } from "@aladdin/core";
 import {
   BetaCalculator,
   type BetaResult,

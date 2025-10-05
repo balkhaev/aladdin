@@ -2,8 +2,8 @@
  * Order Book Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
-import { getOrderBookQuerySchema } from "@aladdin/shared/schemas/market-data";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { getOrderBookQuerySchema } from "@aladdin/validation/schemas/market-data";
 import type { Hono } from "hono";
 import { LIMITS } from "../config";
 import type { MarketDataServiceWrapper } from "../services/market-data-wrapper";

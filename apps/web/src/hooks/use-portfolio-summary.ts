@@ -3,8 +3,7 @@ import {
   getPortfolioSummary,
   type PortfolioSummary,
 } from "@/lib/api/analytics";
-
-const REFETCH_INTERVAL = 300_000; // 5 minutes
+import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
 
 type UsePortfolioSummaryOptions = {
   from?: Date;

@@ -3,7 +3,7 @@
  * Минимальный bootstrap файл
  */
 
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { initializeService } from "@aladdin/service/bootstrap";
 import type { ServerWebSocket } from "bun";
 import { config } from "./config";
 import { setupAllPortfolioRoutes } from "./routes";

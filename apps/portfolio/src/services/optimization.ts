@@ -10,7 +10,7 @@
  * Based on Modern Portfolio Theory (MPT) by Harry Markowitz (Nobel Prize 1990)
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type OptimizationConstraints = {
   /** Minimum weight per asset (e.g., 0.0 = no shorts) */

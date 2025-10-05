@@ -5,6 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api/client";
+import { API_CONFIG } from "@/lib/config";
 import { REFETCH_INTERVALS, STALE_TIME } from "@/lib/query-config";
 import { portfolioKeys } from "@/lib/query-keys";
 
@@ -146,7 +147,7 @@ export function usePortfolioSummary(
         searchParams.append("window", params.window);
       }
 
-      const url = `${API_BASE_URL}/api/analytics/portfolio/${portfolioId}/summary${
+      const url = `${API_CONFIG.BASE_URL}/api/analytics/portfolio/${portfolioId}/summary${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`;
 

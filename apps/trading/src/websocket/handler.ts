@@ -1,6 +1,6 @@
-import type { Logger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
-import type { Order } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
+import type { Order } from "@aladdin/core";
 import type { ServerWebSocket } from "bun";
 
 type WebSocketData = {

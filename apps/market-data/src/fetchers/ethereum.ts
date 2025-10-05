@@ -1,9 +1,9 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type {
   ExchangeFlowDetail,
   OnChainMetrics,
   WhaleTransaction,
-} from "@aladdin/shared/types";
+} from "@aladdin/core";
 import {
   getExchangeAddresses,
   isExchangeAddress,

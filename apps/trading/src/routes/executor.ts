@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@aladdin/database";
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
 import type { Hono } from "hono";
 import type { StrategyExecutor } from "../services/executor";
 

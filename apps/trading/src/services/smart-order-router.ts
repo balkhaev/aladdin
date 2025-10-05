@@ -14,7 +14,7 @@
  * - Best execution principles (MiFID II, RegNMS)
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type Exchange = "binance" | "bybit" | "okx" | "kraken";
 

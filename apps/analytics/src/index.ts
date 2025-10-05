@@ -3,7 +3,7 @@
  * Минимальный bootstrap файл
  */
 
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { initializeService } from "@aladdin/service/bootstrap";
 import { config } from "./config";
 import { setupAnalyticsRoutes } from "./routes";
 import { AnalyticsService } from "./services/analytics";

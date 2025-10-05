@@ -2,7 +2,7 @@
  * Price Update Routes
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
 import type { Hono } from "hono";
 import type { PortfolioService } from "../services/portfolio";
 

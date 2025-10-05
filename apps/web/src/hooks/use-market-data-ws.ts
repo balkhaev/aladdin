@@ -1,4 +1,4 @@
-import type { Tick } from "@aladdin/shared/types";
+import type { Tick } from "@aladdin/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWebSocket } from "./use-websocket";
 

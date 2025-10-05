@@ -1,10 +1,10 @@
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import { NotFoundError } from "@aladdin/shared/errors";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import { NotFoundError } from "@aladdin/http/errors";
 import {
   validateParams,
   validateQuery,
-} from "@aladdin/shared/middleware/validation";
-import type { OnChainMetrics } from "@aladdin/shared/types";
+} from "@aladdin/validation/middleware";
+import type { OnChainMetrics } from "@aladdin/core";
 import type { Context, Hono } from "hono";
 import {
   blockchainParamSchema,

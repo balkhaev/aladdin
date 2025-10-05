@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getLogger } from "@aladdin/shared/logger";
+import { getLogger } from "@aladdin/logger";
 import dotenv from "dotenv";
 import puppeteer, { type Browser, type Page, type Protocol } from "puppeteer";
 import { isLoggedUrl } from "./utils.js";

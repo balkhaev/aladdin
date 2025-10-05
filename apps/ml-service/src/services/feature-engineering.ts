@@ -1,5 +1,5 @@
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 import type { FeatureSet, PriceFeatures, TechnicalFeatures } from "../types";
 import { SentimentIntegrationService } from "./sentiment-integration";
 

@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { createLogger, Logger } from "@aladdin/shared/logger";
-import { initNatsClient } from "@aladdin/shared/nats";
+import { createLogger, Logger } from "@aladdin/logger";
+import { initNatsClient } from "@aladdin/messaging";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
@@ -135,6 +135,7 @@ app.get("/", (c) =>
       onChain: "/api/on-chain/*",
       screener: "/api/screener/*",
       macroData: "/api/macro/*",
+      ml: "/api/ml/*",
       websocket: "ws://localhost:3000/ws",
     },
   })
@@ -244,6 +245,15 @@ app.use(
       process.env.SCRAPER_URL ||
       "http://localhost:3018",
     serviceName: "scraper",
+  })
+);
+
+// ML Service
+app.use(
+  "/api/ml/*",
+  proxyToService({
+    targetUrl: process.env.ML_SERVICE_URL || "http://localhost:3019",
+    serviceName: "ml-service",
   })
 );
 

@@ -9,8 +9,8 @@
  * original index.ts remains in use for WebSocket support.
  */
 
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { initializeService } from "@aladdin/service/bootstrap";
 import type { ServerWebSocket } from "bun";
 import { BinanceConnector } from "./connectors/binance";
 import { BybitConnector } from "./connectors/bybit";

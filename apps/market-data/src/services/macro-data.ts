@@ -1,7 +1,7 @@
 import {
   BaseService,
   type BaseServiceConfig,
-} from "@aladdin/shared/base-service";
+} from "@aladdin/service";
 import { CoinGeckoProvider } from "../providers/coingecko";
 import { FearGreedProvider } from "../providers/feargreed";
 

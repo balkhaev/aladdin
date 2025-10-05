@@ -1,4 +1,4 @@
-import { BaseService } from "@aladdin/shared/base-service";
+import { BaseService } from "@aladdin/service";
 import {
   closeRedis,
   getActiveSubscriptions,

@@ -5,13 +5,13 @@
 import {
   validateBody,
   validateQuery,
-} from "@aladdin/shared/middleware/validation";
+} from "@aladdin/validation/middleware";
 import {
   type BacktestStrategy,
   backtestStrategySchema,
   type GetReportsQuery,
   getReportsQuerySchema,
-} from "@aladdin/shared/schemas/analytics";
+} from "@aladdin/validation/schemas/analytics";
 import type { Hono } from "hono";
 import { HTTP_STATUS } from "../config";
 import type { AnalyticsService } from "../services/analytics";

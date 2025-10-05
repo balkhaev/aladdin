@@ -1,4 +1,4 @@
-import { createLogger } from "@aladdin/shared/logger";
+import { createLogger } from "@aladdin/logger";
 import type { Context } from "hono";
 
 const logger = createLogger({ service: "gateway-proxy" });

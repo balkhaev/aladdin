@@ -2,7 +2,7 @@
  * Cache Management Routes
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
+import type { CacheService } from "@aladdin/cache";
 import type { Hono } from "hono";
 
 export function setupCacheRoutes(app: Hono, cache?: CacheService): void {

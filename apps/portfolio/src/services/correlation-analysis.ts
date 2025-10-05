@@ -9,8 +9,8 @@
  * - Risk concentration analysis
  */
 
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 
 /**
  * Correlation Matrix Result

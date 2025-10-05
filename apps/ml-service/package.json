@@ -9,8 +9,12 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@aladdin/clickhouse": "workspace:*",
+    "@aladdin/core": "workspace:*",
     "@aladdin/database": "workspace:*",
-    "@aladdin/shared": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/service": "workspace:*",
     "dotenv": "^17.2.3",
     "hono": "^4.7.11",
     "zod": "^3.23.8"

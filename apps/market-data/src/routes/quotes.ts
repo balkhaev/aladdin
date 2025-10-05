@@ -2,12 +2,12 @@
  * Quotes and Prices Routes
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import type { CacheService } from "@aladdin/cache";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
 import {
   getAggregatedQuerySchema,
   getArbitrageQuerySchema,
-} from "@aladdin/shared/schemas/market-data";
+} from "@aladdin/validation/schemas/market-data";
 import type { Hono } from "hono";
 import { CACHE_TTL, LIMITS } from "../config";
 import type { MarketDataServiceWrapper } from "../services/market-data-wrapper";

@@ -1,4 +1,4 @@
-import { BaseService } from "@aladdin/shared/base-service";
+import { BaseService } from "@aladdin/service";
 import { RedditService } from "./reddit/service";
 import { SentimentAnalyzer } from "./sentiment/analyzer";
 

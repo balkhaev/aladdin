@@ -1,9 +1,9 @@
 import {
   BaseService,
   type BaseServiceConfig,
-} from "@aladdin/shared/base-service";
-import { getEnv, getEnvNumber } from "@aladdin/shared/config";
-import type { AggTrade, Candle, Tick, Timeframe } from "@aladdin/shared/types";
+} from "@aladdin/service";
+import { getEnv, getEnvNumber } from "@aladdin/core/config";
+import type { AggTrade, Candle, Tick, Timeframe } from "@aladdin/core";
 import type { ExchangeConnector } from "../connectors/types";
 import { CandleBuilderService } from "./candle-builder";
 import { MarketDataService } from "./market-data";

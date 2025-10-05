@@ -1,5 +1,5 @@
-import type { Logger } from "@aladdin/shared/logger";
-import type { Candle } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { Candle } from "@aladdin/core";
 import type { SymbolInfo } from "../types";
 
 const MILLISECONDS_TO_SECONDS = 1000;

@@ -5,9 +5,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useDialog } from "@/hooks/use-dialog";
 
 const MAX_SYMBOL_LENGTH = 20;
 
@@ -55,7 +55,7 @@ type AddPositionDialogProps = {
 };
 
 export function AddPositionDialog({ portfolioId }: AddPositionDialogProps) {
-  const [open, setOpen] = useState(false);
+  const { dialogProps, closeDialog } = useDialog();
   const createPosition = useCreatePosition();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -76,7 +76,7 @@ export function AddPositionDialog({ portfolioId }: AddPositionDialogProps) {
       },
       {
         onSuccess: () => {
-          setOpen(false);
+          closeDialog();
           form.reset();
         },
       }
@@ -84,7 +84,7 @@ export function AddPositionDialog({ portfolioId }: AddPositionDialogProps) {
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog {...dialogProps}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />

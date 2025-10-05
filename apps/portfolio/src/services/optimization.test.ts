@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import { PortfolioOptimizer } from "./optimization";
 
 const TEST_RETURN_1 = 0.15;

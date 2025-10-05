@@ -1,6 +1,6 @@
-import { BaseService } from "@aladdin/shared/base-service";
-import { NotFoundError } from "@aladdin/shared/errors";
-import type { Candle } from "@aladdin/shared/types";
+import { BaseService } from "@aladdin/service";
+import { NotFoundError } from "@aladdin/http/errors";
+import type { Candle } from "@aladdin/core";
 
 /**
  * Format date to ClickHouse DateTime format (YYYY-MM-DD HH:MM:SS)

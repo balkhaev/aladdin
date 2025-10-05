@@ -8,7 +8,7 @@ import {
   loadConfig,
   type MarketDataConfig,
   ServiceConstants,
-} from "@aladdin/shared/config";
+} from "@aladdin/core/config";
 
 /**
  * Загрузить и валидировать конфигурацию market-data service

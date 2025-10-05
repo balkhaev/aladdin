@@ -3,7 +3,7 @@ import type {
   ExchangeFlowDetail,
   OnChainMetrics,
   WhaleTransaction,
-} from "@aladdin/shared/types";
+} from "@aladdin/core";
 
 /**
  * Interface for blockchain data fetchers

@@ -1,5 +1,5 @@
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
-import type { Logger } from "@aladdin/shared/logger";
+import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { Logger } from "@aladdin/logger";
 
 // Constants
 const OI_CHANGE_THRESHOLD = 10; // 10% change is significant

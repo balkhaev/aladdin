@@ -1,4 +1,4 @@
-import { createLogger } from "@aladdin/shared/logger";
+import { createLogger } from "@aladdin/logger";
 import { createMiddleware } from "hono/factory";
 import { auth } from "../lib/auth";
 
@@ -23,6 +23,8 @@ const PUBLIC_PATHS = [
   "/api/analytics", // Временно для тестирования
   "/api/exchange-credentials", // Временно для тестирования
   "/api/social", // Social integrations доступны публично
+  "/api/ml", // ML Service endpoints (predictions, backtesting, etc.)
+  "/api/screener", // Screener service
   "/health",
   "/health/services",
 ];

@@ -1,4 +1,4 @@
-import type { Order } from "@aladdin/shared/types";
+import type { Order } from "@aladdin/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { logger } from "@/lib/logger";

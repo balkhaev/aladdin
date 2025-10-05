@@ -2,11 +2,11 @@
  * Candles and Historical Data Routes
  */
 
-import { createSuccessResponse } from "@aladdin/shared/http";
+import { createSuccessResponse } from "@aladdin/http/responses";
 import {
   getCandlesQuerySchema,
   getTradesQuerySchema,
-} from "@aladdin/shared/schemas/market-data";
+} from "@aladdin/validation/schemas/market-data";
 import type { Hono } from "hono";
 import { LIMITS } from "../config";
 import type { MarketDataServiceWrapper } from "../services/market-data-wrapper";

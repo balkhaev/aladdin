@@ -1,4 +1,4 @@
-import type { OnChainMetrics, WhaleTransaction } from "@aladdin/shared/types";
+import type { OnChainMetrics, WhaleTransaction } from "@aladdin/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {

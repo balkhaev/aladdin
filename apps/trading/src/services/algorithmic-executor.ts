@@ -12,7 +12,7 @@
  * - Bertsimas & Lo (1998) - Optimal Control of Execution Costs
  */
 
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 
 export type ExecutionStrategy = "VWAP" | "TWAP" | "ICEBERG";
 

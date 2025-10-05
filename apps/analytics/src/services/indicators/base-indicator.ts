@@ -3,7 +3,7 @@
  * All indicator calculators should extend this class
  */
 
-import type { Candle } from "@aladdin/shared/types";
+import type { Candle } from "@aladdin/core";
 
 /**
  * Base indicator parameters

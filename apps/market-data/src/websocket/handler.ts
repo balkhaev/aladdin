@@ -1,5 +1,5 @@
-import type { Logger } from "@aladdin/shared/logger";
-import type { AggTrade, Tick } from "@aladdin/shared/types";
+import type { Logger } from "@aladdin/logger";
+import type { AggTrade, Tick } from "@aladdin/core";
 import type { ServerWebSocket } from "bun";
 import type { MarketDataService } from "../services/market-data";
 

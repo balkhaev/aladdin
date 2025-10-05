@@ -1,5 +1,5 @@
-import { createSuccessResponse } from "@aladdin/shared/http";
-import { initializeService } from "@aladdin/shared/service-bootstrap";
+import { createSuccessResponse } from "@aladdin/http/responses";
+import { initializeService } from "@aladdin/service/bootstrap";
 import { setupMLRoutes } from "./routes";
 import { MLService } from "./services/ml-service";
 import "dotenv/config";

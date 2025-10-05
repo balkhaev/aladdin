@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@aladdin/database";
-import { encrypt } from "@aladdin/shared/crypto";
-import type { Logger } from "@aladdin/shared/logger";
+import { encrypt } from "@aladdin/auth/crypto";
+import type { Logger } from "@aladdin/logger";
 import { Hono } from "hono";
 import { createAuditLog, getAuditLogs } from "../utils/audit";
 

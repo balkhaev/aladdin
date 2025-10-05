@@ -1,4 +1,4 @@
-import type { Logger } from "@aladdin/shared/logger";
+import type { Logger } from "@aladdin/logger";
 import type { BlockchainFetcher, RateLimitConfig, RetryConfig } from "./types";
 
 const DEFAULT_MAX_RETRIES = 3;

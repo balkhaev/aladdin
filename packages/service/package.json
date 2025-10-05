@@ -1,0 +1,30 @@
+{
+  "name": "@aladdin/service",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./base-service": "./src/base-service.ts",
+    "./bootstrap": "./src/bootstrap.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/clickhouse": "workspace:*",
+    "@aladdin/core": "workspace:*",
+    "@aladdin/database": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/messaging": "workspace:*",
+    "@aladdin/resilience": "workspace:*",
+    "@aladdin/telemetry": "workspace:*",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.8.2"
+  }
+}

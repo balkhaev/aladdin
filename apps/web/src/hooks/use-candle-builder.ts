@@ -1,4 +1,4 @@
-import type { AggTrade, Candle, Timeframe } from "@aladdin/shared/types";
+import type { AggTrade, Candle, Timeframe } from "@aladdin/core";
 import { useCallback, useRef } from "react";
 
 const MILLISECONDS_IN_SECOND = 1000;

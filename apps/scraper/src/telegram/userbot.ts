@@ -1,5 +1,5 @@
-import { getLogger } from "@aladdin/shared/logger";
-import type { NatsClient } from "@aladdin/shared/nats";
+import { getLogger } from "@aladdin/logger";
+import type { NatsClient } from "@aladdin/messaging";
 import dotenv from "dotenv";
 import { Api } from "telegram";
 import type { NewMessageEvent } from "telegram/events";

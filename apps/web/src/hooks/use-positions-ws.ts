@@ -1,4 +1,4 @@
-import type { Position } from "@aladdin/shared/types";
+import type { Position } from "@aladdin/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { logger } from "@/lib/logger";

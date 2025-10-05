@@ -1,12 +1,7 @@
-import { BaseService } from "@aladdin/shared/base-service";
-import { decrypt } from "@aladdin/shared/crypto";
-import { NotFoundError } from "@aladdin/shared/errors";
-import type {
-  Order,
-  OrderSide,
-  OrderStatus,
-  OrderType,
-} from "@aladdin/shared/types";
+import { decrypt } from "@aladdin/auth/crypto";
+import type { Order, OrderSide, OrderStatus, OrderType } from "@aladdin/core";
+import { NotFoundError } from "@aladdin/http/errors";
+import { BaseService } from "@aladdin/service";
 import { BinanceConnector } from "../connectors/binance";
 import { BybitConnector } from "../connectors/bybit";
 import type { ExchangeConnector } from "../connectors/types";
@@ -209,6 +204,58 @@ export class TradingService extends BaseService {
       default:
         throw new Error(`Unsupported exchange: ${exchange}`);
     }
+  }
+
+  /**
+   * Get positions for user
+   */
+  async getPositions(
+    userId: string,
+    portfolioId?: string,
+    symbol?: string
+  ): Promise<
+    Array<{
+      symbol: string;
+      side: "Buy" | "Sell";
+      size: number;
+      entryPrice: number;
+      markPrice: number;
+      unrealisedPnl: number;
+      leverage: number;
+    }>
+  > {
+    if (!this.prisma) {
+      throw new Error("Prisma client not initialized");
+    }
+
+    // Get exchange credentials for user
+    const credentials = await this.prisma.exchangeCredentials.findFirst({
+      where: {
+        userId,
+        isActive: true,
+      },
+    });
+
+    if (!credentials) {
+      throw new NotFoundError(
+        "Exchange credentials not found. Please connect your exchange account in the settings."
+      );
+    }
+
+    const connector = await this.getExchangeConnector(
+      userId,
+      credentials.exchange
+    );
+    const positions = await connector.getPositions(symbol);
+
+    this.logger.info(`Retrieved ${positions.length} positions`, {
+      userId,
+      portfolioId,
+      symbol,
+      exchange: credentials.exchange,
+    });
+
+    return positions;
   }
 
   /**

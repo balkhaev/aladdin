@@ -12,8 +12,16 @@
     "format": "biome format --write ."
   },
   "dependencies": {
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/clickhouse": "workspace:*",
+    "@aladdin/core": "workspace:*",
     "@aladdin/database": "workspace:*",
-    "@aladdin/shared": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/messaging": "workspace:*",
+    "@aladdin/service": "workspace:*",
+    "@aladdin/validation": "workspace:*",
+    "@aladdin/websocket": "workspace:*",
     "bullmq": "^5.29.3",
     "dotenv": "^16.4.7",
     "hono": "^4.7.12",

@@ -2,8 +2,8 @@
  * Sentiment Analysis Routes
  */
 
-import type { CacheService } from "@aladdin/shared/cache";
-import { InternalServerError, ValidationError } from "@aladdin/shared/errors";
+import type { CacheService } from "@aladdin/cache";
+import { InternalServerError, ValidationError } from "@aladdin/http/errors";
 import type { Hono } from "hono";
 import { CACHE_TTL, SERVICES } from "../config";
 import type { CombinedSentimentService } from "../services/sentiment/combined-sentiment";

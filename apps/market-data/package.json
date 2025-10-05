@@ -10,7 +10,16 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@aladdin/shared": "workspace:*",
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/clickhouse": "workspace:*",
+    "@aladdin/core": "workspace:*",
+    "@aladdin/database": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/messaging": "workspace:*",
+    "@aladdin/service": "workspace:*",
+    "@aladdin/validation": "workspace:*",
+    "@aladdin/websocket": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "dotenv": "^17.2.3",
     "hono": "^4.7.8",

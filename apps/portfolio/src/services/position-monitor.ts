@@ -1,6 +1,6 @@
-import { NotFoundError } from "@aladdin/shared/errors";
-import type { Logger } from "@aladdin/shared/logger";
-import type { NATSClient } from "@aladdin/shared/nats";
+import { NotFoundError } from "@aladdin/http/errors";
+import type { Logger } from "@aladdin/logger";
+import type { NATSClient } from "@aladdin/messaging";
 import type { PrismaClient } from "@prisma/client";
 
 type MonitoringConfig = {

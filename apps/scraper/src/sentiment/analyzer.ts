@@ -19,6 +19,7 @@ export type SentimentInput = {
   text: string;
   weight?: number; // For weighted averaging
   source?: string; // twitter, reddit, telegram
+  engagement?: number; // likes, retweets, upvotes
 };
 
 /**
@@ -30,7 +31,6 @@ const TOKENIZE_REGEX_REPLACE = /[^\p{L}\p{N}\s]/gu;
 const TOKENIZE_REGEX_SPLIT = /\s+/;
 
 export class SentimentAnalyzer {
-
   // Bullish keywords with weights
   private readonly BULLISH_KEYWORDS = new Map<string, number>([
     // Strong bullish (2.0)
@@ -161,6 +161,7 @@ export class SentimentAnalyzer {
   /**
    * Analyze sentiment of a single text
    */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Sentiment analysis requires complex logic
   analyzeSingle(text: string): SentimentScore {
     const tokens = this.tokenize(text);
     let totalScore = 0;
@@ -297,4 +298,3 @@ export class SentimentAnalyzer {
       .filter((t) => t.length > 0);
   }
 }
-

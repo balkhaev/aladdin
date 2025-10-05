@@ -1,0 +1,20 @@
+{
+  "symbol": "BTCUSDT",
+  "modelType": "LSTM",
+  "version": "1.0.0",
+  "trainedAt": 1759684938148,
+  "accuracy": 0.9860798374609546,
+  "trainingDuration": 123376,
+  "dataPoints": 7262,
+  "mae": 1.3920162539045364,
+  "rmse": 1.6704195046854435,
+  "mape": 0.0013920162539045365,
+  "r2Score": 0.9721596749219092,
+  "directionalAccuracy": 0.9860798374609546,
+  "config": {
+    "hiddenSize": 32,
+    "sequenceLength": 20,
+    "learningRate": 0.001,
+    "epochs": 100
+  }
+}

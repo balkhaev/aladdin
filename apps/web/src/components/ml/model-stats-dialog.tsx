@@ -80,13 +80,16 @@ export function ModelStatsDialog({
               <div>
                 <p className="text-slate-400 text-sm">Training Duration</p>
                 <p className="mt-1 text-sm">
-                  {(stats.trainingDuration / 1000).toFixed(1)}s
+                  {stats.trainingDuration
+                    ? (stats.trainingDuration / 1000).toFixed(1)
+                    : "0"}
+                  s
                 </p>
               </div>
               <div className="col-span-2">
                 <p className="text-slate-400 text-sm">Data Points</p>
                 <p className="mt-1 font-mono text-sm">
-                  {stats.dataPoints.toLocaleString()}
+                  {stats.dataPoints?.toLocaleString() ?? "N/A"}
                 </p>
               </div>
             </div>
@@ -96,44 +99,50 @@ export function ModelStatsDialog({
               <h3 className="font-semibold text-lg">Performance Metrics</h3>
 
               {/* Accuracy */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm">Model Accuracy</span>
-                  <span className="font-mono text-sm">
-                    {(stats.accuracy * PERCENTAGE_MULTIPLIER).toFixed(2)}%
-                  </span>
+              {stats.accuracy !== undefined && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm">Model Accuracy</span>
+                    <span className="font-mono text-sm">
+                      {(stats.accuracy * PERCENTAGE_MULTIPLIER).toFixed(2)}%
+                    </span>
+                  </div>
+                  <Progress value={stats.accuracy * PERCENTAGE_MULTIPLIER} />
                 </div>
-                <Progress value={stats.accuracy * PERCENTAGE_MULTIPLIER} />
-              </div>
+              )}
 
               {/* Directional Accuracy */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm">Directional Accuracy</span>
-                  <span className="font-mono text-sm">
-                    {(
-                      stats.directionalAccuracy * PERCENTAGE_MULTIPLIER
-                    ).toFixed(2)}
-                    %
-                  </span>
+              {stats.directionalAccuracy !== undefined && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm">Directional Accuracy</span>
+                    <span className="font-mono text-sm">
+                      {(
+                        stats.directionalAccuracy * PERCENTAGE_MULTIPLIER
+                      ).toFixed(2)}
+                      %
+                    </span>
+                  </div>
+                  <Progress
+                    value={stats.directionalAccuracy * PERCENTAGE_MULTIPLIER}
+                  />
                 </div>
-                <Progress
-                  value={stats.directionalAccuracy * PERCENTAGE_MULTIPLIER}
-                />
-              </div>
+              )}
 
               {/* R² Score */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm">R² Score</span>
-                  <span className="font-mono text-sm">
-                    {stats.r2Score.toFixed(4)}
-                  </span>
+              {stats.r2Score !== undefined && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm">R² Score</span>
+                    <span className="font-mono text-sm">
+                      {stats.r2Score.toFixed(4)}
+                    </span>
+                  </div>
+                  <Progress
+                    value={Math.max(0, stats.r2Score * PERCENTAGE_MULTIPLIER)}
+                  />
                 </div>
-                <Progress
-                  value={Math.max(0, stats.r2Score * PERCENTAGE_MULTIPLIER)}
-                />
-              </div>
+              )}
             </div>
 
             {/* Error Metrics */}
@@ -141,32 +150,38 @@ export function ModelStatsDialog({
               <h3 className="font-semibold text-lg">Error Metrics</h3>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                  <p className="text-slate-400 text-xs">
-                    MAE (Mean Absolute Error)
-                  </p>
-                  <p className="mt-1 font-mono text-lg">
-                    {stats.mae.toFixed(2)}
-                  </p>
-                </div>
+                {stats.mae !== undefined && (
+                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                    <p className="text-slate-400 text-xs">
+                      MAE (Mean Absolute Error)
+                    </p>
+                    <p className="mt-1 font-mono text-lg">
+                      {stats.mae.toFixed(2)}
+                    </p>
+                  </div>
+                )}
 
-                <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                  <p className="text-slate-400 text-xs">
-                    RMSE (Root Mean Squared Error)
-                  </p>
-                  <p className="mt-1 font-mono text-lg">
-                    {stats.rmse.toFixed(2)}
-                  </p>
-                </div>
+                {stats.rmse !== undefined && (
+                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                    <p className="text-slate-400 text-xs">
+                      RMSE (Root Mean Squared Error)
+                    </p>
+                    <p className="mt-1 font-mono text-lg">
+                      {stats.rmse.toFixed(2)}
+                    </p>
+                  </div>
+                )}
 
-                <div className="col-span-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                  <p className="text-slate-400 text-xs">
-                    MAPE (Mean Absolute Percentage Error)
-                  </p>
-                  <p className="mt-1 font-mono text-lg">
-                    {(stats.mape * PERCENTAGE_MULTIPLIER).toFixed(2)}%
-                  </p>
-                </div>
+                {stats.mape !== undefined && (
+                  <div className="col-span-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                    <p className="text-slate-400 text-xs">
+                      MAPE (Mean Absolute Percentage Error)
+                    </p>
+                    <p className="mt-1 font-mono text-lg">
+                      {(stats.mape * PERCENTAGE_MULTIPLIER).toFixed(2)}%
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

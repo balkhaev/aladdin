@@ -344,15 +344,53 @@ curl http://localhost:3018/api/social/reddit/health
 
 ---
 
+## 🤖 AI-Powered Sentiment Analysis
+
+### OpenAI GPT-5 Integration
+
+Сервис теперь поддерживает гибридный sentiment analysis с использованием OpenAI GPT:
+
+#### Режимы работы:
+
+- **Keyword-only**: Быстрый, бесплатный (default без API key)
+- **Hybrid**: Keyword + GPT для важных текстов (рекомендуется)
+- **AI-only**: Только GPT для максимальной точности
+
+#### Конфигурация:
+
+```bash
+OPENAI_API_KEY=sk-proj-your-key
+OPENAI_SENTIMENT_ENABLED=true
+SENTIMENT_MODE=hybrid
+AI_HIGH_ENGAGEMENT_THRESHOLD=50
+AI_LOW_CONFIDENCE_THRESHOLD=0.3
+```
+
+#### Новые endpoints:
+
+```bash
+# Статистика AI
+GET /api/social/ai/stats
+
+# Управление кэшем
+POST /api/social/ai/cache/clear
+POST /api/social/ai/cache/cleanup
+```
+
+**Подробнее**: См. [OPENAI_INTEGRATION.md](../../docs/OPENAI_INTEGRATION.md)
+
+---
+
 ## 🔮 Roadmap
 
+- [x] Advanced NLP models (GPT для sentiment) ✅
 - [ ] Real-time streaming для Twitter/Reddit
 - [ ] Telegram bot для автоматических алертов
 - [ ] Discord integration
 - [ ] YouTube sentiment analysis (комментарии)
-- [ ] Advanced NLP models (BERT/GPT для sentiment)
 - [ ] Multi-language support
 - [ ] Crypto influencer tracking
+- [ ] Fine-tuned GPT model на крипто-данных
 
 ---
 

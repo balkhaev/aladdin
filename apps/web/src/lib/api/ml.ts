@@ -108,6 +108,7 @@ export async function predictPrice(params: {
   const response = await fetch(`${API_BASE_URL}/api/ml/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(params),
   });
 
@@ -131,6 +132,7 @@ export async function predictPriceLSTM(params: {
   const response = await fetch(`${API_BASE_URL}/api/ml/predict/lstm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(params),
   });
 
@@ -158,6 +160,7 @@ export async function runBacktest(config: {
   const response = await fetch(`${API_BASE_URL}/api/ml/backtest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(config),
   });
 
@@ -184,6 +187,7 @@ export async function compareModels(config: {
   const response = await fetch(`${API_BASE_URL}/api/ml/backtest/compare`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(config),
   });
 
@@ -228,6 +232,7 @@ export async function getMarketRegime(params: {
   const response = await fetch(`${API_BASE_URL}/api/ml/regime`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(params),
   });
 
@@ -311,6 +316,7 @@ export async function runOptimization(config: {
   const response = await fetch(`${API_BASE_URL}/api/ml/optimize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(config),
   });
 
@@ -330,7 +336,8 @@ export async function getHPORecommendations(
   modelType: ModelType
 ): Promise<OptimizationRecommendations> {
   const response = await fetch(
-    `${API_BASE_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`
+    `${API_BASE_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`,
+    { credentials: "include" }
   );
 
   if (!response.ok) {
@@ -372,7 +379,9 @@ export async function listModels(): Promise<{
   models: SavedModel[];
   count: number;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/models`);
+  const response = await fetch(`${API_BASE_URL}/api/ml/models`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to list models: ${response.statusText}`);
@@ -386,10 +395,50 @@ export async function listModels(): Promise<{
  * Get model statistics
  */
 export async function getModelStats(symbol: string): Promise<ModelStats> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/models/${symbol}/stats`);
+  const response = await fetch(
+    `${API_BASE_URL}/api/ml/models/${symbol}/stats`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to get model stats: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+/**
+ * Save model manually after backtest
+ */
+export async function saveModel(params: {
+  symbol: string;
+  modelType: ModelType;
+  config: Record<string, number>;
+  metrics: {
+    mae: number;
+    rmse: number;
+    mape: number;
+    r2Score: number;
+    directionalAccuracy: number;
+  };
+}): Promise<{
+  message: string;
+  symbol: string;
+  modelType: string;
+  accuracy: number;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/ml/models/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save model: ${response.statusText}`);
   }
 
   const data = await response.json();
@@ -402,6 +451,7 @@ export async function getModelStats(symbol: string): Promise<ModelStats> {
 export async function deleteModel(symbol: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/ml/models/${symbol}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -420,6 +470,7 @@ export async function cleanupModels(
   const response = await fetch(`${API_BASE_URL}/api/ml/models/cleanup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(body),
   });
 

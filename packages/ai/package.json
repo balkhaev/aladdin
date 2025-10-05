@@ -1,0 +1,23 @@
+{
+  "name": "@aladdin/ai",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "openai": "^4.77.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.23",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.8.2"
+  }
+}

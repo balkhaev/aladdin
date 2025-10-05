@@ -19,6 +19,7 @@ import { Wifi, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCandlesWS } from "../hooks/use-candles-ws";
 import { useCandles } from "../hooks/use-market-data";
+import { usePrediction } from "../hooks/use-ml-prediction";
 import {
   calculateBollingerBands,
   calculateEMA,
@@ -32,6 +33,7 @@ type TradingChartProps = {
   interval: "1m" | "5m" | "15m" | "1h" | "1d";
   height?: number;
   selectedIndicators: Indicator[];
+  showMLPrediction?: boolean;
 };
 
 const CHART_HEIGHT_DEFAULT = 500;
@@ -56,6 +58,7 @@ export function TradingChart({
   interval,
   height = CHART_HEIGHT_DEFAULT,
   selectedIndicators,
+  showMLPrediction = false,
 }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -64,6 +67,7 @@ export function TradingChart({
   const indicatorSeriesRef = useRef<
     Map<string, ReturnType<IChartApi["addSeries"]>>
   >(new Map());
+  const mlPredictionSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
 
@@ -84,6 +88,9 @@ export function TradingChart({
     interval,
     isReadyForWebSocket // Подключаем WebSocket только когда график готов И данные загружены
   );
+
+  // ML Prediction
+  const { data: mlPrediction } = usePrediction(symbol, "1h", showMLPrediction);
 
   // Initialize chart
   useEffect(() => {
@@ -441,6 +448,64 @@ export function TradingChart({
       }
     }
   }, [selectedIndicators, isChartReady, candles]);
+
+  // Add/remove ML prediction line
+  useEffect(() => {
+    if (!chartRef.current) return;
+    if (!isChartReady) return;
+    if (!candles) return;
+    if (candles.length === 0) return;
+
+    const chart = chartRef.current;
+
+    // Remove existing ML prediction series
+    if (mlPredictionSeriesRef.current) {
+      chart.removeSeries(mlPredictionSeriesRef.current);
+      mlPredictionSeriesRef.current = null;
+    }
+
+    // Add ML prediction if enabled and available
+    if (showMLPrediction && mlPrediction?.predictions?.[0]) {
+      const prediction = mlPrediction.predictions[0];
+      const lastCandle = candles.at(-1);
+      const currentPrice = lastCandle?.close || 0;
+
+      // Determine color based on direction
+      const isPositive = prediction.predictedPrice > currentPrice;
+      const color = isPositive ? "#22c55e" : "#ef4444";
+
+      // Create price line marker at the predicted price level
+      const mlSeries = chart.addSeries(LineSeries, {
+        color,
+        lineWidth: 2,
+        lineStyle: 2, // Dashed line
+        title: `ML: $${prediction.predictedPrice.toFixed(2)}`,
+        priceLineVisible: true,
+        lastValueVisible: true,
+      });
+
+      // Create horizontal line at prediction level
+      // Use last candle time + 1 hour for future prediction
+      const lastCandleTimestamp = candles.at(-1)?.timestamp;
+      if (!lastCandleTimestamp) return;
+
+      const lastCandleTime = convertTimestamp(lastCandleTimestamp);
+      const futureTime = (lastCandleTime + 3600) as UTCTimestamp; // +1 hour
+
+      mlSeries.setData([
+        {
+          time: lastCandleTime as UTCTimestamp,
+          value: currentPrice,
+        },
+        {
+          time: futureTime,
+          value: prediction.predictedPrice,
+        },
+      ]);
+
+      mlPredictionSeriesRef.current = mlSeries;
+    }
+  }, [showMLPrediction, mlPrediction, isChartReady, candles, convertTimestamp]);
 
   return (
     <div className="relative">

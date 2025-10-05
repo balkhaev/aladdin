@@ -26,6 +26,7 @@ import { OpenInterestCard } from "../components/futures/open-interest-card";
 import { FuturesPositionsTable } from "../components/futures-positions-table";
 import type { Indicator } from "../components/indicator-controls";
 import { IndicatorControls } from "../components/indicator-controls";
+import { MLPredictionCard } from "../components/ml-prediction-card";
 import { OrderBook } from "../components/order-book";
 import { OrderForm } from "../components/order-form";
 import { OrdersTable } from "../components/orders-table";
@@ -34,6 +35,7 @@ import { SymbolCombobox } from "../components/symbol-combobox";
 import { TradingChart } from "../components/trading-chart";
 import { Button } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { Switch } from "../components/ui/switch";
 import {
   Tabs,
   TabsContent,
@@ -88,6 +90,7 @@ function TradingPage() {
   );
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState<Indicator[]>([]);
+  const [showMLPrediction, setShowMLPrediction] = useState(false);
 
   // Get selected exchange from context, default to bybit
   const selectedExchange = selectedCredential?.exchange || "bybit";
@@ -184,6 +187,13 @@ function TradingPage() {
                   <TrendingUp className="h-3.5 w-3.5" />
                   <span className="hidden xl:inline">OI</span>
                 </TabsTrigger>
+                <TabsTrigger
+                  className="flex items-center gap-1.5 text-xs"
+                  value="ml"
+                >
+                  <Brain className="h-3.5 w-3.5" />
+                  <span className="hidden xl:inline">ML</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -207,17 +217,38 @@ function TradingPage() {
               <TabsContent forceMount value="oi">
                 <OpenInterestCard symbol={selectedSymbol} />
               </TabsContent>
+
+              <TabsContent forceMount value="ml">
+                <MLPredictionCard symbol={selectedSymbol} />
+              </TabsContent>
             </ScrollArea>
           </Tabs>
         </div>
 
         {/* Center: Chart Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
+          {/* ML Toggle */}
+          <div className="mb-2 flex items-center justify-end gap-2 px-2">
+            <label
+              className="flex cursor-pointer items-center gap-2 text-sm"
+              htmlFor="ml-toggle"
+            >
+              <Brain className="h-4 w-4 text-purple-500" />
+              <span className="text-muted-foreground">Show ML on Chart</span>
+              <Switch
+                checked={showMLPrediction}
+                id="ml-toggle"
+                onCheckedChange={setShowMLPrediction}
+              />
+            </label>
+          </div>
+
           <div className="h-full flex-1 rounded-lg border border-border/50 bg-card/30 p-1.5 shadow-sm backdrop-blur-sm">
             <TradingChart
               height={600}
               interval={interval}
               selectedIndicators={selectedIndicators}
+              showMLPrediction={showMLPrediction}
               symbol={selectedSymbol}
             />
           </div>

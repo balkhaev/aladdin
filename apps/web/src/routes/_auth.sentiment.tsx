@@ -6,6 +6,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, BookOpen, Layers } from "lucide-react";
 import { useState } from "react";
+import { AIAnalyzedFeed } from "@/components/ai-analyzed-feed";
 import { SocialSentimentCard } from "@/components/social-sentiment-card";
 import { SocialSentimentCompact } from "@/components/social-sentiment-compact";
 import { SymbolCombobox } from "@/components/symbol-combobox";
@@ -84,6 +85,7 @@ function SentimentPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="detail">Detailed Analysis</TabsTrigger>
+          <TabsTrigger value="ai-feed">AI Feed</TabsTrigger>
         </TabsList>
 
         <TabsContent className="space-y-6" value="overview">
@@ -171,6 +173,11 @@ function SentimentPage() {
 
           {/* Detailed Sentiment Card */}
           <SocialSentimentCard symbol={selectedSymbol} />
+        </TabsContent>
+
+        <TabsContent className="space-y-6" value="ai-feed">
+          {/* AI Analyzed Content Feed */}
+          <AIAnalyzedFeed />
         </TabsContent>
       </Tabs>
     </div>

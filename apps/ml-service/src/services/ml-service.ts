@@ -43,12 +43,13 @@ export class MLService extends BaseService {
       this.regimeService,
       this.logger
     );
+    this.persistenceService = new ModelPersistenceService(this.logger);
     this.lstmService = new LSTMPredictionService(
       this.clickhouse,
       this.featureService,
-      this.logger
+      this.logger,
+      this.persistenceService
     );
-    this.persistenceService = new ModelPersistenceService(this.logger);
     this.backtestingService = new BacktestingService(
       this.clickhouse,
       this.logger,

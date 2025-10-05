@@ -115,9 +115,19 @@ export function ModelListCard() {
                         {model.version}
                       </TableCell>
                       <TableCell className="text-slate-400 text-sm">
-                        {formatDistanceToNow(model.lastTrained, {
-                          addSuffix: true,
-                        })}
+                        {(() => {
+                          try {
+                            const date = new Date(model.lastTrained);
+                            if (Number.isNaN(date.getTime())) {
+                              return "Unknown";
+                            }
+                            return formatDistanceToNow(date, {
+                              addSuffix: true,
+                            });
+                          } catch {
+                            return "Unknown";
+                          }
+                        })()}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {formatSize(model.size)}

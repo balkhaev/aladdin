@@ -14,6 +14,12 @@ export type ModelMetadata = {
   trainingDuration: number;
   dataPoints: number;
   config: Record<string, unknown>;
+  // Performance metrics
+  mae?: number;
+  rmse?: number;
+  mape?: number;
+  r2Score?: number;
+  directionalAccuracy?: number;
 };
 
 /**
@@ -109,18 +115,42 @@ export class ModelPersistenceService {
   /**
    * List all saved models
    */
-  async listModels(): Promise<ModelMetadata[]> {
+  async listModels(): Promise<
+    Array<ModelMetadata & { size: number; lastTrained: number }>
+  > {
     try {
       const files = await fs.readdir(MODELS_DIR);
       const metadataFiles = files.filter((f) => f.endsWith(".meta.json"));
 
-      const models: ModelMetadata[] = [];
+      const models: Array<
+        ModelMetadata & { size: number; lastTrained: number }
+      > = [];
 
       for (const file of metadataFiles) {
         const metadataPath = join(MODELS_DIR, file);
         const metadataJSON = await fs.readFile(metadataPath, "utf-8");
         const metadata = JSON.parse(metadataJSON) as ModelMetadata;
-        models.push(metadata);
+
+        // Get model file size
+        const modelFileName = file.replace(".meta.json", "");
+        const modelPath = join(MODELS_DIR, modelFileName);
+        let size = 0;
+
+        try {
+          const stats = await fs.stat(modelPath);
+          size = stats.size;
+        } catch {
+          // Model file might not exist
+          this.logger.warn("Model file not found for metadata", {
+            file: modelFileName,
+          });
+        }
+
+        models.push({
+          ...metadata,
+          size,
+          lastTrained: metadata.trainedAt, // Add lastTrained for frontend compatibility
+        });
       }
 
       return models.sort((a, b) => b.trainedAt - a.trainedAt);

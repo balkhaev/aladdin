@@ -88,13 +88,28 @@ await initializeService<SocialIntegrationsService>({
           try {
             return await service.analyzeSocialSentiment(symbol);
           } catch (error) {
-            service.logger.error("Failed to analyze sentiment", { symbol, error });
+            service.logger.error("Failed to analyze sentiment", {
+              symbol,
+              error,
+            });
             return {
               symbol,
               overall: 0,
               telegram: { score: 0, bullish: 0, bearish: 0, signals: 0 },
-              twitter: { score: 0, positive: 0, negative: 0, neutral: 0, tweets: 0 },
-              reddit: { score: 0, positive: 0, negative: 0, neutral: 0, posts: 0 },
+              twitter: {
+                score: 0,
+                positive: 0,
+                negative: 0,
+                neutral: 0,
+                tweets: 0,
+              },
+              reddit: {
+                score: 0,
+                positive: 0,
+                negative: 0,
+                neutral: 0,
+                posts: 0,
+              },
               confidence: 0,
               timestamp: new Date().toISOString(),
             };
@@ -193,6 +208,89 @@ await initializeService<SocialIntegrationsService>({
             success: false,
             error: {
               code: "MONITOR_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+          },
+          500
+        );
+      }
+    });
+
+    /**
+     * GET /api/social/ai/stats - Get AI sentiment analysis statistics
+     */
+    app.get("/api/social/ai/stats", (c) => {
+      const stats = service.getAIStats();
+      return c.json(createSuccessResponse(stats));
+    });
+
+    /**
+     * POST /api/social/ai/cache/clear - Clear AI cache
+     */
+    app.post("/api/social/ai/cache/clear", (c) => {
+      service.clearAICache();
+      return c.json(
+        createSuccessResponse({
+          message: "AI cache cleared",
+          timestamp: new Date().toISOString(),
+        })
+      );
+    });
+
+    /**
+     * POST /api/social/ai/cache/cleanup - Cleanup expired AI cache entries
+     */
+    app.post("/api/social/ai/cache/cleanup", (c) => {
+      const removed = service.cleanupAICache();
+      return c.json(
+        createSuccessResponse({
+          removed,
+          message: `Removed ${removed} expired entries`,
+          timestamp: new Date().toISOString(),
+        })
+      );
+    });
+
+    /**
+     * GET /api/social/feed - Get AI analyzed content feed
+     */
+    app.get("/api/social/feed", async (c) => {
+      const limit = Number(c.req.query("limit") || 50);
+      const offset = Number(c.req.query("offset") || 0);
+      const contentType = c.req.query("contentType");
+      const symbol = c.req.query("symbol");
+      const minSentiment = c.req.query("minSentiment")
+        ? Number(c.req.query("minSentiment"))
+        : undefined;
+      const maxSentiment = c.req.query("maxSentiment")
+        ? Number(c.req.query("maxSentiment"))
+        : undefined;
+
+      try {
+        const feed = await service.getAnalyzedFeed({
+          limit,
+          offset,
+          contentType,
+          symbol,
+          minSentiment,
+          maxSentiment,
+        });
+
+        return c.json(
+          createSuccessResponse({
+            items: feed,
+            count: feed.length,
+            limit,
+            offset,
+          })
+        );
+      } catch (error) {
+        service.logger.error("Failed to get analyzed feed", { error });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "FEED_ERROR",
               message: error instanceof Error ? error.message : "Unknown error",
             },
           },

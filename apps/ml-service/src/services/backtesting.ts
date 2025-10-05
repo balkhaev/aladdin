@@ -112,8 +112,8 @@ export class BacktestingService {
 
       // Run predictions and compare with actuals
       const predictions = config.walkForward
-        ? this.walkForwardBacktest(config, historicalData)
-        : this.simpleBacktest(config, historicalData);
+        ? await this.walkForwardBacktest(config, historicalData)
+        : await this.simpleBacktest(config, historicalData);
 
       // Calculate metrics
       const metrics = this.calculateMetrics(predictions);
@@ -166,10 +166,10 @@ export class BacktestingService {
   /**
    * Simple backtest (single model, no retraining)
    */
-  private simpleBacktest(
+  private async simpleBacktest(
     config: BacktestConfig,
     historicalData: Array<{ timestamp: number; close: number }>
-  ): BacktestResult["predictions"] {
+  ): Promise<BacktestResult["predictions"]> {
     const predictions: BacktestResult["predictions"] = [];
     const horizonHours = HORIZON_TO_HOURS[config.horizon];
 
@@ -186,7 +186,7 @@ export class BacktestingService {
 
       try {
         // Make prediction (using features up to current time)
-        const predictionResult = this.makePrediction(
+        const predictionResult = await this.makePrediction(
           config,
           currentTime,
           historicalData.slice(0, i + 1)
@@ -230,10 +230,10 @@ export class BacktestingService {
   /**
    * Walk-forward backtest (retrain model periodically)
    */
-  private walkForwardBacktest(
+  private async walkForwardBacktest(
     config: BacktestConfig,
     historicalData: Array<{ timestamp: number; close: number }>
-  ): BacktestResult["predictions"] {
+  ): Promise<BacktestResult["predictions"]> {
     const predictions: BacktestResult["predictions"] = [];
     const horizonHours = HORIZON_TO_HOURS[config.horizon];
     const retrainIntervalMs = (config.retrainInterval || 30) * 86_400_000;
@@ -263,7 +263,7 @@ export class BacktestingService {
 
       try {
         // Make prediction
-        const predictionResult = this.makePrediction(
+        const predictionResult = await this.makePrediction(
           config,
           currentTime,
           historicalData.slice(0, i + 1)
@@ -363,7 +363,7 @@ export class BacktestingService {
         // Train model (without await - synchronous)
         model.train(trainingData, epochs);
 
-        // Cache model
+        // Cache model (NOT saved to disk - manual save required)
         this.modelCache.set(cacheKey, model);
       }
 

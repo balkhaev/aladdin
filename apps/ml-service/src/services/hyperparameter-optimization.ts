@@ -140,6 +140,27 @@ export class HyperparameterOptimizationService {
         executionTime: totalExecutionTime,
       });
 
+      // Retrain final model with best hyperparameters to ensure it's saved
+      this.logger.info("Retraining final model with best hyperparameters", {
+        symbol: config.symbol,
+        bestHyperparameters: bestTrial.hyperparameters,
+      });
+
+      await this.backtestingService.runBacktest({
+        symbol: config.symbol,
+        modelType: config.modelType,
+        horizon: config.horizon,
+        startDate: config.startDate,
+        endDate: config.endDate,
+        walkForward: true,
+        retrainInterval: bestTrial.hyperparameters.retrainInterval,
+        ...bestTrial.hyperparameters,
+      });
+
+      this.logger.info("Final optimized model saved to disk", {
+        symbol: config.symbol,
+      });
+
       return {
         config,
         trials,

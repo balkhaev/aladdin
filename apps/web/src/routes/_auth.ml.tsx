@@ -4,8 +4,9 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Calendar, Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Calendar, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { HPOConfigForm } from "../components/ml/hpo-config-form";
 import { HPOOptimizationResults } from "../components/ml/hpo-optimization-results";
 import { MLBacktestResults } from "../components/ml/ml-backtest-results";
@@ -37,6 +38,7 @@ import {
 } from "../components/ui/tabs";
 import { useRunOptimization } from "../hooks/use-hpo";
 import { useCompareModels, useRunBacktest } from "../hooks/use-ml-backtest";
+import { useSaveModel } from "../hooks/use-save-model";
 import type { ModelType, PredictionHorizon } from "../lib/api/ml";
 
 export const Route = createFileRoute("/_auth/ml")({
@@ -58,6 +60,7 @@ function MachineLearningPage() {
   const runBacktestMutation = useRunBacktest();
   const compareModelsMutation = useCompareModels();
   const runOptimizationMutation = useRunOptimization();
+  const saveModelMutation = useSaveModel();
 
   // Handle run backtest
   const handleRunBacktest = () => {
@@ -92,15 +95,151 @@ function MachineLearningPage() {
     });
   };
 
+  // Show success notification when model is saved
+  useEffect(() => {
+    if (saveModelMutation.isSuccess) {
+      toast.success("Model Saved Successfully", {
+        description: "Model has been saved and is ready for production use",
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+      });
+    }
+  }, [saveModelMutation.isSuccess]);
+
+  // Show success notification when comparison completes
+  useEffect(() => {
+    if (compareModelsMutation.isSuccess) {
+      toast.success("Models Trained Successfully", {
+        description: "Both LSTM and Hybrid models have been saved",
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+      });
+    }
+  }, [compareModelsMutation.isSuccess]);
+
+  // Show success notification when HPO completes
+  useEffect(() => {
+    if (runOptimizationMutation.isSuccess) {
+      toast.success("Model Optimized Successfully", {
+        description: `Optimized model for ${symbol} has been saved with best hyperparameters`,
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+      });
+    }
+  }, [runOptimizationMutation.isSuccess, symbol]);
+
   return (
     <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
       <div>
         <h1 className="font-bold text-3xl">Machine Learning</h1>
         <p className="mt-1 text-slate-400">
-          Backtest ML models and compare performance
+          Train, test, and deploy ML models for price prediction
         </p>
       </div>
+
+      {/* Status Stepper */}
+      <Card className="border-purple-500/20 bg-purple-500/5">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            {/* Step 1: Train with HPO */}
+            <div className="flex flex-1 flex-col items-center">
+              <div
+                className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold ${
+                  runOptimizationMutation.isSuccess
+                    ? "border-green-500 bg-green-500/20 text-green-500"
+                    : "border-purple-500 bg-purple-500/20 text-purple-500"
+                }`}
+              >
+                {runOptimizationMutation.isSuccess ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  "1"
+                )}
+              </div>
+              <span className="text-center font-medium text-sm">Train</span>
+              <span className="text-center text-muted-foreground text-xs">
+                HPO (auto-save)
+              </span>
+            </div>
+
+            <div className="h-0.5 w-full flex-1 bg-border" />
+
+            {/* Step 2: Evaluate & Save */}
+            <div className="flex flex-1 flex-col items-center">
+              <div
+                className={(() => {
+                  if (saveModelMutation.isSuccess) {
+                    return "mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-green-500 bg-green-500/20 font-semibold text-green-500";
+                  }
+                  if (runBacktestMutation.isSuccess) {
+                    return "mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-yellow-500 bg-yellow-500/20 font-semibold text-yellow-500";
+                  }
+                  return "mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-border bg-muted font-semibold text-muted-foreground";
+                })()}
+              >
+                {saveModelMutation.isSuccess ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  "2"
+                )}
+              </div>
+              <span className="text-center font-medium text-sm">Evaluate</span>
+              <span className="text-center text-muted-foreground text-xs">
+                Test & Save
+              </span>
+            </div>
+
+            <div className="h-0.5 w-full flex-1 bg-border" />
+
+            {/* Step 3: Production Ready */}
+            <div className="flex flex-1 flex-col items-center">
+              <div
+                className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold ${
+                  saveModelMutation.isSuccess ||
+                  runOptimizationMutation.isSuccess
+                    ? "border-green-500 bg-green-500/20 text-green-500"
+                    : "border-border bg-muted text-muted-foreground"
+                }`}
+              >
+                {saveModelMutation.isSuccess ||
+                runOptimizationMutation.isSuccess ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  "3"
+                )}
+              </div>
+              <span className="text-center font-medium text-sm">
+                Production
+              </span>
+              <span className="text-center text-muted-foreground text-xs">
+                Use on /trading
+              </span>
+            </div>
+          </div>
+
+          {(saveModelMutation.isSuccess ||
+            runOptimizationMutation.isSuccess) && (
+            <div className="mt-4 rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-center">
+              <p className="font-medium text-green-500 text-sm">
+                <CheckCircle2 className="mr-1 inline h-4 w-4" />
+                Model saved and ready for production
+              </p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                Enable ML predictions on the /trading page
+              </p>
+            </div>
+          )}
+
+          {runBacktestMutation.isSuccess && !saveModelMutation.isSuccess && (
+            <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-center">
+              <p className="font-medium text-sm text-yellow-500">
+                Backtest complete - Click "Save Model" to deploy
+              </p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                Review results in the Evaluate tab
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Configuration */}
       <Card>
@@ -258,15 +397,15 @@ function MachineLearningPage() {
       </Card>
 
       {/* Results */}
-      <Tabs className="w-full" defaultValue="backtest">
+      <Tabs className="w-full" defaultValue="train">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="backtest">Backtest Results</TabsTrigger>
-          <TabsTrigger value="comparison">Model Comparison</TabsTrigger>
-          <TabsTrigger value="optimization">HPO</TabsTrigger>
+          <TabsTrigger value="train">Train (HPO)</TabsTrigger>
+          <TabsTrigger value="evaluate">Evaluate</TabsTrigger>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
           <TabsTrigger value="models">Models</TabsTrigger>
         </TabsList>
 
-        <TabsContent className="space-y-6" value="backtest">
+        <TabsContent className="space-y-6" value="evaluate">
           {runBacktestMutation.isPending && (
             <Card>
               <CardContent className="py-12">
@@ -293,7 +432,46 @@ function MachineLearningPage() {
           )}
 
           {runBacktestMutation.isSuccess && runBacktestMutation.data && (
-            <MLBacktestResults result={runBacktestMutation.data} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Symbol: {runBacktestMutation.data.config.symbol}
+                </span>
+                <Button
+                  disabled={saveModelMutation.isPending}
+                  onClick={() => {
+                    const result = runBacktestMutation.data;
+                    if (!result) return;
+
+                    saveModelMutation.mutate({
+                      symbol: result.config.symbol,
+                      modelType: result.config.modelType,
+                      config: {
+                        hiddenSize: result.config.hiddenSize || 32,
+                        sequenceLength: result.config.sequenceLength || 20,
+                        learningRate: result.config.learningRate || 0.001,
+                        epochs: result.config.epochs || 100,
+                      },
+                      metrics: result.metrics,
+                    });
+                  }}
+                  variant="default"
+                >
+                  {saveModelMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Save Model
+                    </>
+                  )}
+                </Button>
+              </div>
+              <MLBacktestResults result={runBacktestMutation.data} />
+            </div>
           )}
 
           {!(
@@ -311,7 +489,7 @@ function MachineLearningPage() {
           )}
         </TabsContent>
 
-        <TabsContent className="space-y-6" value="comparison">
+        <TabsContent className="space-y-6" value="compare">
           {compareModelsMutation.isPending && (
             <Card>
               <CardContent className="py-12">
@@ -372,7 +550,7 @@ function MachineLearningPage() {
           )}
         </TabsContent>
 
-        <TabsContent className="space-y-6" value="optimization">
+        <TabsContent className="space-y-6" value="train">
           {!runOptimizationMutation.isSuccess && (
             <HPOConfigForm
               isLoading={runOptimizationMutation.isPending}

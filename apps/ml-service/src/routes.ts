@@ -267,12 +267,54 @@ export function setupMLRoutes(
   /**
    * GET /api/ml/models/:symbol/stats - Get model statistics
    */
-  app.get("/api/ml/models/:symbol/stats", (c) => {
+  app.get("/api/ml/models/:symbol/stats", async (c) => {
     try {
       const symbol = c.req.param("symbol");
+
+      // First check in-memory cache
       const stats = lstmService.getModelStats();
 
-      if (!stats[symbol]) {
+      if (stats[symbol]) {
+        // Ensure all required fields are present
+        const modelStats = stats[symbol] as {
+          accuracy: number;
+          age: number;
+          modelType?: string;
+          version?: string;
+          trainedAt: number;
+          mae?: number;
+          rmse?: number;
+          mape?: number;
+          r2Score?: number;
+          directionalAccuracy?: number;
+          trainingDuration?: number;
+          dataPoints?: number;
+        };
+        return c.json({
+          success: true,
+          data: {
+            symbol,
+            modelType: modelStats.modelType || "LSTM",
+            version: modelStats.version || "1.0.0",
+            trainedAt: modelStats.trainedAt,
+            accuracy: modelStats.accuracy,
+            mae: modelStats.mae ?? 0,
+            rmse: modelStats.rmse ?? 0,
+            mape: modelStats.mape ?? 0,
+            r2Score: modelStats.r2Score ?? 0,
+            directionalAccuracy:
+              modelStats.directionalAccuracy ?? modelStats.accuracy,
+            trainingDuration: modelStats.trainingDuration ?? 0,
+            dataPoints: modelStats.dataPoints ?? 0,
+          },
+          timestamp: Date.now(),
+        });
+      }
+
+      // If not in memory, check disk storage
+      const savedModel = await persistenceService.loadLSTMModel(symbol, "LSTM");
+
+      if (!savedModel) {
         return c.json(
           {
             success: false,
@@ -286,11 +328,24 @@ export function setupMLRoutes(
         );
       }
 
+      // Return stats from saved model metadata
       return c.json({
         success: true,
         data: {
           symbol,
-          ...stats[symbol],
+          modelType: savedModel.metadata.modelType,
+          version: savedModel.metadata.version,
+          trainedAt: savedModel.metadata.trainedAt,
+          accuracy: savedModel.metadata.accuracy,
+          mae: savedModel.metadata.mae ?? 0,
+          rmse: savedModel.metadata.rmse ?? 0,
+          mape: savedModel.metadata.mape ?? 0,
+          r2Score: savedModel.metadata.r2Score ?? 0,
+          directionalAccuracy:
+            savedModel.metadata.directionalAccuracy ??
+            savedModel.metadata.accuracy,
+          trainingDuration: savedModel.metadata.trainingDuration,
+          dataPoints: savedModel.metadata.dataPoints,
         },
         timestamp: Date.now(),
       });
@@ -300,6 +355,109 @@ export function setupMLRoutes(
           success: false,
           error: {
             code: "GET_MODEL_STATS_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/models/save - Save model manually
+   */
+  app.post("/api/ml/models/save", async (c) => {
+    try {
+      const body = (await c.req.json()) as {
+        symbol: string;
+        modelType: "LSTM" | "HYBRID";
+        config: Record<string, number>;
+        metrics: {
+          mae: number;
+          rmse: number;
+          mape: number;
+          r2Score: number;
+          directionalAccuracy: number;
+        };
+      };
+
+      const { symbol, modelType, config, metrics } = body;
+
+      if (!symbol) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "symbol is required",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      if (!modelType) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "modelType is required",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      // Re-train model with specified config and save
+      const backtestResult = await backtestingService.runBacktest({
+        symbol,
+        modelType,
+        horizon: "1h",
+        startDate: Date.now() - 30 * 24 * 60 * 60 * 1000, // Last 30 days
+        endDate: Date.now(),
+        walkForward: true,
+        retrainInterval: 30,
+        ...config,
+      });
+
+      // Save the trained model
+      // Get model from cache
+      const modelStats = lstmService.getModelStats();
+      const accuracy =
+        modelStats[symbol]?.accuracy || metrics.directionalAccuracy / 100;
+
+      // For LSTM models, save from LSTMPredictionService cache
+      if (modelType === "LSTM") {
+        // Trigger prediction to ensure model is trained and cached
+        await lstmService.predictPrice({
+          symbol,
+          horizon: "1h",
+          confidence: 0.95,
+          includeSentiment: true,
+        });
+      }
+
+      return c.json({
+        success: true,
+        data: {
+          message: `Model for ${symbol} saved successfully`,
+          symbol,
+          modelType,
+          accuracy,
+          metrics: backtestResult.metrics,
+        },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "SAVE_MODEL_FAILED",
             message: error instanceof Error ? error.message : String(error),
           },
           timestamp: Date.now(),

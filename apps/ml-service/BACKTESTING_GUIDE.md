@@ -349,9 +349,11 @@ for (const horizon of ["1h", "4h", "1d", "7d"]) {
     horizon,
     startDate: 1696118400000,
     endDate: 1727740800000,
-  });
+  })
 
-  console.log(`${horizon}: MAE=${result.metrics.mae}, Accuracy=${result.metrics.directionalAccuracy}%`);
+  console.log(
+    `${horizon}: MAE=${result.metrics.mae}, Accuracy=${result.metrics.directionalAccuracy}%`
+  )
 }
 ```
 
@@ -402,8 +404,8 @@ for (const horizon of ["1h", "4h", "1d", "7d"]) {
 
 ```json
 {
-  "mae": 45.20,
-  "rmse": 320.50,
+  "mae": 45.2,
+  "rmse": 320.5,
   "mape": 3.1,
   "r2Score": 0.45,
   "directionalAccuracy": 51.2
@@ -421,7 +423,7 @@ for (const horizon of ["1h", "4h", "1d", "7d"]) {
   "mape": 3.5,
   "r2Score": 0.82,
   "directionalAccuracy": 62.1,
-  "meanError": 85.20
+  "meanError": 85.2
 }
 ```
 
@@ -496,4 +498,3 @@ After backtesting:
 
 **Status:** Production Ready ✅
 **Last Updated:** 5 октября 2025
-

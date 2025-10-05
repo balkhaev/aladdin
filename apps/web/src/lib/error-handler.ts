@@ -16,13 +16,18 @@ type ErrorHandlerOptions = {
  * API Error with structured information
  */
 export class ApiError extends Error {
+  statusCode?: number;
+  details?: Record<string, unknown>;
+
   constructor(
     message: string,
-    public statusCode?: number,
-    public details?: Record<string, unknown>
+    statusCode?: number,
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "ApiError";
+    this.statusCode = statusCode;
+    this.details = details;
   }
 }
 
@@ -30,13 +35,18 @@ export class ApiError extends Error {
  * WebSocket Error with structured information
  */
 export class WebSocketError extends Error {
+  code?: string;
+  details?: Record<string, unknown>;
+
   constructor(
     message: string,
-    public code?: string,
-    public details?: Record<string, unknown>
+    code?: string,
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "WebSocketError";
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -158,4 +168,3 @@ export async function retryWithBackoff<T>(
 
   throw lastError;
 }
-

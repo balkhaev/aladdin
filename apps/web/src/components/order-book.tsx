@@ -1,3 +1,5 @@
+import { memo, useMemo } from "react";
+import { formatPrice, formatVolume } from "@/lib/format";
 import { useOrderBook } from "../hooks/use-order-book";
 import { useOrderBookWS } from "../hooks/use-order-book-ws";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -10,8 +12,12 @@ type OrderBookProps = {
 
 const PERCENTAGE_MULTIPLIER = 100;
 const SPREAD_DECIMAL_PLACES = 3;
+const DEFAULT_LEVELS = 15;
 
-export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
+export const OrderBook = memo(function OrderBookComponent({
+  symbol,
+  levels = DEFAULT_LEVELS,
+}: OrderBookProps) {
   // Fallback to REST API with polling
   const { data: restOrderBook, isLoading } = useOrderBook(symbol, levels);
 
@@ -20,6 +26,54 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
 
   // Use WebSocket data if available, otherwise fallback to REST
   const orderBook = wsOrderBook || restOrderBook;
+
+  // Memoize totals calculation
+  const { maxBidTotal, maxAskTotal, bidTotals, askTotals } = useMemo(() => {
+    if (!orderBook) {
+      return {
+        maxBidTotal: 0,
+        maxAskTotal: 0,
+        bidTotals: [],
+        askTotals: [],
+      };
+    }
+
+    // Calculate cumulative totals for bids
+    const bids = orderBook.bids.map((_, idx) =>
+      orderBook.bids.slice(0, idx + 1).reduce((sum, [, q]) => sum + q, 0)
+    );
+
+    // Calculate cumulative totals for asks
+    const asks = orderBook.asks.map((_, idx) =>
+      orderBook.asks.slice(0, idx + 1).reduce((sum, [, q]) => sum + q, 0)
+    );
+
+    return {
+      maxBidTotal: Math.max(...bids, 0),
+      maxAskTotal: Math.max(...asks, 0),
+      bidTotals: bids,
+      askTotals: asks,
+    };
+  }, [orderBook]);
+
+  // Memoize spread calculation
+  const spread = useMemo(() => {
+    if (!orderBook?.bids[0]) {
+      return null;
+    }
+    if (!orderBook?.asks[0]) {
+      return null;
+    }
+
+    const spreadValue = orderBook.asks[0][0] - orderBook.bids[0][0];
+    const spreadPercent =
+      (spreadValue / orderBook.bids[0][0]) * PERCENTAGE_MULTIPLIER;
+
+    return {
+      value: spreadValue,
+      percent: spreadPercent,
+    };
+  }, [orderBook]);
 
   if (isLoading || !orderBook) {
     return (
@@ -33,39 +87,6 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
       </Card>
     );
   }
-
-  const formatPrice = (price: number) =>
-    price.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
-    });
-
-  const formatQty = (qty: number) =>
-    qty.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
-    });
-
-  // Calculate totals for visualization
-  const maxBidTotal = orderBook.bids.reduce((max, _entry, idx) => {
-    const total = orderBook.bids
-      .slice(0, idx + 1)
-      .reduce((sum, [, q]) => sum + q, 0);
-    return Math.max(max, total);
-  }, 0);
-
-  const maxAskTotal = orderBook.asks.reduce((max, _entry, idx) => {
-    const total = orderBook.asks
-      .slice(0, idx + 1)
-      .reduce((sum, [, q]) => sum + q, 0);
-    return Math.max(max, total);
-  }, 0);
-
-  const getBidTotal = (index: number) =>
-    orderBook.bids.slice(0, index + 1).reduce((sum, [, qty]) => sum + qty, 0);
-
-  const getAskTotal = (index: number) =>
-    orderBook.asks.slice(0, index + 1).reduce((sum, [, qty]) => sum + qty, 0);
 
   return (
     <Card className="flex h-full flex-col py-0">
@@ -87,7 +108,7 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
             .reverse()
             .map(([price, qty], idx) => {
               const reversedIdx = levels - 1 - idx;
-              const total = getAskTotal(reversedIdx);
+              const total = askTotals[reversedIdx] || 0;
               const percentage = (total / maxAskTotal) * PERCENTAGE_MULTIPLIER;
 
               return (
@@ -103,11 +124,13 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
 
                   {/* Content */}
                   <div className="relative text-left text-red-500">
-                    {formatPrice(price)}
+                    {formatPrice(price, 8)}
                   </div>
-                  <div className="relative text-right">{formatQty(qty)}</div>
+                  <div className="relative text-right">
+                    {formatVolume(qty, 8)}
+                  </div>
                   <div className="relative text-right text-[10px] text-muted-foreground">
-                    {formatQty(total)}
+                    {formatVolume(total, 8)}
                   </div>
                 </div>
               );
@@ -115,22 +138,16 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
         </div>
 
         {/* Spread */}
-        {orderBook.bids[0] && orderBook.asks[0] && (
+        {spread && (
           <div className="border-y bg-muted/30 px-3 py-2">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">Spread</span>
               <div className="flex items-center gap-2 font-mono">
                 <span className="font-semibold text-foreground">
-                  {formatPrice(orderBook.asks[0][0] - orderBook.bids[0][0])}
+                  {formatPrice(spread.value, 8)}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  (
-                  {(
-                    ((orderBook.asks[0][0] - orderBook.bids[0][0]) /
-                      orderBook.bids[0][0]) *
-                    PERCENTAGE_MULTIPLIER
-                  ).toFixed(SPREAD_DECIMAL_PLACES)}
-                  %)
+                  ({spread.percent.toFixed(SPREAD_DECIMAL_PLACES)}%)
                 </span>
               </div>
             </div>
@@ -143,7 +160,7 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
           style={{ maxHeight: "calc(50% - 32px)" }}
         >
           {orderBook.bids.slice(0, levels).map(([price, qty], idx) => {
-            const total = getBidTotal(idx);
+            const total = bidTotals[idx] || 0;
             const percentage = (total / maxBidTotal) * PERCENTAGE_MULTIPLIER;
 
             return (
@@ -159,11 +176,13 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
 
                 {/* Content */}
                 <div className="relative text-left text-green-500">
-                  {formatPrice(price)}
+                  {formatPrice(price, 8)}
                 </div>
-                <div className="relative text-right">{formatQty(qty)}</div>
+                <div className="relative text-right">
+                  {formatVolume(qty, 8)}
+                </div>
                 <div className="relative text-right text-[10px] text-muted-foreground">
-                  {formatQty(total)}
+                  {formatVolume(total, 8)}
                 </div>
               </div>
             );
@@ -172,4 +191,4 @@ export function OrderBook({ symbol, levels = 15 }: OrderBookProps) {
       </CardContent>
     </Card>
   );
-}
+});

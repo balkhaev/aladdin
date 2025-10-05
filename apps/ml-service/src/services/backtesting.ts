@@ -1,8 +1,8 @@
-import type { Logger } from "@aladdin/shared/logger";
 import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
+import type { Logger } from "@aladdin/shared/logger";
+import type { FeatureEngineeringService } from "./feature-engineering";
 import type { LSTMPredictionService } from "./lstm-prediction";
 import type { PricePredictionService } from "./price-prediction";
-import type { FeatureEngineeringService } from "./feature-engineering";
 
 /**
  * Evaluation Metrics
@@ -110,10 +110,18 @@ export class BacktestingService {
       // Calculate summary
       const summary = {
         totalPredictions: predictions.length,
-        successfulPredictions: predictions.filter((p) => !Number.isNaN(p.predicted)).length,
-        failedPredictions: predictions.filter((p) => Number.isNaN(p.predicted)).length,
+        successfulPredictions: predictions.filter(
+          (p) => !Number.isNaN(p.predicted)
+        ).length,
+        failedPredictions: predictions.filter((p) => Number.isNaN(p.predicted))
+          .length,
         averageConfidence: 0.85, // Placeholder
-        modelRetrains: config.walkForward ? Math.floor((config.endDate - config.startDate) / (86_400_000 * (config.retrainInterval || 30))) : 0,
+        modelRetrains: config.walkForward
+          ? Math.floor(
+              (config.endDate - config.startDate) /
+                (86_400_000 * (config.retrainInterval || 30))
+            )
+          : 0,
       };
 
       const executionTime = Date.now() - startTime;
@@ -173,7 +181,8 @@ export class BacktestingService {
           historicalData.slice(0, i + 1)
         );
 
-        const predictedPrice = predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
+        const predictedPrice =
+          predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
 
         if (!predictedPrice || Number.isNaN(predictedPrice)) {
           this.logger.warn("Invalid prediction", { timestamp: currentTime });
@@ -250,7 +259,8 @@ export class BacktestingService {
           historicalData.slice(0, i + 1)
         );
 
-        const predictedPrice = predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
+        const predictedPrice =
+          predictionResult?.predictions[horizonHours - 1]?.predictedPrice;
 
         if (!predictedPrice || Number.isNaN(predictedPrice)) continue;
 
@@ -290,7 +300,8 @@ export class BacktestingService {
     _historicalData: Array<{ timestamp: number; close: number }>
   ) {
     try {
-      const service = config.modelType === "LSTM" ? this.lstmService : this.hybridService;
+      const service =
+        config.modelType === "LSTM" ? this.lstmService : this.hybridService;
 
       return await service.predictPrice({
         symbol: config.symbol,
@@ -338,16 +349,22 @@ export class BacktestingService {
     const rmse = Math.sqrt(mse);
 
     // Mean Absolute Percentage Error
-    const mape = predictions.reduce((sum, p) => sum + Math.abs(p.percentError), 0) / n;
+    const mape =
+      predictions.reduce((sum, p) => sum + Math.abs(p.percentError), 0) / n;
 
     // R² Score (coefficient of determination)
     const actualMean = predictions.reduce((sum, p) => sum + p.actual, 0) / n;
-    const ssTot = predictions.reduce((sum, p) => sum + (p.actual - actualMean) ** 2, 0);
+    const ssTot = predictions.reduce(
+      (sum, p) => sum + (p.actual - actualMean) ** 2,
+      0
+    );
     const ssRes = predictions.reduce((sum, p) => sum + p.error ** 2, 0);
     const r2Score = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
 
     // Directional Accuracy
-    const correctDirections = predictions.filter((p) => p.correctDirection).length;
+    const correctDirections = predictions.filter(
+      (p) => p.correctDirection
+    ).length;
     const directionalAccuracy = (correctDirections / n) * 100;
 
     // Mean Error (bias)
@@ -425,9 +442,7 @@ export class BacktestingService {
   /**
    * Compare two models
    */
-  async compareModels(
-    config: Omit<BacktestConfig, "modelType">
-  ): Promise<{
+  async compareModels(config: Omit<BacktestConfig, "modelType">): Promise<{
     lstm: BacktestResult;
     hybrid: BacktestResult;
     comparison: {
@@ -494,4 +509,3 @@ export class BacktestingService {
     };
   }
 }
-

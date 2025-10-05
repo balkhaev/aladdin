@@ -1,6 +1,7 @@
 import type { Order } from "@aladdin/shared/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { useWebSocketSubscription } from "./use-websocket";
 
 type OrderEvent = {
@@ -45,7 +46,10 @@ export function useOrdersWebSocket(userId: string | undefined, enabled = true) {
       return;
     }
 
-    console.log("[Orders WS] Received event:", data.event, data.data);
+    logger.debug("Orders WS", "Received event", {
+      event: data.event,
+      orderId: data.data.id,
+    });
 
     // Обновляем кеш React Query
     switch (data.event) {

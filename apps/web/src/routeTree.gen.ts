@@ -19,6 +19,7 @@ import { Route as AuthSentimentRouteImport } from './routes/_auth.sentiment'
 import { Route as AuthScreenerRouteImport } from './routes/_auth.screener'
 import { Route as AuthPortfolioRouteImport } from './routes/_auth.portfolio'
 import { Route as AuthOnChainRouteImport } from './routes/_auth.on-chain'
+import { Route as AuthMlRouteImport } from './routes/_auth.ml'
 import { Route as AuthMarketRouteImport } from './routes/_auth.market'
 import { Route as AuthExecutorRouteImport } from './routes/_auth.executor'
 import { Route as AuthDebugRouteImport } from './routes/_auth.debug'
@@ -73,6 +74,11 @@ const AuthOnChainRoute = AuthOnChainRouteImport.update({
   path: '/on-chain',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthMlRoute = AuthMlRouteImport.update({
+  id: '/ml',
+  path: '/ml',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMarketRoute = AuthMarketRouteImport.update({
   id: '/market',
   path: '/market',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/debug': typeof AuthDebugRoute
   '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
+  '/ml': typeof AuthMlRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
   '/screener': typeof AuthScreenerRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/debug': typeof AuthDebugRoute
   '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
+  '/ml': typeof AuthMlRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
   '/screener': typeof AuthScreenerRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_auth/debug': typeof AuthDebugRoute
   '/_auth/executor': typeof AuthExecutorRoute
   '/_auth/market': typeof AuthMarketRoute
+  '/_auth/ml': typeof AuthMlRoute
   '/_auth/on-chain': typeof AuthOnChainRoute
   '/_auth/portfolio': typeof AuthPortfolioRoute
   '/_auth/screener': typeof AuthScreenerRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/debug'
     | '/executor'
     | '/market'
+    | '/ml'
     | '/on-chain'
     | '/portfolio'
     | '/screener'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/debug'
     | '/executor'
     | '/market'
+    | '/ml'
     | '/on-chain'
     | '/portfolio'
     | '/screener'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/_auth/debug'
     | '/_auth/executor'
     | '/_auth/market'
+    | '/_auth/ml'
     | '/_auth/on-chain'
     | '/_auth/portfolio'
     | '/_auth/screener'
@@ -276,6 +288,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnChainRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/ml': {
+      id: '/_auth/ml'
+      path: '/ml'
+      fullPath: '/ml'
+      preLoaderRoute: typeof AuthMlRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/market': {
       id: '/_auth/market'
       path: '/market'
@@ -320,6 +339,7 @@ interface AuthRouteChildren {
   AuthDebugRoute: typeof AuthDebugRoute
   AuthExecutorRoute: typeof AuthExecutorRoute
   AuthMarketRoute: typeof AuthMarketRoute
+  AuthMlRoute: typeof AuthMlRoute
   AuthOnChainRoute: typeof AuthOnChainRoute
   AuthPortfolioRoute: typeof AuthPortfolioRoute
   AuthScreenerRoute: typeof AuthScreenerRoute
@@ -333,6 +353,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthDebugRoute: AuthDebugRoute,
   AuthExecutorRoute: AuthExecutorRoute,
   AuthMarketRoute: AuthMarketRoute,
+  AuthMlRoute: AuthMlRoute,
   AuthOnChainRoute: AuthOnChainRoute,
   AuthPortfolioRoute: AuthPortfolioRoute,
   AuthScreenerRoute: AuthScreenerRoute,

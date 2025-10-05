@@ -1,26 +1,14 @@
 import { API_CONFIG } from "./config";
+import { logger } from "./logger";
 
-type MessageHandler = (data: unknown) => void;
+export type WebSocketMessage = Record<string, unknown>;
+type MessageHandler = (data: WebSocketMessage) => void;
 type ErrorHandler = (error: Event) => void;
 type ConnectionHandler = () => void;
 
 const RECONNECT_DELAY = 3000; // 3 секунды
 const MAX_RECONNECT_ATTEMPTS = 5;
 const PING_INTERVAL = 30_000; // 30 секунд
-const isDevelopment = import.meta.env.DEV;
-
-// Вспомогательная функция для логирования только в dev режиме
-const devLog = (...args: unknown[]) => {
-  if (isDevelopment) {
-    console.log(...args);
-  }
-};
-
-const devError = (...args: unknown[]) => {
-  if (isDevelopment) {
-    console.error(...args);
-  }
-};
 
 /**
  * WebSocket Manager для управления WebSocket соединением
@@ -42,7 +30,7 @@ export class WebSocketManager {
   private closeHandlers = new Set<ConnectionHandler>();
   private isManualClose = false;
   private isConnecting = false; // Флаг для отслеживания процесса подключения
-  private messageQueue: unknown[] = []; // Очередь сообщений до подключения
+  private messageQueue: WebSocketMessage[] = []; // Очередь сообщений до подключения
 
   constructor(private url: string = API_CONFIG.WS_URL) {}
 
@@ -52,12 +40,12 @@ export class WebSocketManager {
   connect(): void {
     // Если уже подключены или в процессе подключения - ничего не делаем
     if (this.ws?.readyState === WebSocket.OPEN) {
-      devLog("[WebSocket] Already connected");
+      logger.info("WebSocket", "Already connected");
       return;
     }
 
     if (this.isConnecting) {
-      devLog("[WebSocket] Connection already in progress");
+      logger.info("WebSocket", "Connection already in progress");
       return;
     }
 
@@ -65,11 +53,11 @@ export class WebSocketManager {
     this.isConnecting = true;
 
     try {
-      devLog(`[WebSocket] Connecting to ${this.url}...`);
+      logger.info("WebSocket", `Connecting to ${this.url}...`);
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        devLog("[WebSocket] Connected successfully");
+        logger.info("WebSocket", "Connected successfully");
         this.reconnectAttempts = 0;
         this.isConnecting = false;
         this.startPing();
@@ -79,21 +67,21 @@ export class WebSocketManager {
 
       this.ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(event.data) as WebSocketMessage;
           this.notifyMessageHandlers(data);
         } catch (error) {
-          devError("[WebSocket] Failed to parse message:", error);
+          logger.error("WebSocket", "Failed to parse message", error);
         }
       };
 
       this.ws.onerror = (error) => {
-        devError("[WebSocket] Error:", error);
+        logger.error("WebSocket", "Connection error", error);
         this.isConnecting = false;
         this.notifyErrorHandlers(error);
       };
 
       this.ws.onclose = () => {
-        devLog("[WebSocket] Connection closed");
+        logger.info("WebSocket", "Connection closed");
         this.isConnecting = false;
         this.stopPing();
         this.notifyCloseHandlers();
@@ -103,7 +91,7 @@ export class WebSocketManager {
         }
       };
     } catch (error) {
-      devError("[WebSocket] Failed to create connection:", error);
+      logger.error("WebSocket", "Failed to create connection", error);
       this.isConnecting = false;
       this.scheduleReconnect();
     }
@@ -126,18 +114,22 @@ export class WebSocketManager {
       this.ws = null;
     }
 
-    devLog("[WebSocket] Disconnected");
+    logger.info("WebSocket", "Disconnected");
   }
 
   /**
    * Отправка сообщения на сервер
    */
-  send(data: unknown): void {
+  send(data: WebSocketMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      devLog("[WebSocketManager] Sending:", data);
+      logger.debug("WebSocketManager", "Sending message", data);
       this.ws.send(JSON.stringify(data));
     } else {
-      devLog("[WebSocketManager] Queueing message (not connected yet):", data);
+      logger.debug(
+        "WebSocketManager",
+        "Queueing message (not connected yet)",
+        data
+      );
       this.messageQueue.push(data);
     }
   }
@@ -153,7 +145,7 @@ export class WebSocketManager {
       portfolioId?: string;
     }
   ): void {
-    devLog(`[WebSocketManager] Subscribing to ${type}:`, options);
+    logger.debug("WebSocketManager", `Subscribing to ${type}`, options);
     this.send({
       type: "subscribe",
       channels: [type],
@@ -171,7 +163,7 @@ export class WebSocketManager {
       portfolioId?: string;
     }
   ): void {
-    devLog(`[WebSocketManager] Unsubscribing from ${type}:`, options);
+    logger.debug("WebSocketManager", `Unsubscribing from ${type}`, options);
     this.send({
       type: "unsubscribe",
       channels: [type],
@@ -223,8 +215,9 @@ export class WebSocketManager {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      devError(
-        `[WebSocket] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached`
+      logger.error(
+        "WebSocket",
+        `Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached`
       );
       return;
     }
@@ -232,8 +225,9 @@ export class WebSocketManager {
     this.reconnectAttempts += 1;
     const delay = RECONNECT_DELAY * this.reconnectAttempts;
 
-    devLog(
-      `[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+    logger.info(
+      "WebSocket",
+      `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
     );
 
     this.reconnectTimeout = setTimeout(() => {
@@ -271,13 +265,14 @@ export class WebSocketManager {
       return;
     }
 
-    devLog(
-      `[WebSocketManager] Flushing ${this.messageQueue.length} queued messages`
+    logger.debug(
+      "WebSocketManager",
+      `Flushing ${this.messageQueue.length} queued messages`
     );
 
     for (const message of this.messageQueue) {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        devLog("[WebSocketManager] Sending queued:", message);
+        logger.debug("WebSocketManager", "Sending queued message", message);
         this.ws.send(JSON.stringify(message));
       }
     }
@@ -288,12 +283,12 @@ export class WebSocketManager {
   /**
    * Уведомление обработчиков сообщений
    */
-  private notifyMessageHandlers(data: unknown): void {
+  private notifyMessageHandlers(data: WebSocketMessage): void {
     for (const handler of this.messageHandlers) {
       try {
         handler(data);
       } catch (error) {
-        devError("[WebSocket] Message handler error:", error);
+        logger.error("WebSocket", "Message handler error", error);
       }
     }
   }
@@ -306,7 +301,7 @@ export class WebSocketManager {
       try {
         handler(error);
       } catch (err) {
-        devError("[WebSocket] Error handler error:", err);
+        logger.error("WebSocket", "Error handler error", err);
       }
     }
   }
@@ -319,7 +314,7 @@ export class WebSocketManager {
       try {
         handler();
       } catch (error) {
-        devError("[WebSocket] Open handler error:", error);
+        logger.error("WebSocket", "Open handler error", error);
       }
     }
   }
@@ -332,7 +327,7 @@ export class WebSocketManager {
       try {
         handler();
       } catch (error) {
-        devError("[WebSocket] Close handler error:", error);
+        logger.error("WebSocket", "Close handler error", error);
       }
     }
   }

@@ -67,4 +67,3 @@ export function getPriceChangeColor(change: number | null | undefined): string {
   if (change < 0) return "text-red-500";
   return "text-gray-500";
 }
-

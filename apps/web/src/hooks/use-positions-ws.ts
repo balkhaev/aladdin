@@ -1,6 +1,7 @@
 import type { Position } from "@aladdin/shared/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { useWebSocketSubscription } from "./use-websocket";
 
 type PositionEvent = {
@@ -61,7 +62,10 @@ export function usePositionsWebSocket(
       return;
     }
 
-    console.log("[Positions WS] Received event:", data.type, data.event);
+    logger.debug("Positions WS", "Received event", {
+      type: data.type,
+      event: data.event,
+    });
 
     if (data.type === "position") {
       const positionData = data.data;

@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import type { OrderBook } from "../lib/api/market-data";
+import type { OrderBook } from "@/lib/api/trading";
+import { logger } from "@/lib/logger";
 import { useWebSocket } from "./use-websocket";
 
 type OrderBookMessage = {
@@ -29,11 +30,11 @@ export function useOrderBookWS(symbol: string, limit = 20, enabled = true) {
   // Subscribe to order book updates
   useEffect(() => {
     if (isConnected && symbol && enabled) {
-      console.log(`[OrderBook WS] Subscribing to ${symbol}`);
+      logger.debug("OrderBook WS", `Subscribing to ${symbol}`);
       subscribe("orderbook", { symbols: [symbol], limit });
 
       return () => {
-        console.log(`[OrderBook WS] Unsubscribing from ${symbol}`);
+        logger.debug("OrderBook WS", `Unsubscribing from ${symbol}`);
         unsubscribe("orderbook", { symbols: [symbol] });
       };
     }
@@ -46,7 +47,7 @@ export function useOrderBookWS(symbol: string, limit = 20, enabled = true) {
 
       // Update only if it's our symbol
       if (obData.symbol === symbol) {
-        console.log(`[OrderBook WS] Received update for ${symbol}`);
+        logger.debug("OrderBook WS", `Received update for ${symbol}`);
         setOrderBook(obData);
 
         // Update React Query cache
@@ -58,7 +59,7 @@ export function useOrderBookWS(symbol: string, limit = 20, enabled = true) {
   // Reset state on unmount or symbol change
   useEffect(
     () => () => {
-      console.log(`[OrderBook WS] Resetting order book for ${symbol}`);
+      logger.debug("OrderBook WS", `Resetting order book for ${symbol}`);
       setOrderBook(null);
     },
     [symbol]

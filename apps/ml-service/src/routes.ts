@@ -1,14 +1,14 @@
 import type { Hono } from "hono";
+import type { BacktestingService } from "./services/backtesting";
 import type { LSTMPredictionService } from "./services/lstm-prediction";
 import type { MarketRegimeService } from "./services/market-regime";
 import type { ModelPersistenceService } from "./services/model-persistence";
 import type { PricePredictionService } from "./services/price-prediction";
-import type { BacktestingService } from "./services/backtesting";
 import {
-  MarketRegimeRequestSchema,
-  PredictionRequestSchema,
   BacktestConfigSchema,
   CompareModelsRequestSchema,
+  MarketRegimeRequestSchema,
+  PredictionRequestSchema,
 } from "./types";
 
 const HTTP_STATUS = {

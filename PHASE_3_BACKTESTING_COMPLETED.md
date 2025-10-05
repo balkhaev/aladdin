@@ -180,7 +180,7 @@ POST /api/ml/backtest/compare
 class BacktestingService {
   async runBacktest(config: BacktestConfig): Promise<BacktestResult>
   async compareModels(config): Promise<ComparisonResult>
-  
+
   // Private methods
   private simpleBacktest()
   private walkForwardBacktest()
@@ -215,17 +215,17 @@ export const BacktestConfigSchema = z.object({
   endDate: z.number().min(0),
   walkForward: z.boolean().optional(),
   retrainInterval: z.number().min(1).optional(),
-});
+})
 
 // Results
 export type BacktestResult = {
-  config: BacktestConfig;
-  metrics: EvaluationMetrics;
-  predictions: PredictionPoint[];
-  summary: BacktestSummary;
-  executionTime: number;
-  completedAt: number;
-};
+  config: BacktestConfig
+  metrics: EvaluationMetrics
+  predictions: PredictionPoint[]
+  summary: BacktestSummary
+  executionTime: number
+  completedAt: number
+}
 ```
 
 #### `apps/ml-service/src/routes.ts`
@@ -246,7 +246,7 @@ const backtestingService = new BacktestingService(
   predictionService,
   featureService,
   logger
-);
+)
 
 setupMLRoutes(
   app,
@@ -254,8 +254,8 @@ setupMLRoutes(
   regimeService,
   lstmService,
   persistenceService,
-  backtestingService  // ✅ Added
-);
+  backtestingService // ✅ Added
+)
 ```
 
 ---
@@ -358,15 +358,15 @@ setupMLRoutes(
 
 ```typescript
 describe("BacktestingService", () => {
-  it("should calculate MAE correctly");
-  it("should calculate RMSE correctly");
-  it("should calculate MAPE correctly");
-  it("should calculate R² score correctly");
-  it("should calculate directional accuracy");
-  it("should run simple backtest");
-  it("should run walk-forward backtest");
-  it("should compare models");
-});
+  it("should calculate MAE correctly")
+  it("should calculate RMSE correctly")
+  it("should calculate MAPE correctly")
+  it("should calculate R² score correctly")
+  it("should calculate directional accuracy")
+  it("should run simple backtest")
+  it("should run walk-forward backtest")
+  it("should compare models")
+})
 ```
 
 ### Integration Tests
@@ -417,12 +417,12 @@ curl -X POST http://localhost:3019/api/ml/backtest \
 
 **Results:**
 
-| Horizon | MAE   | MAPE | Directional Accuracy |
-| ------- | ----- | ---- | -------------------- |
-| 1h      | 85    | 2.8% | 62.4% ✅             |
-| 4h      | 180   | 4.2% | 60.1%                |
-| 1d      | 420   | 6.5% | 58.2%                |
-| 7d      | 1200  | 12%  | 52.1% ❌             |
+| Horizon | MAE  | MAPE | Directional Accuracy |
+| ------- | ---- | ---- | -------------------- |
+| 1h      | 85   | 2.8% | 62.4% ✅             |
+| 4h      | 180  | 4.2% | 60.1%                |
+| 1d      | 420  | 6.5% | 58.2%                |
+| 7d      | 1200 | 12%  | 52.1% ❌             |
 
 **Decision:** ✅ Use 1h horizon
 
@@ -453,19 +453,19 @@ curl -X POST http://localhost:3019/api/ml/backtest \
 for each window in time series:
   // 1. Train on historical data
   train(data[0:window])
-  
+
   // 2. Test on next period
   predictions = predict(data[window:window+interval])
-  
+
   // 3. Compare with actuals
   errors = predictions - actuals
-  
+
   // 4. Calculate metrics
   metrics = calculateMetrics(errors)
-  
+
   // 5. Move window forward
   window += interval
-  
+
   // 6. Retrain if needed
   if (window % retrainInterval == 0):
     retrain(data[0:window])
@@ -523,14 +523,14 @@ accuracy = (correct / total) * 100
 
 ## 📊 Comparison: Before vs After
 
-| Feature                     | Before Phase 3.3 | After Phase 3.3 |
-| --------------------------- | ---------------- | --------------- |
-| **Model Validation**        | ❌ Manual        | ✅ Automated    |
-| **Metrics**                 | ❌ None          | ✅ 8 metrics    |
-| **Walk-Forward Testing**    | ❌ No            | ✅ Yes          |
-| **Model Comparison**        | ❌ Manual        | ✅ Automated    |
-| **Production Confidence**   | ⚠️ Low           | ✅ High         |
-| **Performance Measurement** | ❌ None          | ✅ Comprehensive|
+| Feature                     | Before Phase 3.3 | After Phase 3.3  |
+| --------------------------- | ---------------- | ---------------- |
+| **Model Validation**        | ❌ Manual        | ✅ Automated     |
+| **Metrics**                 | ❌ None          | ✅ 8 metrics     |
+| **Walk-Forward Testing**    | ❌ No            | ✅ Yes           |
+| **Model Comparison**        | ❌ Manual        | ✅ Automated     |
+| **Production Confidence**   | ⚠️ Low           | ✅ High          |
+| **Performance Measurement** | ❌ None          | ✅ Comprehensive |
 
 ---
 
@@ -657,4 +657,3 @@ Backtesting Framework полностью готов к использовани�
 **Status:** Production Ready ✅
 **Version:** 3.3.0
 **Date:** 5 октября 2025
-

@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { useWebSocketSubscription } from "./use-websocket";
 
 type RiskMetricsEvent = {
@@ -59,7 +60,9 @@ export function useRiskWebSocket(
       return;
     }
 
-    console.log("[Risk WS] Received metrics:", data.data);
+    logger.debug("Risk WS", "Received metrics", {
+      portfolioId: data.data.portfolioId,
+    });
 
     // Обновляем кеш React Query
     queryClient.setQueryData(
@@ -74,10 +77,9 @@ export function useRiskWebSocket(
 
     // Если есть нарушенные лимиты, показываем уведомление
     if (data.data.metrics.breachedLimits.length > 0) {
-      console.warn(
-        "[Risk WS] Risk limits breached:",
-        data.data.metrics.breachedLimits
-      );
+      logger.warn("Risk WS", "Risk limits breached", {
+        breachedLimits: data.data.metrics.breachedLimits,
+      });
       // TODO: Показать toast уведомление пользователю
     }
   }, [data, queryClient]);
@@ -89,4 +91,3 @@ export function useRiskWebSocket(
     metrics: data?.data.metrics,
   };
 }
-

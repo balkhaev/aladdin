@@ -90,4 +90,3 @@ export function calculatePriceChange(
     isNeutral: change === 0,
   };
 }
-

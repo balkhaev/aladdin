@@ -3,15 +3,9 @@
  * Исторический график индекса страха/жадности
  */
 
-import {
-  AreaSeries,
-  createChart,
-  type IChartApi,
-  type ISeriesApi,
-  type LineData,
-} from "lightweight-charts";
+import { AreaSeries, createChart, type ISeriesApi } from "lightweight-charts";
 import { TrendingUp } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -28,34 +22,25 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFearGreedHistory } from "@/hooks/use-macro-data";
+import {
+  deduplicateTimeSeriesData,
+  useChartInitialization,
+} from "@/lib/chart-init";
 
 const CHART_HEIGHT = 300;
-const MILLISECONDS_TO_SECONDS = 1000;
-const INIT_DELAY_MS = 100;
 
 type PeriodOption = "7" | "30" | "90" | "180" | "365";
 
-export function FearGreedHistory() {
+export const FearGreedHistory = memo(function FearGreedHistoryComponent() {
   const [period, setPeriod] = useState<PeriodOption>("30");
   const { data, isLoading, error } = useFearGreedHistory(Number(period));
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
 
-  useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    const container = chartContainerRef.current;
-    let chart: IChartApi | null = null;
-    let series: ISeriesApi<"Area"> | null = null;
-
-    const initializeChart = () => {
-      // Don't initialize if already initialized or container not visible
-      if (chart || container.clientWidth === 0 || container.offsetWidth === 0)
-        return;
-
-      // Create chart
-      chart = createChart(container, {
+  // Create chart initialization callback
+  const createChartCallback = useCallback(
+    (container: HTMLDivElement, width: number) => {
+      const chart = createChart(container, {
         layout: {
           background: { color: "transparent" },
           textColor: "#9ca3af",
@@ -64,7 +49,7 @@ export function FearGreedHistory() {
           vertLines: { color: "#1f2937" },
           horzLines: { color: "#1f2937" },
         },
-        width: container.clientWidth,
+        width,
         height: CHART_HEIGHT,
         timeScale: {
           borderColor: "#1f2937",
@@ -80,7 +65,7 @@ export function FearGreedHistory() {
       });
 
       // Create area series
-      series = chart.addSeries(AreaSeries, {
+      const series = chart.addSeries(AreaSeries, {
         topColor: "rgba(34, 197, 94, 0.4)",
         bottomColor: "rgba(239, 68, 68, 0.0)",
         lineColor: "rgba(34, 197, 94, 0.8)",
@@ -115,142 +100,45 @@ export function FearGreedHistory() {
         title: "Fear",
       });
 
-      chartRef.current = chart;
       seriesRef.current = series;
-    };
+      return chart;
+    },
+    []
+  );
 
-    // Handle resize
-    const handleResize = () => {
-      // Initialize chart if not yet initialized and container is now visible
-      if (!chart && container.clientWidth > 0) {
-        initializeChart();
-      }
-
-      if (container && chart) {
-        const width = container.clientWidth;
-        if (width > 0) {
-          chart.applyOptions({ width });
-        }
-      }
-    };
-
-    // Use MutationObserver to detect when tab becomes visible (handles display:none cases)
-    const mutationObserver = new MutationObserver(() => {
-      // Check if container is now visible
-      if (!chart && container.offsetWidth > 0 && container.offsetHeight > 0) {
-        initializeChart();
-      }
-    });
-
-    // Observe parent elements for attribute changes
-    let parent = container.parentElement;
-    while (parent) {
-      mutationObserver.observe(parent, {
-        attributes: true,
-        attributeFilter: ["data-state", "hidden", "aria-hidden", "style"],
-      });
-      parent = parent.parentElement;
-      // Stop at a reasonable depth
-      if (parent?.getAttribute("role") === "tabpanel") break;
+  // Initialize chart with universal hook
+  const chartRef = useChartInitialization(
+    chartContainerRef,
+    createChartCallback,
+    {
+      dependencies: [data],
     }
+  );
 
-    // Use IntersectionObserver to detect when container becomes visible
-    const intersectionObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && !chart) {
-            initializeChart();
-          }
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    intersectionObserver.observe(container);
-
-    // Use ResizeObserver to detect container size changes
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize();
-    });
-
-    resizeObserver.observe(container);
-
-    // Also listen to window resize
-    window.addEventListener("resize", handleResize);
-
-    // Try initial initialization
-    initializeChart();
-
-    // If still not initialized after a short delay, try again (fallback)
-    const timeoutId = setTimeout(() => {
-      if (!chart && container.offsetWidth > 0) {
-        initializeChart();
-      }
-    }, INIT_DELAY_MS);
-
-    return () => {
-      clearTimeout(timeoutId);
-      mutationObserver.disconnect();
-      intersectionObserver.disconnect();
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", handleResize);
-      if (chart) {
-        chart.remove();
-      }
-    };
-  }, []);
-
-  // Data-driven initialization: force chart creation when data arrives
-  // This is critical for tabs where the chart container becomes visible after data loads
+  // Update chart data when data changes
   useEffect(() => {
-    if (!data) return;
-    if (!chartContainerRef.current) return;
-
-    const container = chartContainerRef.current;
-
-    // If data arrived but chart is not initialized yet, and container is now visible, force initialization
-    const isChartNotInitialized = !chartRef.current;
-    const isContainerVisible =
-      container.offsetWidth > 0 && container.clientWidth > 0;
-
-    if (isChartNotInitialized && isContainerVisible) {
-      // Trigger resize which will call initializeChart
-      const event = new Event("resize");
-      window.dispatchEvent(event);
+    if (!seriesRef.current) {
+      return;
     }
-  }, [data]);
-
-  useEffect(() => {
-    if (!(seriesRef.current && data)) return;
-
-    // Deduplicate by timestamp and ensure ascending order
-    const dataMap = new Map<number, number>();
-
-    for (const point of data) {
-      const timestamp =
-        typeof point.time === "string"
-          ? Math.floor(new Date(point.time).getTime() / MILLISECONDS_TO_SECONDS)
-          : point.time;
-      // If duplicate timestamp, keep the last value
-      dataMap.set(timestamp, point.value);
+    if (!data) {
+      return;
+    }
+    if (!chartRef.current) {
+      return;
     }
 
-    // Convert to array and sort by time ascending
-    const chartData: LineData[] = Array.from(dataMap.entries())
-      .map(([time, value]) => ({
-        time: time as LineData["time"],
-        value,
-      }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+    // Deduplicate and format data
+    const chartData = deduplicateTimeSeriesData(data);
 
     if (chartData.length > 0) {
       seriesRef.current.setData(chartData);
-    }
-
-    if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
     }
-  }, [data]);
+  }, [data, chartRef]);
+
+  const handlePeriodChange = useCallback((value: string) => {
+    setPeriod(value as PeriodOption);
+  }, []);
 
   if (isLoading) {
     return (
@@ -303,10 +191,7 @@ export function FearGreedHistory() {
               Historical Fear & Greed Index trends
             </CardDescription>
           </div>
-          <Select
-            onValueChange={(v) => setPeriod(v as PeriodOption)}
-            value={period}
-          >
+          <Select onValueChange={handlePeriodChange} value={period}>
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
@@ -339,4 +224,4 @@ export function FearGreedHistory() {
       </CardContent>
     </Card>
   );
-}
+});

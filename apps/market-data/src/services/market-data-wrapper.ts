@@ -7,6 +7,8 @@ import type { ExchangeConnector } from "../connectors/types";
 import { CandleBuilderService } from "./candle-builder";
 import { MarketDataService } from "./market-data";
 import { MultiExchangeAggregator } from "./multi-exchange-aggregator";
+import { OnChainService } from "./on-chain";
+import { getEnv, getEnvNumber } from "@aladdin/shared/config";
 
 type MarketDataWrapperConfig = BaseServiceConfig & {
   connectors: {
@@ -23,6 +25,7 @@ export class MarketDataServiceWrapper extends BaseService {
   private marketDataService?: MarketDataService;
   private aggregator?: MultiExchangeAggregator;
   private candleBuilder?: CandleBuilderService;
+  private onChainService?: OnChainService;
   private readonly primaryConnector: ExchangeConnector;
   private readonly secondaryConnectors: ExchangeConnector[];
 
@@ -94,11 +97,47 @@ export class MarketDataServiceWrapper extends BaseService {
       throw error;
     }
 
+    // Initialize On-Chain Service if configured
+    const enabledChains = getEnv("BLOCKCHAIN_CHAINS", "");
+    const etherscanApiKey = getEnv("ETHERSCAN_API_KEY", "");
+    const cmcApiKey = getEnv("CMC_API_KEY", "");
+
+    if (enabledChains && etherscanApiKey && cmcApiKey) {
+      this.logger.info("Initializing On-Chain Service", { enabledChains });
+      
+      this.onChainService = new OnChainService({
+        logger: this.logger,
+        natsClient: this.natsClient,
+        clickhouse: this.clickhouse,
+        cmcApiKey,
+        etherscanApiKey,
+        blockchairApiKey: getEnv("BLOCKCHAIR_API_KEY", ""),
+        enabledChains,
+        updateIntervalMs: getEnvNumber("ON_CHAIN_UPDATE_INTERVAL_MS", 300_000),
+        whaleThresholdBTC: getEnvNumber("WHALE_THRESHOLD_BTC", 10),
+        whaleThresholdETH: getEnvNumber("WHALE_THRESHOLD_ETH", 100),
+      });
+
+      await this.onChainService.initialize();
+      await this.onChainService.start();
+      
+      this.logger.info("On-Chain Service started successfully");
+    } else {
+      this.logger.warn("On-Chain Service not configured - missing API keys or chains", {
+        hasChains: !!enabledChains,
+        hasEtherscan: !!etherscanApiKey,
+        hasCMC: !!cmcApiKey,
+      });
+    }
+
     this.logger.info("Market Data Service initialized");
     return Promise.resolve();
   }
 
   protected async onStop(): Promise<void> {
+    if (this.onChainService) {
+      await this.onChainService.stop();
+    }
     if (this.candleBuilder) {
       await this.candleBuilder.stop();
     }
@@ -119,6 +158,7 @@ export class MarketDataServiceWrapper extends BaseService {
     const health: Record<string, boolean> = {
       marketData: this.marketDataService !== undefined,
       aggregator: this.aggregator !== undefined,
+      onChain: this.onChainService !== undefined,
       primaryConnector: true, // Always true if initialized
     };
 

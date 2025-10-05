@@ -31,6 +31,20 @@ export function formatPrice(
 }
 
 /**
+ * Format a score value with fixed decimal places
+ */
+export function formatScore(
+  score: number | null | undefined,
+  decimals: number = DEFAULT_PERCENT_DECIMALS
+): string {
+  if (score === null || score === undefined || Number.isNaN(score)) {
+    return "0.00";
+  }
+
+  return score.toFixed(decimals);
+}
+
+/**
  * Format a volume with locale and appropriate decimal places
  */
 export function formatVolume(
@@ -129,9 +143,7 @@ export function formatMarketCap(value: number | null | undefined): string {
 /**
  * Format a number with abbreviated notation (K, M, B, T)
  */
-export function formatCompactNumber(
-  value: number | null | undefined
-): string {
+export function formatCompactNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return "0";
   }
@@ -174,4 +186,3 @@ export function getDecimalsForPrice(price: number): number {
   if (price >= 0.01) return 6;
   return 8;
 }
-

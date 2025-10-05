@@ -14,25 +14,22 @@ function log(level: LogLevel, prefix: string, ...args: unknown[]): void {
   const timestamp = new Date().toISOString();
   const formattedPrefix = `[${timestamp}] [${prefix}]`;
 
-  switch (level) {
-    case "error":
-      // biome-ignore lint/suspicious/noConsole: Development-only logging
-      console.error(formattedPrefix, ...args);
-      break;
-    case "warn":
-      // biome-ignore lint/suspicious/noConsole: Development-only logging
-      console.warn(formattedPrefix, ...args);
-      break;
-    case "debug":
-      // biome-ignore lint/suspicious/noConsole: Development-only logging
-      console.debug(formattedPrefix, ...args);
-      break;
-    case "info":
-    default:
-      // biome-ignore lint/suspicious/noConsole: Development-only logging
-      console.log(formattedPrefix, ...args);
-      break;
+  if (level === "error") {
+    console.error(formattedPrefix, ...args);
+    return;
   }
+
+  if (level === "warn") {
+    console.warn(formattedPrefix, ...args);
+    return;
+  }
+
+  if (level === "debug") {
+    console.debug(formattedPrefix, ...args);
+    return;
+  }
+
+  console.log(formattedPrefix, ...args);
 }
 
 export const logger = {
@@ -41,4 +38,3 @@ export const logger = {
   error: (prefix: string, ...args: unknown[]) => log("error", prefix, ...args),
   debug: (prefix: string, ...args: unknown[]) => log("debug", prefix, ...args),
 };
-

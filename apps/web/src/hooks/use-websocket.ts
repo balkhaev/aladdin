@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { WebSocketMessage } from "@/lib/websocket-manager";
 import { getWebSocketManager } from "@/lib/websocket-manager";
 
 type WebSocketStatus = "connecting" | "connected" | "disconnected" | "error";
@@ -17,7 +18,7 @@ type WebSocketStatus = "connecting" | "connected" | "disconnected" | "error";
  * }, [status, subscribe]);
  * ```
  */
-export function useWebSocket<T = unknown>() {
+export function useWebSocket<T = WebSocketMessage>() {
   const [status, setStatus] = useState<WebSocketStatus>("disconnected");
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -91,7 +92,7 @@ export function useWebSocket<T = unknown>() {
   );
 
   const send = useCallback(
-    (message: unknown) => {
+    (message: WebSocketMessage) => {
       ws.send(message);
     },
     [ws]
@@ -111,7 +112,7 @@ export function useWebSocket<T = unknown>() {
 /**
  * Hook для подписки на конкретный тип данных с символами
  */
-export function useWebSocketSubscription<T = unknown>(
+export function useWebSocketSubscription<T = WebSocketMessage>(
   type: string,
   options?: {
     symbols?: string[];
@@ -121,9 +122,6 @@ export function useWebSocketSubscription<T = unknown>(
 ) {
   const { status, data, error, subscribe, unsubscribe, isConnected } =
     useWebSocket<T>();
-
-  // Сериализуем options для стабильности
-  const optionsKey = options ? JSON.stringify(options) : "";
 
   useEffect(() => {
     if (isConnected && options) {
@@ -136,8 +134,7 @@ export function useWebSocketSubscription<T = unknown>(
         });
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, type, optionsKey, subscribe, unsubscribe]);
+  }, [isConnected, type, options, subscribe, unsubscribe]);
 
   return {
     status,

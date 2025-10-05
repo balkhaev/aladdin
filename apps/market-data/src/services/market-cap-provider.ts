@@ -87,4 +87,3 @@ export class MarketCapProvider {
     this.marketCapCache.clear();
   }
 }
-

@@ -37,6 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { OnChainComparisonTable } from "@/components/on-chain-comparison-table";
 import { getMetricDescription, getMetricStatus } from "@/lib/api/on-chain";
 
 const REFETCH_INTERVAL_MINUTE = 60_000;
@@ -92,12 +93,17 @@ function OnChainPage() {
       <Tabs className="space-y-4" defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="comparison">BTC vs ETH</TabsTrigger>
           <TabsTrigger value="whales">Whale Transactions</TabsTrigger>
           <TabsTrigger value="exchanges">Exchange Flows</TabsTrigger>
         </TabsList>
 
         <TabsContent className="space-y-4" value="overview">
           <OnChainOverview blockchain={selectedBlockchain} />
+        </TabsContent>
+
+        <TabsContent className="space-y-4" value="comparison">
+          <OnChainComparisonTable />
         </TabsContent>
 
         <TabsContent className="space-y-4" value="whales">

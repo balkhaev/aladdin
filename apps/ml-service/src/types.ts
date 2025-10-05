@@ -193,6 +193,12 @@ export const OptimizationConfigSchema = z.object({
   nTrials: z.number().min(1).optional().default(20),
   startDate: z.number().min(0),
   endDate: z.number().min(0),
-  optimizationMetric: z.enum(["mae", "rmse", "mape", "r2Score", "directionalAccuracy"]),
+  optimizationMetric: z.enum([
+    "mae",
+    "rmse",
+    "mape",
+    "r2Score",
+    "directionalAccuracy",
+  ]),
   crossValidationFolds: z.number().min(2).max(10).optional().default(3),
 });

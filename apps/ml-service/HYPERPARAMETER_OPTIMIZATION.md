@@ -22,25 +22,25 @@ Hyperparameter Optimization автоматически находит оптим
 
 ### LSTM Model
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **hiddenSize** | Number of LSTM units | [16, 32, 64] | High - affects model capacity |
-| **sequenceLength** | Lookback window | [10, 20, 30] | High - affects context |
-| **learningRate** | Training step size | [0.0001, 0.001, 0.01] | Medium - affects convergence |
-| **epochs** | Training iterations | [50, 100, 200] | Medium - affects fit |
+| Parameter          | Description          | Default Range         | Impact                        |
+| ------------------ | -------------------- | --------------------- | ----------------------------- |
+| **hiddenSize**     | Number of LSTM units | [16, 32, 64]          | High - affects model capacity |
+| **sequenceLength** | Lookback window      | [10, 20, 30]          | High - affects context        |
+| **learningRate**   | Training step size   | [0.0001, 0.001, 0.01] | Medium - affects convergence  |
+| **epochs**         | Training iterations  | [50, 100, 200]        | Medium - affects fit          |
 
 ### Hybrid Model
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **lookbackWindow** | Historical data window | [20, 30, 50] | High - affects trend detection |
+| Parameter           | Description                 | Default Range   | Impact                           |
+| ------------------- | --------------------------- | --------------- | -------------------------------- |
+| **lookbackWindow**  | Historical data window      | [20, 30, 50]    | High - affects trend detection   |
 | **smoothingFactor** | Exponential smoothing alpha | [0.1, 0.2, 0.3] | Medium - affects noise reduction |
 
 ### General
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **retrainInterval** | Days between retraining | [7, 14, 30] | Medium - affects adaptation |
+| Parameter           | Description             | Default Range | Impact                      |
+| ------------------- | ----------------------- | ------------- | --------------------------- |
+| **retrainInterval** | Days between retraining | [7, 14, 30]   | Medium - affects adaptation |
 
 ---
 
@@ -61,15 +61,18 @@ learningRate: [0.0001, 0.001, 0.01]
 ```
 
 **Pros:**
+
 - ✅ Exhaustive search (guaranteed to find best in space)
 - ✅ Simple to understand
 - ✅ Reproducible results
 
 **Cons:**
+
 - ❌ Slow (exponential growth with parameters)
 - ❌ Computationally expensive
 
 **Best for:**
+
 - Small parameter spaces (< 50 combinations)
 - Critical models requiring best performance
 - When computational resources available
@@ -89,20 +92,23 @@ for i in range(20):
   hiddenSize = random.choice([16, 32, 64])
   sequenceLength = random.choice([10, 20, 30])
   learningRate = random.choice([0.0001, 0.001, 0.01])
-  
+
   // Test this combination
 ```
 
 **Pros:**
+
 - ✅ Fast (fixed number of trials)
 - ✅ Scales to large parameter spaces
 - ✅ Often finds "good enough" solutions
 
 **Cons:**
+
 - ❌ May miss optimal combination
 - ❌ Results vary between runs
 
 **Best for:**
+
 - Large parameter spaces (> 50 combinations)
 - Quick prototyping
 - When computational resources limited
@@ -211,6 +217,7 @@ POST /api/ml/optimize
 ```
 
 **Expected:**
+
 - Trials: 20
 - Time: ~20-30 minutes
 - Improvement: ~5-10%
@@ -240,6 +247,7 @@ POST /api/ml/optimize
 ```
 
 **Expected:**
+
 - Trials: 2 × 2 × 2 = 8
 - Time: ~10-15 minutes
 - Improvement: ~10-15%
@@ -266,6 +274,7 @@ POST /api/ml/optimize
 ```
 
 **Expected:**
+
 - Trials: 3 × 3 = 9
 - Time: ~5-10 minutes (Hybrid is faster than LSTM)
 - Improvement: ~5-10%
@@ -299,7 +308,7 @@ POST /api/ml/optimize
         "directionalAccuracy": 58.5
       },
       "score": 58.5
-    },
+    }
     // ... 19 more trials
   ],
   "bestTrial": {
@@ -362,12 +371,12 @@ Grid Search: hiddenSize=[32, 48, 64]
 
 ### 2. Choose Right Metric
 
-| Goal | Metric | Reason |
-|------|--------|--------|
-| Trading | directionalAccuracy | Need correct direction |
-| Price forecasting | mae or mape | Need close prices |
-| Risk management | rmse | Penalize outliers |
-| Model comparison | r2Score | Overall fit |
+| Goal              | Metric              | Reason                 |
+| ----------------- | ------------------- | ---------------------- |
+| Trading           | directionalAccuracy | Need correct direction |
+| Price forecasting | mae or mape         | Need close prices      |
+| Risk management   | rmse                | Penalize outliers      |
+| Model comparison  | r2Score             | Overall fit            |
 
 ---
 
@@ -428,16 +437,18 @@ POST /api/ml/backtest
 **Problem:** Missing optimal parameters
 
 **Bad:**
+
 ```json
 {
-  "hiddenSize": [32]  // Only one value!
+  "hiddenSize": [32] // Only one value!
 }
 ```
 
 **Good:**
+
 ```json
 {
-  "hiddenSize": [16, 32, 64]  // Multiple values
+  "hiddenSize": [16, 32, 64] // Multiple values
 }
 ```
 
@@ -448,16 +459,18 @@ POST /api/ml/backtest
 **Problem:** Grid search takes forever
 
 **Bad (Grid Search):**
+
 ```json
 {
-  "hiddenSize": [16, 32, 48, 64, 80, 96, 112, 128],  // 8 values
-  "sequenceLength": [10, 15, 20, 25, 30, 35, 40],    // 7 values
-  "learningRate": [0.0001, 0.0005, 0.001, 0.005, 0.01]  // 5 values
+  "hiddenSize": [16, 32, 48, 64, 80, 96, 112, 128], // 8 values
+  "sequenceLength": [10, 15, 20, 25, 30, 35, 40], // 7 values
+  "learningRate": [0.0001, 0.0005, 0.001, 0.005, 0.01] // 5 values
 }
 // Total: 8 × 7 × 5 = 280 trials! 😱
 ```
 
 **Good (Random Search):**
+
 ```json
 {
   "method": "RANDOM",
@@ -477,29 +490,29 @@ POST /api/ml/backtest
 function optimize(config) {
   // 1. Generate hyperparameter combinations
   combinations = generateCombinations(config.space, config.method)
-  
+
   // 2. Test each combination
   trials = []
   for (hyperparams of combinations) {
     // Run backtest with these hyperparameters
     result = backtest(symbol, hyperparams)
-    
+
     // Extract score
     score = result.metrics[config.optimizationMetric]
-    
+
     trials.push({ hyperparams, score, metrics: result.metrics })
   }
-  
+
   // 3. Find best
   bestTrial = findBest(trials, config.optimizationMetric)
-  
+
   // 4. Calculate improvement
   improvement = (bestTrial.score - trials[0].score) / trials[0].score
-  
+
   return {
     trials,
     bestTrial,
-    improvement
+    improvement,
   }
 }
 ```
@@ -522,4 +535,3 @@ function optimize(config) {
 
 **Status:** Production Ready ✅  
 **Last Updated:** 5 октября 2025
-

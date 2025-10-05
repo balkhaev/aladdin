@@ -50,22 +50,25 @@
 **Example:**
 
 ```typescript
-hiddenSize: [16, 32, 64]        // 3 options
-sequenceLength: [10, 20, 30]    // 3 options
-learningRate: [0.001, 0.01]     // 2 options
+hiddenSize: [16, 32, 64] // 3 options
+sequenceLength: [10, 20, 30] // 3 options
+learningRate: [0.001, 0.01] // 2 options
 
 // Total trials = 3 × 3 × 2 = 18
 ```
 
 **Pros:**
+
 - ✅ Exhaustive (guaranteed to find best in space)
 - ✅ Simple and reproducible
 
 **Cons:**
+
 - ❌ Slow (exponential growth)
 - ❌ Computationally expensive
 
 **Use when:**
+
 - Small parameter space (< 50 combinations)
 - Need absolute best parameters
 - Have computational resources
@@ -90,15 +93,18 @@ learningRate: [0.0001, 0.001, 0.01]
 ```
 
 **Pros:**
+
 - ✅ Fast (fixed trials)
 - ✅ Scales to large spaces
 - ✅ Often finds "good enough" solution
 
 **Cons:**
+
 - ❌ May miss optimal
 - ❌ Results vary between runs
 
 **Use when:**
+
 - Large parameter space (> 50 combinations)
 - Quick prototyping
 - Limited computational resources
@@ -109,25 +115,25 @@ learningRate: [0.0001, 0.001, 0.01]
 
 ### LSTM Model
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **hiddenSize** | LSTM units | [16, 32, 64] | High - model capacity |
-| **sequenceLength** | Lookback window | [10, 20, 30] | High - context length |
-| **learningRate** | Training step size | [0.0001, 0.001, 0.01] | Medium - convergence speed |
-| **epochs** | Training iterations | [50, 100, 200] | Medium - model fit |
+| Parameter          | Description         | Default Range         | Impact                     |
+| ------------------ | ------------------- | --------------------- | -------------------------- |
+| **hiddenSize**     | LSTM units          | [16, 32, 64]          | High - model capacity      |
+| **sequenceLength** | Lookback window     | [10, 20, 30]          | High - context length      |
+| **learningRate**   | Training step size  | [0.0001, 0.001, 0.01] | Medium - convergence speed |
+| **epochs**         | Training iterations | [50, 100, 200]        | Medium - model fit         |
 
 ### Hybrid Model
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **lookbackWindow** | Historical data window | [20, 30, 50] | High - trend detection |
+| Parameter           | Description                 | Default Range   | Impact                   |
+| ------------------- | --------------------------- | --------------- | ------------------------ |
+| **lookbackWindow**  | Historical data window      | [20, 30, 50]    | High - trend detection   |
 | **smoothingFactor** | Exponential smoothing alpha | [0.1, 0.2, 0.3] | Medium - noise reduction |
 
 ### General
 
-| Parameter | Description | Default Range | Impact |
-|-----------|-------------|---------------|--------|
-| **retrainInterval** | Days between retraining | [7, 14, 30] | Medium - adaptation speed |
+| Parameter           | Description             | Default Range | Impact                    |
+| ------------------- | ----------------------- | ------------- | ------------------------- |
+| **retrainInterval** | Days between retraining | [7, 14, 30]   | Medium - adaptation speed |
 
 ---
 
@@ -348,21 +354,21 @@ GET /api/ml/optimize/recommendations?symbol=BTCUSDT&modelType=LSTM
 class HyperparameterOptimizationService {
   // Main entry point
   async optimize(config: OptimizationConfig): Promise<OptimizationResult>
-  
+
   // Grid search implementation
   private async gridSearch(config, space): Promise<TrialResult[]>
-  
+
   // Random search implementation
   private async randomSearch(config, space): Promise<TrialResult[]>
-  
+
   // Single trial execution
   private async runTrial(trialId, config, hyperparameters): Promise<TrialResult>
-  
+
   // Find best trial
   private findBestTrial(trials, metric): TrialResult
-  
+
   // Get recommendations
-  getRecommendations(symbol, modelType): { recommendedSpace, reasoning }
+  getRecommendations(symbol, modelType): { recommendedSpace; reasoning }
 }
 ```
 
@@ -438,22 +444,22 @@ class HyperparameterOptimizationService {
 
 ### Execution Time
 
-| Method | Trials | Avg Time per Trial | Total Time |
-|--------|--------|-------------------|------------|
-| Random Search (LSTM) | 20 | ~1-2 min | 20-40 min |
-| Grid Search (LSTM) | 18 | ~1-2 min | 18-36 min |
-| Random Search (Hybrid) | 20 | ~30-60s | 10-20 min |
-| Grid Search (Hybrid) | 18 | ~30-60s | 9-18 min |
+| Method                 | Trials | Avg Time per Trial | Total Time |
+| ---------------------- | ------ | ------------------ | ---------- |
+| Random Search (LSTM)   | 20     | ~1-2 min           | 20-40 min  |
+| Grid Search (LSTM)     | 18     | ~1-2 min           | 18-36 min  |
+| Random Search (Hybrid) | 20     | ~30-60s            | 10-20 min  |
+| Grid Search (Hybrid)   | 18     | ~30-60s            | 9-18 min   |
 
 ### Typical Improvements
 
-| Metric | Baseline | After HPO | Improvement |
-|--------|----------|-----------|-------------|
-| MAE | $120 | $85 | -29% ✅ |
-| RMSE | $180 | $120 | -33% ✅ |
-| MAPE | 4.5% | 2.8% | -38% ✅ |
-| R² Score | 0.75 | 0.89 | +19% ✅ |
-| Direction | 55% | 65% | +18% ✅ |
+| Metric    | Baseline | After HPO | Improvement |
+| --------- | -------- | --------- | ----------- |
+| MAE       | $120     | $85       | -29% ✅     |
+| RMSE      | $180     | $120      | -33% ✅     |
+| MAPE      | 4.5%     | 2.8%      | -38% ✅     |
+| R² Score  | 0.75     | 0.89      | +19% ✅     |
+| Direction | 55%      | 65%       | +18% ✅     |
 
 ---
 
@@ -510,14 +516,14 @@ class HyperparameterOptimizationService {
 
 ## 📊 Comparison: Before vs After
 
-| Feature | Before Phase 3.5 | After Phase 3.5 |
-|---------|------------------|-----------------|
-| **Parameter Tuning** | ❌ Manual guessing | ✅ Automatic optimization |
-| **Search Method** | ❌ Trial and error | ✅ Grid + Random Search |
-| **Improvement Tracking** | ❌ None | ✅ Percentage improvement |
-| **Metrics** | ⚠️ Single metric | ✅ 5 optimization metrics |
-| **Documentation** | ❌ None | ✅ Comprehensive guide |
-| **Reproducibility** | ❌ Low | ✅ High |
+| Feature                  | Before Phase 3.5   | After Phase 3.5           |
+| ------------------------ | ------------------ | ------------------------- |
+| **Parameter Tuning**     | ❌ Manual guessing | ✅ Automatic optimization |
+| **Search Method**        | ❌ Trial and error | ✅ Grid + Random Search   |
+| **Improvement Tracking** | ❌ None            | ✅ Percentage improvement |
+| **Metrics**              | ⚠️ Single metric   | ✅ 5 optimization metrics |
+| **Documentation**        | ❌ None            | ✅ Comprehensive guide    |
+| **Reproducibility**      | ❌ Low             | ✅ High                   |
 
 ---
 
@@ -540,4 +546,3 @@ class HyperparameterOptimizationService {
 **Status:** Production Ready ✅  
 **Version:** 3.5.0  
 **Date:** 5 октября 2025
-

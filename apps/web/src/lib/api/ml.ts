@@ -228,3 +228,99 @@ export async function getMarketRegime(params: {
   const data = await response.json();
   return data.data;
 }
+
+// Hyperparameter Optimization types
+export type HyperparameterSpace = {
+  hiddenSize?: number[];
+  sequenceLength?: number[];
+  learningRate?: number[];
+  epochs?: number[];
+  lookbackWindow?: number[];
+  smoothingFactor?: number[];
+  retrainInterval?: number[];
+};
+
+export type OptimizationMetric = "mae" | "rmse" | "mape" | "r2Score" | "directionalAccuracy";
+
+export type TrialResult = {
+  trialId: number;
+  hyperparameters: Record<string, number>;
+  metrics: EvaluationMetrics;
+  score: number;
+  executionTime: number;
+  completedAt: number;
+};
+
+export type OptimizationResult = {
+  config: {
+    symbol: string;
+    modelType: ModelType;
+    horizon: PredictionHorizon;
+    hyperparameterSpace: HyperparameterSpace;
+    method: "GRID" | "RANDOM";
+    nTrials?: number;
+    startDate: number;
+    endDate: number;
+    optimizationMetric: OptimizationMetric;
+    crossValidationFolds?: number;
+  };
+  trials: TrialResult[];
+  bestTrial: TrialResult;
+  bestHyperparameters: Record<string, number>;
+  improvementPercentage: number;
+  totalExecutionTime: number;
+  completedAt: number;
+};
+
+export type OptimizationRecommendations = {
+  recommendedSpace: HyperparameterSpace;
+  reasoning: string;
+};
+
+/**
+ * Run hyperparameter optimization
+ */
+export async function runOptimization(config: {
+  symbol: string;
+  modelType: ModelType;
+  horizon: PredictionHorizon;
+  hyperparameterSpace: HyperparameterSpace;
+  method: "GRID" | "RANDOM";
+  nTrials?: number;
+  startDate: number;
+  endDate: number;
+  optimizationMetric: OptimizationMetric;
+  crossValidationFolds?: number;
+}): Promise<OptimizationResult> {
+  const response = await fetch(`${ML_API_URL}/api/ml/optimize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Optimization failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+/**
+ * Get hyperparameter recommendations
+ */
+export async function getHPORecommendations(
+  symbol: string,
+  modelType: ModelType
+): Promise<OptimizationRecommendations> {
+  const response = await fetch(
+    `${ML_API_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to get recommendations: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}

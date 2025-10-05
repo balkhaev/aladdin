@@ -9,6 +9,7 @@ import {
   BookOpen,
   Info,
   Layers,
+  MessageSquare,
   Shield,
   TrendingDown,
   TrendingUp,
@@ -186,6 +187,12 @@ const SentimentRowComponent = memo(function SentimentRowMemo({
         SENTIMENT_THRESHOLD
       ),
     [sentiment.components.orderBook.score]
+  );
+
+  const socialColor = useMemo(
+    () =>
+      getSentimentColor(sentiment.components.social.score, SENTIMENT_THRESHOLD),
+    [sentiment.components.social.score]
   );
 
   const combinedColor = useMemo(
@@ -371,6 +378,35 @@ const SentimentRowComponent = memo(function SentimentRowMemo({
                 <p className="text-xs">
                   Order Book • Weight:{" "}
                   {formatScore(sentiment.components.orderBook.weight, 2)}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Social */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5 text-orange-500" />
+                  <div className="flex flex-col">
+                    <span className={`font-semibold text-xs ${socialColor}`}>
+                      {formatScore(
+                        sentiment.components.social.score,
+                        SCORE_DECIMALS
+                      )}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {Math.round(sentiment.components.social.confidence * 100)}
+                      %
+                    </span>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">
+                  Social • Weight:{" "}
+                  {formatScore(sentiment.components.social.weight, 2)}
                 </p>
               </TooltipContent>
             </Tooltip>

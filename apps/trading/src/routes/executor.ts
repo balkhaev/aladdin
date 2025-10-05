@@ -1,5 +1,5 @@
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
 import type { PrismaClient } from "@aladdin/database";
+import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
 import type { Hono } from "hono";
 import type { StrategyExecutor } from "../services/executor";
 
@@ -76,7 +76,10 @@ export function setupExecutorRoutes(
       const body = await c.req.json<Record<string, unknown>>();
 
       // Validate exchangeCredentialsId if provided
-      if (body.exchangeCredentialsId && typeof body.exchangeCredentialsId === "string") {
+      if (
+        body.exchangeCredentialsId &&
+        typeof body.exchangeCredentialsId === "string"
+      ) {
         const credentials = await prisma.exchangeCredentials.findUnique({
           where: { id: body.exchangeCredentialsId },
         });

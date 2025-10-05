@@ -3,7 +3,13 @@ import type { LSTMPredictionService } from "./services/lstm-prediction";
 import type { MarketRegimeService } from "./services/market-regime";
 import type { ModelPersistenceService } from "./services/model-persistence";
 import type { PricePredictionService } from "./services/price-prediction";
-import { MarketRegimeRequestSchema, PredictionRequestSchema } from "./types";
+import type { BacktestingService } from "./services/backtesting";
+import {
+  MarketRegimeRequestSchema,
+  PredictionRequestSchema,
+  BacktestConfigSchema,
+  CompareModelsRequestSchema,
+} from "./types";
 
 const HTTP_STATUS = {
   OK: 200,
@@ -16,7 +22,8 @@ export function setupMLRoutes(
   predictionService: PricePredictionService,
   regimeService: MarketRegimeService,
   lstmService: LSTMPredictionService,
-  persistenceService: ModelPersistenceService
+  persistenceService: ModelPersistenceService,
+  backtestingService: BacktestingService
 ) {
   /**
    * POST /api/ml/predict - Предсказать цену
@@ -344,6 +351,96 @@ export function setupMLRoutes(
           success: false,
           error: {
             code: "CLEANUP_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/backtest - Run backtest
+   */
+  app.post("/api/ml/backtest", async (c) => {
+    try {
+      const body = await c.req.json();
+
+      // Validate request
+      const validation = BacktestConfigSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: validation.error.message,
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const result = await backtestingService.runBacktest(validation.data);
+
+      return c.json({
+        success: true,
+        data: result,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "BACKTEST_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/backtest/compare - Compare LSTM vs Hybrid models
+   */
+  app.post("/api/ml/backtest/compare", async (c) => {
+    try {
+      const body = await c.req.json();
+
+      // Validate request
+      const validation = CompareModelsRequestSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: validation.error.message,
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const result = await backtestingService.compareModels(validation.data);
+
+      return c.json({
+        success: true,
+        data: result,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "COMPARISON_FAILED",
             message: error instanceof Error ? error.message : String(error),
           },
           timestamp: Date.now(),

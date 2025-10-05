@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { setupMLRoutes } from "./routes";
+import { BacktestingService } from "./services/backtesting";
 import { FeatureEngineeringService } from "./services/feature-engineering";
 import { LSTMPredictionService } from "./services/lstm-prediction";
 import { MarketRegimeService } from "./services/market-regime";
@@ -50,6 +51,13 @@ function initializeServices() {
       logger
     );
     const persistenceService = new ModelPersistenceService(logger);
+    const backtestingService = new BacktestingService(
+      clickhouse,
+      lstmService,
+      predictionService,
+      featureService,
+      logger
+    );
 
     // Setup routes
     setupMLRoutes(
@@ -57,7 +65,8 @@ function initializeServices() {
       predictionService,
       regimeService,
       lstmService,
-      persistenceService
+      persistenceService,
+      backtestingService
     );
 
     logger.info("ML Service initialized successfully");
@@ -91,6 +100,8 @@ function start() {
     logger.info("  POST /api/ml/predict/lstm - Price prediction (LSTM)");
     logger.info("  POST /api/ml/predict/batch - Batch predictions");
     logger.info("  POST /api/ml/regime - Market regime detection");
+    logger.info("  POST /api/ml/backtest - Run backtest");
+    logger.info("  POST /api/ml/backtest/compare - Compare models");
     logger.info("  GET /api/ml/models - List saved models");
     logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
     logger.info("  DELETE /api/ml/models/:symbol - Delete model");

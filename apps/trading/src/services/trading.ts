@@ -76,6 +76,16 @@ export class TradingService extends BaseService {
     return "trading";
   }
 
+  /**
+   * Get Prisma client for external use
+   */
+  getPrisma() {
+    if (!this.prisma) {
+      throw new Error("Prisma client not initialized");
+    }
+    return this.prisma;
+  }
+
   protected onInitialize(): Promise<void> {
     if (!this.natsClient) {
       throw new Error("NATS client is required for Trading Service");
@@ -303,9 +313,7 @@ export class TradingService extends BaseService {
 
     // Verify ownership
     if (credentials.userId !== userId) {
-      throw new NotFoundError(
-        "Exchange credentials not found. Access denied."
-      );
+      throw new NotFoundError("Exchange credentials not found. Access denied.");
     }
 
     // Check if active
@@ -406,7 +414,7 @@ export class TradingService extends BaseService {
         params.exchangeCredentialsId,
         params.userId
       );
-      
+
       // Get exchange name from credentials
       const credentials = await this.prisma.exchangeCredentials.findUnique({
         where: { id: params.exchangeCredentialsId },
@@ -414,10 +422,15 @@ export class TradingService extends BaseService {
       exchangeName = credentials?.exchange || "unknown";
     } else if (params.exchange) {
       // Use exchange (legacy method)
-      connector = await this.getExchangeConnector(params.userId, params.exchange);
+      connector = await this.getExchangeConnector(
+        params.userId,
+        params.exchange
+      );
       exchangeName = params.exchange;
     } else {
-      throw new Error("Either exchangeCredentialsId or exchange must be provided");
+      throw new Error(
+        "Either exchangeCredentialsId or exchange must be provided"
+      );
     }
 
     // TODO: Add pre-order validation (min/max order size, price filters, lot size)

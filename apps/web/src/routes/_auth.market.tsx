@@ -4,7 +4,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, BarChart3, Flame, Link2, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, Link2, TrendingUp } from "lucide-react";
 import { MarketSentimentGrid } from "@/components/analytics/market-sentiment-grid";
 import { CategoryPerformance } from "@/components/macro/category-performance";
 import { CorrelationMatrix } from "@/components/macro/correlation-matrix";
@@ -54,7 +54,7 @@ function MarketOverviewPage() {
 
       {/* Main Content Tabs */}
       <Tabs className="space-y-6" defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[700px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[550px]">
           <TabsTrigger className="gap-2" value="overview">
             <Activity className="size-4" />
             <span className="hidden sm:inline">Обзор</span>
@@ -62,10 +62,6 @@ function MarketOverviewPage() {
           <TabsTrigger className="gap-2" value="analytics">
             <BarChart3 className="size-4" />
             <span className="hidden sm:inline">Аналитика</span>
-          </TabsTrigger>
-          <TabsTrigger className="gap-2" value="heatmap">
-            <Flame className="size-4" />
-            <span className="hidden sm:inline">Heatmap</span>
           </TabsTrigger>
           <TabsTrigger className="gap-2" value="onchain">
             <Link2 className="size-4" />
@@ -124,19 +120,16 @@ function MarketOverviewPage() {
           </div>
 
           <div className="space-y-3">
-            <h2 className="font-semibold text-xl">Correlation Matrix</h2>
-            <CorrelationMatrix />
-          </div>
-        </TabsContent>
-
-        {/* Heatmap Tab */}
-        <TabsContent className="space-y-6" value="heatmap">
-          <div className="space-y-3">
             <h2 className="font-semibold text-xl">Market Heatmap</h2>
             <p className="text-muted-foreground text-sm">
               Визуализация рыночной капитализации и изменений цен
             </p>
             <MarketHeatmap />
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="font-semibold text-xl">Correlation Matrix</h2>
+            <CorrelationMatrix />
           </div>
         </TabsContent>
 

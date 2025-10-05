@@ -150,3 +150,25 @@ export type TrainingResult = {
   validationDataPoints: number;
   completedAt: number;
 };
+
+// Backtesting
+export const BacktestConfigSchema = z.object({
+  symbol: z.string().min(1),
+  modelType: z.enum(["LSTM", "HYBRID"]),
+  horizon: z.enum(["1h", "4h", "1d", "7d"]),
+  startDate: z.number().min(0),
+  endDate: z.number().min(0),
+  walkForward: z.boolean().optional().default(false),
+  retrainInterval: z.number().min(1).optional().default(30), // days
+});
+
+export type BacktestConfig = z.infer<typeof BacktestConfigSchema>;
+
+export const CompareModelsRequestSchema = z.object({
+  symbol: z.string().min(1),
+  horizon: z.enum(["1h", "4h", "1d", "7d"]),
+  startDate: z.number().min(0),
+  endDate: z.number().min(0),
+  walkForward: z.boolean().optional().default(false),
+  retrainInterval: z.number().min(1).optional().default(30), // days
+});

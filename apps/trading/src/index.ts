@@ -6,6 +6,8 @@ import {
 import { initializeService } from "@aladdin/shared/service-bootstrap";
 import type { OrderStatus } from "@aladdin/shared/types";
 import type { ServerWebSocket } from "bun";
+import { setupExecutorRoutes } from "./routes/executor";
+import { type ExecutorConfig, StrategyExecutor } from "./services/executor";
 import { TradingService } from "./services/trading";
 import {
   type CreateOrderInput,
@@ -14,8 +16,6 @@ import {
   getOrdersQuerySchema,
 } from "./validation/schemas";
 import { TradingWebSocketHandler } from "./websocket/handler";
-import { setupExecutorRoutes } from "./routes/executor";
-import { type ExecutorConfig, StrategyExecutor } from "./services/executor";
 import "dotenv/config";
 
 const DEFAULT_PORT = 3011;
@@ -57,9 +57,11 @@ await initializeService<TradingService, WebSocketData>({
       exchangeCredentialsId: process.env.DEFAULT_EXCHANGE_CREDENTIALS_ID || "",
       autoExecute: process.env.AUTO_EXECUTE !== "false",
     };
-    
+
     executor = new StrategyExecutor(deps, executorConfig);
-    deps.logger.info("Strategy executor initialized", { config: executorConfig });
+    deps.logger.info("Strategy executor initialized", {
+      config: executorConfig,
+    });
   },
 
   setupRoutes: (app, service) => {
@@ -429,10 +431,10 @@ await initializeService<TradingService, WebSocketData>({
             },
             timestamp: Date.now(),
           },
-        HTTP_STATUS.INTERNAL_SERVER_ERROR
-      );
-    }
-  });
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+    });
 
     // Setup Strategy Executor routes
     setupExecutorRoutes(app, executor, service.getPrisma());

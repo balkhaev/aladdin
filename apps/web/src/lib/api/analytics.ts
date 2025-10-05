@@ -208,10 +208,13 @@ export function getIndicators(params: {
   const searchParams = new URLSearchParams();
   searchParams.set("symbol", params.symbol);
   if (params.timeframe) searchParams.set("timeframe", params.timeframe);
-  if (params.indicators) searchParams.set("indicators", params.indicators.join(","));
+  if (params.indicators)
+    searchParams.set("indicators", params.indicators.join(","));
   if (params.period) searchParams.set("period", params.period.toString());
 
-  return apiClient.get<Indicators>(`/api/analytics/indicators?${searchParams.toString()}`);
+  return apiClient.get<Indicators>(
+    `/api/analytics/indicators?${searchParams.toString()}`
+  );
 }
 
 // ==================== Trading Statistics ====================
@@ -244,12 +247,19 @@ export function getTradingStatistics(params: {
   if (params.from) searchParams.set("from", params.from);
   if (params.to) searchParams.set("to", params.to);
 
-  return apiClient.get<TradingStatistics>(`/api/analytics/trading-statistics?${searchParams.toString()}`);
+  return apiClient.get<TradingStatistics>(
+    `/api/analytics/trading-statistics?${searchParams.toString()}`
+  );
 }
 
 // ==================== Backtesting ====================
 
-export type StrategyType = "MEAN_REVERSION" | "TREND_FOLLOWING" | "BREAKOUT" | "RSI" | "MACD";
+export type StrategyType =
+  | "MEAN_REVERSION"
+  | "TREND_FOLLOWING"
+  | "BREAKOUT"
+  | "RSI"
+  | "MACD";
 
 export type BacktestResult = {
   strategy: StrategyType;
@@ -339,10 +349,15 @@ export function generateReport(params: {
   if (params.format) searchParams.set("format", params.format);
 
   if (params.format === "csv") {
-    return apiClient.get<Blob>(`/api/analytics/report?${searchParams.toString()}`, {
-      responseType: "blob",
-    });
+    return apiClient.get<Blob>(
+      `/api/analytics/report?${searchParams.toString()}`,
+      {
+        responseType: "blob",
+      }
+    );
   }
 
-  return apiClient.get<PortfolioReport>(`/api/analytics/report?${searchParams.toString()}`);
+  return apiClient.get<PortfolioReport>(
+    `/api/analytics/report?${searchParams.toString()}`
+  );
 }

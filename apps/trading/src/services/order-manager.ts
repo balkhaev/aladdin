@@ -43,7 +43,10 @@ export class OrderManager {
 
     try {
       // 1. Get current price
-      const price = await this.getCurrentPrice(signal.symbol, exchangeCredentialsId);
+      const price = await this.getCurrentPrice(
+        signal.symbol,
+        exchangeCredentialsId
+      );
 
       // 2. Calculate position size
       const portfolio = await this.getPortfolio(portfolioId);

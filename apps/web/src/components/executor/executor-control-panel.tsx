@@ -19,13 +19,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
+import { useExchangeCredentials } from "@/hooks/use-exchange-credentials";
 import {
   useExecutorConfig,
   useSetExecutionMode,
   useToggleAutoExecute,
   useUpdateExecutorConfig,
 } from "@/hooks/use-executor";
-import { useExchangeCredentials } from "@/hooks/use-exchange-credentials";
 
 const POSITION_LIMIT_MIN = 1;
 const POSITION_LIMIT_SMALL = 3;
@@ -45,7 +45,8 @@ const MAX_POSITION_OPTIONS = [
 
 export function ExecutorControlPanel() {
   const { data: config, isLoading } = useExecutorConfig();
-  const { data: credentials, isLoading: credentialsLoading } = useExchangeCredentials();
+  const { data: credentials, isLoading: credentialsLoading } =
+    useExchangeCredentials();
   const setModeMutation = useSetExecutionMode();
   const toggleAutoMutation = useToggleAutoExecute();
   const updateConfigMutation = useUpdateExecutorConfig();
@@ -339,7 +340,9 @@ export function ExecutorControlPanel() {
             )}
           </div>
           <Badge className="text-xs" variant="outline">
-            {credentials?.find((c) => c.id === config.exchangeCredentialsId)?.exchange.toUpperCase() || "Not Set"}
+            {credentials
+              ?.find((c) => c.id === config.exchangeCredentialsId)
+              ?.exchange.toUpperCase() || "Not Set"}
           </Badge>
         </div>
       </CardContent>

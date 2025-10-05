@@ -18,6 +18,7 @@
 **File:** `apps/ml-service/src/models/lstm.ts` (340 lines)
 
 **Features:**
+
 - ✅ LSTM Cell implementation (forget/input/output gates)
 - ✅ Forward propagation через sequences
 - ✅ Xavier weight initialization
@@ -27,6 +28,7 @@
 - ✅ Model serialization (toJSON/fromJSON)
 
 **Technical Details:**
+
 - Hidden size: 32 units
 - Learning rate: 0.001
 - Sequence length: 20 candles
@@ -38,6 +40,7 @@
 **File:** `apps/ml-service/src/services/lstm-prediction.ts` (300+ lines)
 
 **Capabilities:**
+
 - ✅ Automatic model training
 - ✅ Model caching (24h expiry)
 - ✅ Data normalization
@@ -48,6 +51,7 @@
 - ✅ Performance tracking
 
 **Training Process:**
+
 1. Extract 500 historical candles
 2. Normalize prices to [0, 1]
 3. Create training sequences (20-candle windows)
@@ -56,6 +60,7 @@
 6. Cache trained model
 
 **Prediction Process:**
+
 1. Load or train model
 2. Prepare recent 20-candle sequence
 3. Generate multi-step predictions
@@ -68,6 +73,7 @@
 **File:** `apps/ml-service/src/services/model-persistence.ts` (200+ lines)
 
 **Features:**
+
 - ✅ Save trained models to disk
 - ✅ Load models from disk
 - ✅ List all saved models
@@ -77,6 +83,7 @@
 - ✅ Model age tracking
 
 **Metadata Stored:**
+
 ```typescript
 {
   symbol: "BTCUSDT",
@@ -101,6 +108,7 @@
 5. `POST /api/ml/models/cleanup` - Cleanup old models
 
 **Updated Service:**
+
 - `apps/ml-service/src/index.ts` - Added LSTM & Persistence services
 - `apps/ml-service/src/routes.ts` - Added 5 new endpoints
 
@@ -109,18 +117,21 @@
 ## 📊 Statistics
 
 ### Code Metrics
+
 - **Files Created:** 3
 - **Lines of Code:** ~1,000
 - **API Endpoints:** 5 new
 - **Services:** 2 new
 
 ### Model Performance
+
 - **Training Time:** 10-15s per symbol
 - **Prediction Time:** < 5ms
 - **Model Size:** ~100KB
 - **Accuracy:** 80-85%
 
 ### Architecture
+
 - **Input Size:** 1 (normalized price)
 - **Hidden Size:** 32 units
 - **Sequence Length:** 20 candles
@@ -134,7 +145,7 @@
 ### LSTM Architecture
 
 ```
-Input Layer (1) 
+Input Layer (1)
     ↓
 LSTM Cell (32 hidden units)
   ├─ Forget Gate
@@ -172,7 +183,7 @@ for epoch in epochs:
     prediction = model.predict(sample.input)
     loss = MSE(prediction, sample.output)
     updateWeights(loss)
-  
+
   if loss < 0.001:
     break // Early stopping
 ```
@@ -183,14 +194,14 @@ for epoch in epochs:
 
 ### Hybrid vs LSTM
 
-| Metric | Hybrid Model | LSTM Model |
-|--------|--------------|------------|
-| **Training** | None | 10-15s |
-| **Accuracy** | ~70% | ~85% |
-| **Speed** | Instant | < 5ms |
-| **Complexity** | Low | High |
-| **Adaptability** | Fixed | Learns |
-| **Use Case** | Quick | Accurate |
+| Metric           | Hybrid Model | LSTM Model |
+| ---------------- | ------------ | ---------- |
+| **Training**     | None         | 10-15s     |
+| **Accuracy**     | ~70%         | ~85%       |
+| **Speed**        | Instant      | < 5ms      |
+| **Complexity**   | Low          | High       |
+| **Adaptability** | Fixed        | Learns     |
+| **Use Case**     | Quick        | Accurate   |
 
 ---
 
@@ -209,6 +220,7 @@ curl -X POST http://localhost:3019/api/ml/predict/lstm \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -218,9 +230,9 @@ curl -X POST http://localhost:3019/api/ml/predict/lstm \
     "predictions": [
       {
         "timestamp": 1728127056789,
-        "predictedPrice": 65432.10,
-        "lowerBound": 64000.50,
-        "upperBound": 66863.70,
+        "predictedPrice": 65432.1,
+        "lowerBound": 64000.5,
+        "upperBound": 66863.7,
         "confidence": 0.95
       }
     ],
@@ -257,17 +269,20 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 ## 💡 Key Insights
 
 ### What Worked Well
+
 ✅ **Pure TypeScript** - No external ML dependencies!  
 ✅ **Production Ready** - Serialization, caching, persistence  
 ✅ **Fast** - Training < 15s, prediction < 5ms  
 ✅ **Accurate** - 85% accuracy on test data
 
 ### Challenges
+
 ⚠️ **Gradient Calculation** - Simplified (no BPTT yet)  
 ⚠️ **Memory** - Full sequence storage  
 ⚠️ **Overfitting** - Limited regularization
 
 ### Improvements Made
+
 🔄 **Xavier Init** - Prevents gradient issues  
 🔄 **Early Stopping** - Prevents overfitting  
 🔄 **Normalization** - Stable training  
@@ -278,17 +293,20 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 ## 🔮 Next Steps
 
 ### Phase 3.3 (Immediate)
+
 - [ ] Backtesting Framework
 - [ ] Model Evaluation Metrics (MAE, RMSE, MAPE)
 - [ ] Hyperparameter optimization
 
 ### Phase 3.4 (Advanced)
+
 - [ ] Bidirectional LSTM
 - [ ] Attention Mechanism
 - [ ] Transformer Models
 - [ ] Multi-feature input (volume, indicators)
 
 ### Phase 3.5 (Production)
+
 - [ ] A/B Testing Framework
 - [ ] Model Monitoring
 - [ ] Drift Detection
@@ -299,11 +317,13 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 ## 📚 Documentation
 
 ### Created
+
 - ✅ `apps/ml-service/LSTM_IMPLEMENTATION.md` - Deep dive
 - ✅ Inline code documentation (JSDoc)
 - ✅ API examples
 
 ### Updated
+
 - ✅ `apps/ml-service/README.md` - Added LSTM section
 - ✅ `PHASE_3_STARTED.md` - Added LSTM progress
 
@@ -311,16 +331,16 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 
 ## 🎖️ Milestones
 
-| Date | Milestone |
-|------|-----------|
-| 2025-10-05 | Phase 3 started |
-| 2025-10-05 | Hybrid model completed |
-| 2025-10-05 | LSTM implementation started |
-| 2025-10-05 | LSTM Cell implemented |
-| 2025-10-05 | LSTM Prediction Service created |
-| 2025-10-05 | Model Persistence added |
-| 2025-10-05 | API integration completed |
-| **2025-10-05** | **Phase 3.2 COMPLETED ✅** |
+| Date           | Milestone                       |
+| -------------- | ------------------------------- |
+| 2025-10-05     | Phase 3 started                 |
+| 2025-10-05     | Hybrid model completed          |
+| 2025-10-05     | LSTM implementation started     |
+| 2025-10-05     | LSTM Cell implemented           |
+| 2025-10-05     | LSTM Prediction Service created |
+| 2025-10-05     | Model Persistence added         |
+| 2025-10-05     | API integration completed       |
+| **2025-10-05** | **Phase 3.2 COMPLETED ✅**      |
 
 ---
 
@@ -336,6 +356,7 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 ## 🏆 Achievements
 
 ### Technical
+
 - ✅ Custom LSTM from scratch (no TensorFlow/PyTorch!)
 - ✅ Production-ready TypeScript implementation
 - ✅ Full training pipeline
@@ -343,6 +364,7 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 - ✅ 85% accuracy
 
 ### Product
+
 - ✅ 5 new API endpoints
 - ✅ Model management UI-ready
 - ✅ Real-time predictions
@@ -350,6 +372,7 @@ curl -X DELETE http://localhost:3019/api/ml/models/BTCUSDT
 - ✅ Performance tracking
 
 ### Code Quality
+
 - ✅ 0 linter errors
 - ✅ Type-safe
 - ✅ Well-documented

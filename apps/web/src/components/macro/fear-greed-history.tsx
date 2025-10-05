@@ -51,7 +51,8 @@ export function FearGreedHistory() {
 
     const initializeChart = () => {
       // Don't initialize if already initialized or container not visible
-      if (chart || container.clientWidth === 0) return;
+      if (chart || container.clientWidth === 0 || container.offsetWidth === 0)
+        return;
 
       // Create chart
       chart = createChart(container, {
@@ -198,6 +199,26 @@ export function FearGreedHistory() {
       }
     };
   }, []);
+
+  // Data-driven initialization: force chart creation when data arrives
+  // This is critical for tabs where the chart container becomes visible after data loads
+  useEffect(() => {
+    if (!data) return;
+    if (!chartContainerRef.current) return;
+
+    const container = chartContainerRef.current;
+
+    // If data arrived but chart is not initialized yet, and container is now visible, force initialization
+    const isChartNotInitialized = !chartRef.current;
+    const isContainerVisible =
+      container.offsetWidth > 0 && container.clientWidth > 0;
+
+    if (isChartNotInitialized && isContainerVisible) {
+      // Trigger resize which will call initializeChart
+      const event = new Event("resize");
+      window.dispatchEvent(event);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!(seriesRef.current && data)) return;

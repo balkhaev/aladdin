@@ -349,14 +349,18 @@ interface StrategyAllocation {
 **Приоритет:** 🟡 Средний  
 **Цель:** AI-powered прогнозирование и автоматизация
 
-#### 3.1 Price Prediction Models
+#### 3.1 Price Prediction Models ✅ COMPLETED
 
-##### LSTM/Transformer для предсказания цен
+##### ✅ LSTM для предсказания цен (COMPLETED - 2025-10-05)
 
-- Multi-step ahead forecasting
-- Uncertainty quantification
-- Feature importance
-- Приоритет: Medium
+- ✅ Multi-step ahead forecasting
+- ✅ Uncertainty quantification (confidence intervals)
+- ✅ Feature importance (technical indicators)
+- ✅ Hybrid Model (linear regression + exponential smoothing)
+- ✅ LSTM Model (custom implementation from scratch)
+- ✅ Model persistence (save/load)
+- ✅ Model caching (24h TTL)
+- Приоритет: Medium → ✅ DONE
 
 ```typescript
 async predictPrice(params: {
@@ -417,12 +421,24 @@ async analyzeSentiment(symbol: string): Promise<{
 
 #### 3.3 Anomaly Detection
 
-##### Market Regime Detection
+##### ✅ Market Regime Detection (COMPLETED - 2025-10-05)
 
-- Bull/Bear/Sideways classification
-- Volatility regime shifts
-- Correlation breakdowns
-- Приоритет: High
+- ✅ Bull/Bear/Sideways classification
+- ✅ Volatility regime shifts
+- ✅ Confidence scoring
+- ✅ Regime prediction (next regime probabilities)
+- Correlation breakdowns → ⏳ TODO
+- Приоритет: High → ✅ DONE
+
+##### ✅ Backtesting Framework (COMPLETED - 2025-10-05)
+
+- ✅ Simple backtest (single training)
+- ✅ Walk-forward testing (periodic retraining)
+- ✅ Model comparison (LSTM vs Hybrid)
+- ✅ 8 evaluation metrics (MAE, RMSE, MAPE, R², Directional Accuracy, Mean/Max/Min Error)
+- ✅ API integration
+- ✅ Comprehensive documentation
+- Приоритет: High → ✅ DONE
 
 ##### Pump & Dump Detection
 

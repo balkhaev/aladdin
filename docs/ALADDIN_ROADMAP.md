@@ -471,6 +471,15 @@ async analyzeSentiment(symbol: string): Promise<{
   - ✅ Integration in ML page (`/ml` tab)
   - ✅ 1000+ lines of UI code
   - ✅ Comprehensive documentation (`apps/web/HPO_UI_GUIDE.md`)
+- ✅ **Export Functionality** (COMPLETED - 2025-10-05):
+  - ✅ Export as JSON (full result)
+  - ✅ Export as CSV (trials table)
+  - ✅ Export summary as TXT (human-readable)
+  - ✅ Copy best params to clipboard
+  - ✅ Export chart as PNG
+  - ✅ Export menu component
+  - ✅ 740+ lines of code
+  - ✅ Comprehensive documentation (`apps/web/HPO_ADVANCED_FEATURES.md`)
 - Приоритет: Medium → ✅ DONE
 
 ##### Pump & Dump Detection

@@ -50,7 +50,7 @@
 **Example:**
 
 ```tsx
-<BacktestMetricsCard 
+<BacktestMetricsCard
   metrics={{
     mae: 85.32,
     rmse: 120.45,
@@ -59,7 +59,7 @@
     directionalAccuracy: 62.4,
     meanError: -5.2,
     maxError: 450.0,
-    minError: -380.0
+    minError: -380.0,
   }}
   modelType="LSTM"
 />
@@ -85,15 +85,15 @@
 **Example:**
 
 ```tsx
-<BacktestChart 
+<BacktestChart
   predictions={[
     {
       timestamp: 1728127056789,
-      actual: 28500.00,
-      predicted: 28420.50,
-      error: -79.50,
+      actual: 28500.0,
+      predicted: 28420.5,
+      error: -79.5,
       percentError: -0.28,
-      correctDirection: true
+      correctDirection: true,
     },
     // ... more predictions
   ]}
@@ -118,10 +118,7 @@
 **Example:**
 
 ```tsx
-<ErrorDistributionChart 
-  predictions={predictions}
-  height={300}
-/>
+<ErrorDistributionChart predictions={predictions} height={300} />
 ```
 
 ---
@@ -142,7 +139,7 @@
 **Example:**
 
 ```tsx
-<ModelComparisonCard 
+<ModelComparisonCard
   comparison={{
     lstm: {...},
     hybrid: {...},
@@ -173,7 +170,7 @@
 **Example:**
 
 ```tsx
-<MLBacktestResults 
+<MLBacktestResults
   result={{
     config: { symbol: "BTCUSDT", modelType: "LSTM", horizon: "1h", ... },
     metrics: { mae: 85.32, rmse: 120.45, ... },
@@ -197,38 +194,53 @@
 
 ```typescript
 // Predict price (Hybrid model)
-predictPrice({ symbol, horizon, confidence? })
+predictPrice({ symbol, horizon, confidence })
 
 // Predict price (LSTM model)
-predictPriceLSTM({ symbol, horizon, confidence? })
+predictPriceLSTM({ symbol, horizon, confidence })
 
 // Run backtest
-runBacktest({ symbol, modelType, horizon, startDate, endDate, walkForward?, retrainInterval? })
+runBacktest({
+  symbol,
+  modelType,
+  horizon,
+  startDate,
+  endDate,
+  walkForward,
+  retrainInterval,
+})
 
 // Compare models
-compareModels({ symbol, horizon, startDate, endDate, walkForward?, retrainInterval? })
+compareModels({
+  symbol,
+  horizon,
+  startDate,
+  endDate,
+  walkForward,
+  retrainInterval,
+})
 
 // Get market regime
-getMarketRegime({ symbol, lookback? })
+getMarketRegime({ symbol, lookback })
 ```
 
 **Types:**
 
 ```typescript
-export type PredictionHorizon = "1h" | "4h" | "1d" | "7d";
-export type ModelType = "LSTM" | "HYBRID";
-export type MarketRegime = "BULL" | "BEAR" | "SIDEWAYS";
+export type PredictionHorizon = "1h" | "4h" | "1d" | "7d"
+export type ModelType = "LSTM" | "HYBRID"
+export type MarketRegime = "BULL" | "BEAR" | "SIDEWAYS"
 
 export type EvaluationMetrics = {
-  mae: number;
-  rmse: number;
-  mape: number;
-  r2Score: number;
-  directionalAccuracy: number;
-  meanError: number;
-  maxError: number;
-  minError: number;
-};
+  mae: number
+  rmse: number
+  mape: number
+  r2Score: number
+  directionalAccuracy: number
+  meanError: number
+  maxError: number
+  minError: number
+}
 ```
 
 ---
@@ -241,16 +253,21 @@ export type EvaluationMetrics = {
 
 ```typescript
 // Run backtest (mutation)
-const { mutate, isPending, data, error } = useRunBacktest();
+const { mutate, isPending, data, error } = useRunBacktest()
 
 // Compare models (mutation)
-const { mutate, isPending, data, error } = useCompareModels();
+const { mutate, isPending, data, error } = useCompareModels()
 
 // Get cached backtest result (query)
-const { data, isLoading, error } = useBacktestResult(symbol, modelType, horizon, enabled);
+const { data, isLoading, error } = useBacktestResult(
+  symbol,
+  modelType,
+  horizon,
+  enabled
+)
 
 // Get cached comparison result (query)
-const { data, isLoading, error } = useComparisonResult(symbol, horizon, enabled);
+const { data, isLoading, error } = useComparisonResult(symbol, horizon, enabled)
 ```
 
 ---
@@ -429,28 +446,28 @@ const { data, isLoading, error } = useComparisonResult(symbol, horizon, enabled)
 
 ### Component Performance
 
-| Component | Initial Render | Update | Notes |
-|-----------|----------------|--------|-------|
-| BacktestMetricsCard | ~5ms | ~2ms | Lightweight calculations |
-| BacktestChart | ~100ms | ~20ms | Chart initialization |
-| ErrorDistributionChart | ~80ms | ~15ms | Histogram calculation |
-| ModelComparisonCard | ~10ms | ~3ms | Simple comparison logic |
-| MLBacktestResults | ~150ms | ~30ms | Combined components |
+| Component              | Initial Render | Update | Notes                    |
+| ---------------------- | -------------- | ------ | ------------------------ |
+| BacktestMetricsCard    | ~5ms           | ~2ms   | Lightweight calculations |
+| BacktestChart          | ~100ms         | ~20ms  | Chart initialization     |
+| ErrorDistributionChart | ~80ms          | ~15ms  | Histogram calculation    |
+| ModelComparisonCard    | ~10ms          | ~3ms   | Simple comparison logic  |
+| MLBacktestResults      | ~150ms         | ~30ms  | Combined components      |
 
 ### API Response Times
 
-| Endpoint | Simple Backtest | Walk-Forward | Notes |
-|----------|-----------------|--------------|-------|
-| `/api/ml/backtest` | 10-15s | 2-5 min | Depends on data size |
-| `/api/ml/backtest/compare` | 20-30s | 4-10 min | Runs both models |
+| Endpoint                   | Simple Backtest | Walk-Forward | Notes                |
+| -------------------------- | --------------- | ------------ | -------------------- |
+| `/api/ml/backtest`         | 10-15s          | 2-5 min      | Depends on data size |
+| `/api/ml/backtest/compare` | 20-30s          | 4-10 min     | Runs both models     |
 
 ### Data Transfer
 
-| Type | Size | Compression |
-|------|------|-------------|
-| Single Backtest Result | ~50-200 KB | gzip |
-| Comparison Result | ~100-400 KB | gzip |
-| 1 Year Predictions | ~300-500 KB | gzip |
+| Type                   | Size        | Compression |
+| ---------------------- | ----------- | ----------- |
+| Single Backtest Result | ~50-200 KB  | gzip        |
+| Comparison Result      | ~100-400 KB | gzip        |
+| 1 Year Predictions     | ~300-500 KB | gzip        |
 
 ---
 
@@ -513,14 +530,14 @@ const { data, isLoading, error } = useComparisonResult(symbol, horizon, enabled)
 
 ## 📊 Comparison: Before vs After
 
-| Feature | Before Phase 3.4 | After Phase 3.4 |
-|---------|------------------|-----------------|
-| **Visualization** | ❌ None | ✅ Interactive charts |
-| **Metrics Display** | ❌ Raw JSON | ✅ Formatted dashboard |
-| **Model Comparison** | ❌ Manual | ✅ Visual comparison |
-| **Quality Indicators** | ❌ None | ✅ Color-coded badges |
-| **User Experience** | ⚠️ Terminal only | ✅ Full UI |
-| **Accessibility** | ❌ None | ✅ ARIA labels |
+| Feature                | Before Phase 3.4 | After Phase 3.4        |
+| ---------------------- | ---------------- | ---------------------- |
+| **Visualization**      | ❌ None          | ✅ Interactive charts  |
+| **Metrics Display**    | ❌ Raw JSON      | ✅ Formatted dashboard |
+| **Model Comparison**   | ❌ Manual        | ✅ Visual comparison   |
+| **Quality Indicators** | ❌ None          | ✅ Color-coded badges  |
+| **User Experience**    | ⚠️ Terminal only | ✅ Full UI             |
+| **Accessibility**      | ❌ None          | ✅ ARIA labels         |
 
 ---
 
@@ -544,4 +561,3 @@ const { data, isLoading, error } = useComparisonResult(symbol, horizon, enabled)
 **Status:** Production Ready ✅
 **Version:** 3.4.0
 **Date:** 5 октября 2025
-

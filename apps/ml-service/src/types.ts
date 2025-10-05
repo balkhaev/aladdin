@@ -172,3 +172,27 @@ export const CompareModelsRequestSchema = z.object({
   walkForward: z.boolean().optional().default(false),
   retrainInterval: z.number().min(1).optional().default(30), // days
 });
+
+// Hyperparameter Optimization
+export const HyperparameterSpaceSchema = z.object({
+  hiddenSize: z.array(z.number()).optional(),
+  sequenceLength: z.array(z.number()).optional(),
+  learningRate: z.array(z.number()).optional(),
+  epochs: z.array(z.number()).optional(),
+  lookbackWindow: z.array(z.number()).optional(),
+  smoothingFactor: z.array(z.number()).optional(),
+  retrainInterval: z.array(z.number()).optional(),
+});
+
+export const OptimizationConfigSchema = z.object({
+  symbol: z.string().min(1),
+  modelType: z.enum(["LSTM", "HYBRID"]),
+  horizon: z.enum(["1h", "4h", "1d", "7d"]),
+  hyperparameterSpace: HyperparameterSpaceSchema,
+  method: z.enum(["GRID", "RANDOM"]),
+  nTrials: z.number().min(1).optional().default(20),
+  startDate: z.number().min(0),
+  endDate: z.number().min(0),
+  optimizationMetric: z.enum(["mae", "rmse", "mape", "r2Score", "directionalAccuracy"]),
+  crossValidationFolds: z.number().min(2).max(10).optional().default(3),
+});

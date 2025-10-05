@@ -2,13 +2,13 @@ import {
   BaseService,
   type BaseServiceConfig,
 } from "@aladdin/shared/base-service";
+import { getEnv, getEnvNumber } from "@aladdin/shared/config";
 import type { AggTrade, Candle, Tick, Timeframe } from "@aladdin/shared/types";
 import type { ExchangeConnector } from "../connectors/types";
 import { CandleBuilderService } from "./candle-builder";
 import { MarketDataService } from "./market-data";
 import { MultiExchangeAggregator } from "./multi-exchange-aggregator";
 import { OnChainService } from "./on-chain";
-import { getEnv, getEnvNumber } from "@aladdin/shared/config";
 
 type MarketDataWrapperConfig = BaseServiceConfig & {
   connectors: {
@@ -46,7 +46,7 @@ export class MarketDataServiceWrapper extends BaseService {
     return this.clickhouse;
   }
 
-  protected onInitialize(): Promise<void> {
+  protected async onInitialize(): Promise<void> {
     if (!this.natsClient) {
       throw new Error("NATS client is required for Market Data Service");
     }
@@ -104,7 +104,7 @@ export class MarketDataServiceWrapper extends BaseService {
 
     if (enabledChains && etherscanApiKey && cmcApiKey) {
       this.logger.info("Initializing On-Chain Service", { enabledChains });
-      
+
       this.onChainService = new OnChainService({
         logger: this.logger,
         natsClient: this.natsClient,
@@ -120,14 +120,17 @@ export class MarketDataServiceWrapper extends BaseService {
 
       await this.onChainService.initialize();
       await this.onChainService.start();
-      
+
       this.logger.info("On-Chain Service started successfully");
     } else {
-      this.logger.warn("On-Chain Service not configured - missing API keys or chains", {
-        hasChains: !!enabledChains,
-        hasEtherscan: !!etherscanApiKey,
-        hasCMC: !!cmcApiKey,
-      });
+      this.logger.warn(
+        "On-Chain Service not configured - missing API keys or chains",
+        {
+          hasChains: !!enabledChains,
+          hasEtherscan: !!etherscanApiKey,
+          hasCMC: !!cmcApiKey,
+        }
+      );
     }
 
     this.logger.info("Market Data Service initialized");

@@ -4,7 +4,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, BarChart3, Link2, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, Brain, Link2, TrendingUp } from "lucide-react";
 import { MarketSentimentGrid } from "@/components/analytics/market-sentiment-grid";
 import { CategoryPerformance } from "@/components/macro/category-performance";
 import { CorrelationMatrix } from "@/components/macro/correlation-matrix";
@@ -54,10 +54,14 @@ function MarketOverviewPage() {
 
       {/* Main Content Tabs */}
       <Tabs className="space-y-6" defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[550px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[720px]">
           <TabsTrigger className="gap-2" value="overview">
             <Activity className="size-4" />
             <span className="hidden sm:inline">Обзор</span>
+          </TabsTrigger>
+          <TabsTrigger className="gap-2" value="sentiment">
+            <Brain className="size-4" />
+            <span className="hidden sm:inline">Sentiment</span>
           </TabsTrigger>
           <TabsTrigger className="gap-2" value="analytics">
             <BarChart3 className="size-4" />
@@ -73,10 +77,18 @@ function MarketOverviewPage() {
         <TabsContent className="space-y-6" value="overview">
           {/* Market Overview - Top Movers */}
           <MarketOverview />
+        </TabsContent>
 
-          {/* Market Sentiment */}
+        {/* Sentiment Tab */}
+        <TabsContent className="space-y-6" value="sentiment">
+          {/* Market Sentiment Grid */}
           <div className="space-y-3">
-            <h2 className="font-semibold text-xl">Sentiment Analysis</h2>
+            <div>
+              <h2 className="font-semibold text-xl">Sentiment Analysis</h2>
+              <p className="text-muted-foreground text-sm">
+                Multi-indicator sentiment analysis for top cryptocurrencies
+              </p>
+            </div>
             <MarketSentimentGrid
               symbols={[
                 "BTCUSDT",
@@ -91,11 +103,13 @@ function MarketOverviewPage() {
 
           {/* Combined Sentiment */}
           <div className="space-y-3">
-            <h2 className="font-semibold text-xl">Combined Sentiment</h2>
-            <p className="text-muted-foreground text-sm">
-              Multi-source sentiment analysis from Technical, Futures, and Order
-              Book data
-            </p>
+            <div>
+              <h2 className="font-semibold text-xl">Combined Sentiment</h2>
+              <p className="text-muted-foreground text-sm">
+                Multi-source sentiment from Technical, Futures, Order Book, and
+                Social data
+              </p>
+            </div>
             <SocialSentimentCompact />
           </div>
 

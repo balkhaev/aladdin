@@ -1,9 +1,9 @@
+import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
 import { NotFoundError } from "@aladdin/shared/errors";
 import {
   validateParams,
   validateQuery,
 } from "@aladdin/shared/middleware/validation";
-import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
 import type { OnChainMetrics } from "@aladdin/shared/types";
 import type { Context, Hono } from "hono";
 import {
@@ -105,6 +105,12 @@ export function setupOnChainRoutes(
         nvt_ratio: number;
         market_cap: number | null;
         transaction_volume: number;
+        mvrv_ratio: number | null;
+        sopr: number | null;
+        nupl: number | null;
+        exchange_reserve: number | null;
+        puell_multiple: number | null;
+        stock_to_flow: number | null;
       }>(
         `
         SELECT *
@@ -138,6 +144,12 @@ export function setupOnChainRoutes(
         nvtRatio: raw.nvt_ratio,
         marketCap: raw.market_cap ?? undefined,
         transactionVolume: raw.transaction_volume,
+        mvrvRatio: raw.mvrv_ratio ?? undefined,
+        sopr: raw.sopr ?? undefined,
+        nupl: raw.nupl ?? undefined,
+        exchangeReserve: raw.exchange_reserve ?? undefined,
+        puellMultiple: raw.puell_multiple ?? undefined,
+        stockToFlow: raw.stock_to_flow ?? undefined,
       };
 
       return c.json({
@@ -410,5 +422,137 @@ export function setupOnChainRoutes(
       });
     }
   );
-}
 
+  /**
+   * GET /api/market-data/on-chain/comparison - Compare BTC vs ETH metrics
+   */
+  app.get("/api/market-data/on-chain/comparison", async (c: Context) => {
+    if (!clickhouse) {
+      throw new NotFoundError("ClickHouse connection");
+    }
+
+    try {
+      // Fetch latest metrics for both blockchains
+      const [btcMetrics, ethMetrics] = await Promise.all([
+        clickhouse.query<{
+          timestamp: string;
+          blockchain: string;
+          whale_tx_count: number;
+          whale_tx_volume: number;
+          exchange_inflow: number;
+          exchange_outflow: number;
+          exchange_net_flow: number;
+          active_addresses: number;
+          nvt_ratio: number;
+          market_cap: number | null;
+          transaction_volume: number;
+          mvrv_ratio: number | null;
+          sopr: number | null;
+          nupl: number | null;
+          exchange_reserve: number | null;
+          puell_multiple: number | null;
+          stock_to_flow: number | null;
+        }>(
+          `
+          SELECT *
+          FROM on_chain_metrics
+          WHERE blockchain = 'BTC'
+          ORDER BY timestamp DESC
+          LIMIT 1
+        `
+        ),
+        clickhouse.query<{
+          timestamp: string;
+          blockchain: string;
+          whale_tx_count: number;
+          whale_tx_volume: number;
+          exchange_inflow: number;
+          exchange_outflow: number;
+          exchange_net_flow: number;
+          active_addresses: number;
+          nvt_ratio: number;
+          market_cap: number | null;
+          transaction_volume: number;
+          mvrv_ratio: number | null;
+          sopr: number | null;
+          nupl: number | null;
+          exchange_reserve: number | null;
+          puell_multiple: number | null;
+          stock_to_flow: number | null;
+        }>(
+          `
+          SELECT *
+          FROM on_chain_metrics
+          WHERE blockchain = 'ETH'
+          ORDER BY timestamp DESC
+          LIMIT 1
+        `
+        ),
+      ]);
+
+      const mapToMetrics = (raw: {
+        timestamp: string;
+        blockchain: string;
+        whale_tx_count: number;
+        whale_tx_volume: number;
+        exchange_inflow: number;
+        exchange_outflow: number;
+        exchange_net_flow: number;
+        active_addresses: number;
+        nvt_ratio: number;
+        market_cap: number | null;
+        transaction_volume: number;
+        mvrv_ratio: number | null;
+        sopr: number | null;
+        nupl: number | null;
+        exchange_reserve: number | null;
+        puell_multiple: number | null;
+        stock_to_flow: number | null;
+      }): OnChainMetrics => ({
+        timestamp: new Date(raw.timestamp).getTime(),
+        blockchain: raw.blockchain,
+        whaleTransactions: {
+          count: raw.whale_tx_count,
+          totalVolume: raw.whale_tx_volume,
+        },
+        exchangeFlow: {
+          inflow: raw.exchange_inflow,
+          outflow: raw.exchange_outflow,
+          netFlow: raw.exchange_net_flow,
+        },
+        activeAddresses: raw.active_addresses,
+        nvtRatio: raw.nvt_ratio,
+        marketCap: raw.market_cap ?? undefined,
+        transactionVolume: raw.transaction_volume,
+        mvrvRatio: raw.mvrv_ratio ?? undefined,
+        sopr: raw.sopr ?? undefined,
+        nupl: raw.nupl ?? undefined,
+        exchangeReserve: raw.exchange_reserve ?? undefined,
+        puellMultiple: raw.puell_multiple ?? undefined,
+        stockToFlow: raw.stock_to_flow ?? undefined,
+      });
+
+      return c.json({
+        success: true,
+        data: {
+          btc: btcMetrics.length > 0 ? mapToMetrics(btcMetrics[0]) : null,
+          eth: ethMetrics.length > 0 ? mapToMetrics(ethMetrics[0]) : null,
+        },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      const errorAny = error as { message?: string };
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "COMPARISON_ERROR",
+            message: errorAny.message || "Failed to compare metrics",
+          },
+          timestamp: Date.now(),
+        },
+        500
+      );
+    }
+  });
+}

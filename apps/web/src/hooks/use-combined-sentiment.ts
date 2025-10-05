@@ -24,6 +24,7 @@ export type CombinedSentiment = {
     analytics: ComponentSentiment;
     futures: ComponentSentiment;
     orderBook: ComponentSentiment;
+    social: ComponentSentiment;
   };
   recommendation: {
     action: "STRONG_BUY" | "BUY" | "HOLD" | "SELL" | "STRONG_SELL";

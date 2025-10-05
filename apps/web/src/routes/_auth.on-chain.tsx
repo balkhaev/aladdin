@@ -5,6 +5,9 @@ import {
   Activity,
   ArrowDownToLine,
   ArrowUpFromLine,
+  BarChart3,
+  Layers,
+  TrendingDown,
   TrendingUp,
   Users,
   Wallet,
@@ -28,6 +31,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getMetricDescription, getMetricStatus } from "@/lib/api/on-chain";
 
 const REFETCH_INTERVAL_MINUTE = 60_000;
 const REFETCH_INTERVAL_HALF_MINUTE = 30_000;
@@ -143,6 +153,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       subtitle: `${metrics.whaleTransactions.totalVolume.toFixed(2)} ${blockchain} volume`,
       icon: Activity,
       color: "text-blue-500",
+      description: getMetricDescription("whaleTransactions"),
     },
     {
       title: "Exchange Inflow",
@@ -150,6 +161,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       subtitle: "To exchanges",
       icon: ArrowDownToLine,
       color: "text-green-500",
+      description: "Coins flowing into exchanges (potential selling pressure)",
     },
     {
       title: "Exchange Outflow",
@@ -157,6 +169,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       subtitle: "From exchanges",
       icon: ArrowUpFromLine,
       color: "text-red-500",
+      description: "Coins flowing out of exchanges (potential holding)",
     },
     {
       title: "Net Flow",
@@ -165,6 +178,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       icon: TrendingUp,
       color:
         metrics.exchangeFlow.netFlow > 0 ? "text-green-500" : "text-red-500",
+      description: "Net flow to/from exchanges",
     },
     {
       title: "Active Addresses",
@@ -172,6 +186,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       subtitle: "Last 24 hours",
       icon: Users,
       color: "text-purple-500",
+      description: getMetricDescription("activeAddresses"),
     },
     {
       title: "NVT Ratio",
@@ -179,27 +194,140 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
       subtitle: "Network value to transactions",
       icon: Wallet,
       color: "text-orange-500",
+      description: getMetricDescription("nvtRatio"),
+      status: getMetricStatus("nvtRatio", metrics.nvtRatio),
     },
   ];
 
+  // Advanced metrics (only if available)
+  const advancedStats = [
+    metrics.sopr !== undefined && {
+      title: "SOPR",
+      value: metrics.sopr.toFixed(3),
+      subtitle: metrics.sopr > 1 ? "Profit-taking" : "Selling at loss",
+      icon: BarChart3,
+      color: metrics.sopr > 1 ? "text-green-500" : "text-red-500",
+      description: getMetricDescription("sopr"),
+      status: getMetricStatus("sopr", metrics.sopr),
+    },
+    metrics.exchangeReserve !== undefined && {
+      title: "Exchange Reserve",
+      value: `${(metrics.exchangeReserve / 1000).toFixed(1)}K ${blockchain}`,
+      subtitle: "On exchanges",
+      icon: Layers,
+      color: "text-cyan-500",
+      description: getMetricDescription("exchangeReserve"),
+      status: getMetricStatus("exchangeReserve", metrics.exchangeReserve),
+    },
+    metrics.stockToFlow !== undefined && {
+      title: "Stock-to-Flow",
+      value: metrics.stockToFlow.toFixed(1),
+      subtitle: "Scarcity model",
+      icon: TrendingDown,
+      color: "text-amber-500",
+      description: getMetricDescription("stockToFlow"),
+      status: getMetricStatus("stockToFlow", metrics.stockToFlow),
+    },
+  ].filter(Boolean);
+
   return (
-    <>
+    <TooltipProvider>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-medium text-sm">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="font-bold text-2xl">{stat.value}</div>
-              <p className="text-muted-foreground text-xs">{stat.subtitle}</p>
-            </CardContent>
-          </Card>
+          <Tooltip key={stat.title}>
+            <TooltipTrigger asChild>
+              <Card className="cursor-help transition-shadow hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-medium text-sm">
+                    {stat.title}
+                  </CardTitle>
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="font-bold text-2xl">{stat.value}</div>
+                  <p className="text-muted-foreground text-xs">
+                    {stat.subtitle}
+                  </p>
+                  {stat.status &&
+                    (() => {
+                      let variant: "default" | "destructive" | "secondary" =
+                        "secondary";
+                      let label = "Neutral";
+
+                      if (stat.status === "positive") {
+                        variant = "default";
+                        label = "Bullish";
+                      } else if (stat.status === "negative") {
+                        variant = "destructive";
+                        label = "Bearish";
+                      }
+
+                      return (
+                        <Badge className="mt-2" variant={variant}>
+                          {label}
+                        </Badge>
+                      );
+                    })()}
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{stat.description}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
       </div>
+
+      {advancedStats.length > 0 && (
+        <div>
+          <h3 className="mb-3 font-semibold text-lg">Advanced Metrics</h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {advancedStats.map((stat) => (
+              <Tooltip key={stat.title}>
+                <TooltipTrigger asChild>
+                  <Card className="cursor-help transition-shadow hover:shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="font-medium text-sm">
+                        {stat.title}
+                      </CardTitle>
+                      <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="font-bold text-2xl">{stat.value}</div>
+                      <p className="text-muted-foreground text-xs">
+                        {stat.subtitle}
+                      </p>
+                      {stat.status &&
+                        (() => {
+                          let variant: "default" | "destructive" | "secondary" =
+                            "secondary";
+                          let label = "Neutral";
+
+                          if (stat.status === "positive") {
+                            variant = "default";
+                            label = "Bullish";
+                          } else if (stat.status === "negative") {
+                            variant = "destructive";
+                            label = "Bearish";
+                          }
+
+                          return (
+                            <Badge className="mt-2" variant={variant}>
+                              {label}
+                            </Badge>
+                          );
+                        })()}
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">{stat.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
+      )}
 
       {metrics.marketCap && (
         <Card>
@@ -228,7 +356,7 @@ function OnChainOverview({ blockchain }: { blockchain: Blockchain }) {
           </CardContent>
         </Card>
       )}
-    </>
+    </TooltipProvider>
   );
 }
 

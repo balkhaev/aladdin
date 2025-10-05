@@ -6,6 +6,7 @@ import { logger as honoLogger } from "hono/logger";
 import { setupMLRoutes } from "./routes";
 import { BacktestingService } from "./services/backtesting";
 import { FeatureEngineeringService } from "./services/feature-engineering";
+import { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
 import { LSTMPredictionService } from "./services/lstm-prediction";
 import { MarketRegimeService } from "./services/market-regime";
 import { ModelPersistenceService } from "./services/model-persistence";
@@ -58,6 +59,11 @@ function initializeServices() {
       featureService,
       logger
     );
+    const hpoService = new HyperparameterOptimizationService(
+      clickhouse,
+      backtestingService,
+      logger
+    );
 
     // Setup routes
     setupMLRoutes(
@@ -66,7 +72,8 @@ function initializeServices() {
       regimeService,
       lstmService,
       persistenceService,
-      backtestingService
+      backtestingService,
+      hpoService
     );
 
     logger.info("ML Service initialized successfully");
@@ -102,6 +109,8 @@ function start() {
     logger.info("  POST /api/ml/regime - Market regime detection");
     logger.info("  POST /api/ml/backtest - Run backtest");
     logger.info("  POST /api/ml/backtest/compare - Compare models");
+    logger.info("  POST /api/ml/optimize - Hyperparameter optimization");
+    logger.info("  GET /api/ml/optimize/recommendations - HPO recommendations");
     logger.info("  GET /api/ml/models - List saved models");
     logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
     logger.info("  DELETE /api/ml/models/:symbol - Delete model");

@@ -246,6 +246,31 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
               </p>
             </div>
           </div>
+
+          {/* Social Sentiment */}
+          <div className="flex items-center justify-between rounded border p-3">
+            <div>
+              <p className="font-medium text-sm">Social</p>
+              <p className="text-muted-foreground text-xs">
+                Telegram + Twitter Sentiment
+              </p>
+            </div>
+            <div className="text-right">
+              <Badge
+                className={getSentimentColor(
+                  sentiment.components.social.signal
+                )}
+              >
+                {sentiment.components.social.signal}
+              </Badge>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {Math.round(
+                  sentiment.components.social.confidence * PERCENTAGE_MULTIPLIER
+                )}
+                % confident
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Confidence & Strength */}

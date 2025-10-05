@@ -12,31 +12,38 @@
 
 ### Архитектура
 
-Aggregates data from 3 independent sources:
+Aggregates data from 4 independent sources:
 
-1. **Analytics** (45% weight)
+1. **Analytics** (35% weight)
 
    - Fear & Greed Index
    - On-Chain metrics (whale transactions, exchange flows)
    - Technical indicators (RSI, MACD, price action)
 
-2. **Futures** (35% weight)
+2. **Futures** (25% weight)
 
    - Funding Rates (Binance, Bybit, OKX)
    - Open Interest changes & price correlation
 
-3. **Order Book** (20% weight)
+3. **Order Book** (15% weight)
+
    - Bid/Ask imbalance
    - Liquidity score
    - Order flow pressure
+
+4. **Social** (25% weight)
+   - Telegram signals (bullish/bearish sentiment)
+   - Twitter sentiment analysis
+   - Community mood tracking
 
 ### Formula
 
 ```typescript
 combinedScore =
-  (analytics.score × analytics.confidence × 0.45 +
-   futures.score × futures.confidence × 0.35 +
-   orderBook.score × orderBook.confidence × 0.20) /
+  (analytics.score × analytics.confidence × 0.35 +
+   futures.score × futures.confidence × 0.25 +
+   orderBook.score × orderBook.confidence × 0.15 +
+   social.score × social.confidence × 0.25) /
   totalConfidenceWeight
 ```
 

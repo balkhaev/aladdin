@@ -113,8 +113,8 @@ export const SocialSentimentCompact = memo(
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p className="text-xs">
-                    Multi-source sentiment analysis from Technical, Futures, and
-                    Order Book data
+                    Multi-source sentiment analysis from Technical, Futures,
+                    Order Book, and Social data
                   </p>
                 </TooltipContent>
               </Tooltip>

@@ -4,6 +4,7 @@
  * 1. Analytics (Fear&Greed + OnChain + Technical)
  * 2. Futures (Funding Rates + Open Interest)
  * 3. Order Book (Bid/Ask imbalance, liquidity)
+ * 4. Social (Telegram + Twitter sentiment)
  */
 
 import type { Logger } from "@aladdin/shared/logger";
@@ -32,6 +33,7 @@ type CombinedSentiment = {
     analytics: ComponentSentiment;
     futures: ComponentSentiment;
     orderBook: ComponentSentiment;
+    social: ComponentSentiment;
   };
 
   // Trading recommendations
@@ -59,12 +61,31 @@ type OrderBookData = {
   liquidityScore: number; // 0 to 100
 };
 
+type SocialSentimentData = {
+  overall: number; // -1 to 1
+  telegram: {
+    score: number;
+    bullish: number;
+    bearish: number;
+    signals: number;
+  };
+  twitter: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    tweets: number;
+  };
+  confidence: number; // 0 to 1
+};
+
 export class CombinedSentimentService {
   // Component weights (must sum to 1.0)
   private static readonly WEIGHTS = {
-    ANALYTICS: 0.45, // 45% - multi-factor analysis
-    FUTURES: 0.35, // 35% - funding + OI
-    ORDER_BOOK: 0.2, // 20% - current market structure
+    ANALYTICS: 0.35, // 35% - multi-factor analysis
+    FUTURES: 0.25, // 25% - funding + OI
+    ORDER_BOOK: 0.15, // 15% - current market structure
+    SOCIAL: 0.25, // 25% - social sentiment (Telegram + Twitter)
   };
 
   // Thresholds for signal strength
@@ -98,11 +119,12 @@ export class CombinedSentimentService {
     this.logger.info("Calculating combined sentiment", { symbol });
 
     // Fetch all data in parallel
-    const [analyticsResult, futuresResult, orderBookResult] =
+    const [analyticsResult, futuresResult, orderBookResult, socialResult] =
       await Promise.allSettled([
         this.fetchAnalyticsSentiment(symbol),
         this.fetchFuturesSentiment(symbol),
         this.fetchOrderBookData(symbol),
+        this.fetchSocialSentiment(symbol),
       ]);
 
     // Calculate component sentiments
@@ -118,11 +140,16 @@ export class CombinedSentimentService {
       orderBookResult.status === "fulfilled" ? orderBookResult.value : null
     );
 
+    const socialSentiment = this.calculateSocialSentiment(
+      socialResult.status === "fulfilled" ? socialResult.value : null
+    );
+
     // Calculate combined score
     const combinedScore = this.calculateCombinedScore({
       analytics: analyticsSentiment,
       futures: futuresSentiment,
       orderBook: orderBookSentiment,
+      social: socialSentiment,
     });
 
     // Determine signal and strength
@@ -134,6 +161,7 @@ export class CombinedSentimentService {
       analytics: analyticsSentiment,
       futures: futuresSentiment,
       orderBook: orderBookSentiment,
+      social: socialSentiment,
     });
 
     // Generate recommendation
@@ -144,6 +172,7 @@ export class CombinedSentimentService {
         analytics: analyticsSentiment,
         futures: futuresSentiment,
         orderBook: orderBookSentiment,
+        social: socialSentiment,
       }
     );
 
@@ -152,6 +181,7 @@ export class CombinedSentimentService {
       analytics: analyticsSentiment,
       futures: futuresSentiment,
       orderBook: orderBookSentiment,
+      social: socialSentiment,
       combinedScore,
       combinedSignal,
     });
@@ -167,6 +197,7 @@ export class CombinedSentimentService {
         analytics: analyticsSentiment,
         futures: futuresSentiment,
         orderBook: orderBookSentiment,
+        social: socialSentiment,
       },
       recommendation,
       insights,
@@ -313,6 +344,39 @@ export class CombinedSentimentService {
   }
 
   /**
+   * Fetch social sentiment (Telegram + Twitter)
+   */
+  private async fetchSocialSentiment(
+    symbol: string
+  ): Promise<SocialSentimentData | null> {
+    try {
+      // Social sentiment is available through analytics service's sentiment endpoint
+      const response = await fetch(
+        `${this.analyticsBaseUrl}/api/analytics/social-sentiment/${symbol}`
+      );
+
+      if (!response.ok) {
+        this.logger.warn("Social sentiment API not available", {
+          symbol,
+          status: response.status,
+        });
+        return null;
+      }
+
+      const result = await response.json();
+
+      if (!(result.success && result.data)) {
+        return null;
+      }
+
+      return result.data;
+    } catch (error) {
+      this.logger.error("Failed to fetch social sentiment", { symbol, error });
+      return null;
+    }
+  }
+
+  /**
    * Calculate analytics component sentiment
    */
   private calculateAnalyticsSentiment(
@@ -425,12 +489,50 @@ export class CombinedSentimentService {
   }
 
   /**
+   * Calculate social component sentiment (Telegram + Twitter)
+   */
+  private calculateSocialSentiment(
+    data: SocialSentimentData | null
+  ): ComponentSentiment {
+    if (!data) {
+      return {
+        score: 0,
+        signal: "NEUTRAL",
+        confidence: 0,
+        weight: CombinedSentimentService.WEIGHTS.SOCIAL,
+      };
+    }
+
+    // Convert from -1..1 range to -100..+100 range
+    const SCORE_SCALE = 100;
+    const score = data.overall * SCORE_SCALE;
+
+    // Use confidence from social sentiment data
+    // Boost confidence if we have both Telegram and Twitter data
+    const hasTelegram = data.telegram.signals > 0;
+    const hasTwitter = data.twitter.tweets > 0;
+
+    let confidence = data.confidence;
+    if (hasTelegram && hasTwitter) {
+      confidence = Math.min(1, confidence * 1.2); // 20% boost for having both sources
+    }
+
+    return {
+      score,
+      signal: this.getSignalFromScore(score),
+      confidence,
+      weight: CombinedSentimentService.WEIGHTS.SOCIAL,
+    };
+  }
+
+  /**
    * Calculate combined score from all components
    */
   private calculateCombinedScore(components: {
     analytics: ComponentSentiment;
     futures: ComponentSentiment;
     orderBook: ComponentSentiment;
+    social: ComponentSentiment;
   }): number {
     const weightedSum =
       components.analytics.score *
@@ -441,12 +543,16 @@ export class CombinedSentimentService {
         components.futures.weight +
       components.orderBook.score *
         components.orderBook.confidence *
-        components.orderBook.weight;
+        components.orderBook.weight +
+      components.social.score *
+        components.social.confidence *
+        components.social.weight;
 
     const totalConfidenceWeight =
       components.analytics.confidence * components.analytics.weight +
       components.futures.confidence * components.futures.weight +
-      components.orderBook.confidence * components.orderBook.weight;
+      components.orderBook.confidence * components.orderBook.weight +
+      components.social.confidence * components.social.weight;
 
     if (totalConfidenceWeight === 0) {
       return 0;
@@ -483,6 +589,15 @@ export class CombinedSentimentService {
           components.orderBook.confidence *
           components.orderBook.weight,
       },
+      social: {
+        score: components.social.score,
+        confidence: components.social.confidence,
+        weight: components.social.weight,
+        contribution:
+          components.social.score *
+          components.social.confidence *
+          components.social.weight,
+      },
       weightedSum,
       totalConfidenceWeight,
       combinedScore,
@@ -498,6 +613,7 @@ export class CombinedSentimentService {
     analytics: ComponentSentiment;
     futures: ComponentSentiment;
     orderBook: ComponentSentiment;
+    social: ComponentSentiment;
   }): number {
     // Count available components (confidence > 0)
     const availableComponents: Array<{ confidence: number; weight: number }> =
@@ -511,6 +627,9 @@ export class CombinedSentimentService {
     }
     if (components.orderBook.confidence > 0) {
       availableComponents.push(components.orderBook);
+    }
+    if (components.social.confidence > 0) {
+      availableComponents.push(components.social);
     }
 
     // If no components available, return 0
@@ -531,14 +650,15 @@ export class CombinedSentimentService {
     const avgConfidence = weightedConfidence / totalWeight;
 
     // Penalty for missing data sources
-    const TOTAL_COMPONENTS = 3;
+    const TOTAL_COMPONENTS = 4;
     const missingPenalty =
-      (TOTAL_COMPONENTS - availableComponents.length) * 0.15;
+      (TOTAL_COMPONENTS - availableComponents.length) * 0.12;
 
     // Check for signal alignment (only for available components)
     const signals = availableComponents.map((c) => {
       if (c === components.analytics) return components.analytics.signal;
       if (c === components.futures) return components.futures.signal;
+      if (c === components.social) return components.social.signal;
       return components.orderBook.signal;
     });
 
@@ -597,6 +717,7 @@ export class CombinedSentimentService {
       analytics: ComponentSentiment;
       futures: ComponentSentiment;
       orderBook: ComponentSentiment;
+      social: ComponentSentiment;
     }
   ): {
     action: "STRONG_BUY" | "BUY" | "HOLD" | "SELL" | "STRONG_SELL";
@@ -629,7 +750,8 @@ export class CombinedSentimentService {
     const availableCount =
       (components.analytics.confidence > 0 ? 1 : 0) +
       (components.futures.confidence > 0 ? 1 : 0) +
-      (components.orderBook.confidence > 0 ? 1 : 0);
+      (components.orderBook.confidence > 0 ? 1 : 0) +
+      (components.social.confidence > 0 ? 1 : 0);
 
     let riskLevel: "LOW" | "MEDIUM" | "HIGH";
 
@@ -638,10 +760,10 @@ export class CombinedSentimentService {
       riskLevel = "HIGH";
     } else if (
       confidence >= MIN_CONFIDENCE_FOR_STRONG_ACTION &&
-      availableCount === 3
+      availableCount === 4
     ) {
       riskLevel = "LOW";
-    } else if (confidence >= 0.5) {
+    } else if (confidence >= 0.5 && availableCount >= 3) {
       riskLevel = "MEDIUM";
     } else {
       riskLevel = "HIGH";
@@ -668,6 +790,12 @@ export class CombinedSentimentService {
       );
     }
 
+    if (components.social.confidence > 0.7) {
+      reasons.push(
+        `Social ${components.social.signal.toLowerCase()} (${Math.round(components.social.score)})`
+      );
+    }
+
     const reasoning =
       reasons.length > 0
         ? reasons.join(", ")
@@ -687,6 +815,7 @@ export class CombinedSentimentService {
     analytics: ComponentSentiment;
     futures: ComponentSentiment;
     orderBook: ComponentSentiment;
+    social: ComponentSentiment;
     combinedScore: number;
     combinedSignal: SentimentSignal;
   }): string[] {
@@ -703,6 +832,9 @@ export class CombinedSentimentService {
     if (context.orderBook.confidence === 0) {
       missingDataSources.push("Order Book");
     }
+    if (context.social.confidence === 0) {
+      missingDataSources.push("Social");
+    }
 
     if (missingDataSources.length > 0) {
       insights.push(
@@ -714,6 +846,7 @@ export class CombinedSentimentService {
     if (
       context.analytics.signal === context.futures.signal &&
       context.futures.signal === context.orderBook.signal &&
+      context.orderBook.signal === context.social.signal &&
       context.analytics.signal !== "NEUTRAL"
     ) {
       insights.push(
@@ -740,6 +873,17 @@ export class CombinedSentimentService {
       );
     }
 
+    // Social sentiment divergence
+    if (
+      context.social.confidence > 0.5 &&
+      context.social.signal !== context.combinedSignal &&
+      context.social.signal !== "NEUTRAL"
+    ) {
+      insights.push(
+        `💬 Social sentiment ${context.social.signal.toLowerCase()} diverges from market - monitor community mood`
+      );
+    }
+
     // Order book insights
     if (context.orderBook.confidence > 0.7) {
       if (context.orderBook.score > 50) {
@@ -755,6 +899,19 @@ export class CombinedSentimentService {
         insights.push("📈 Futures market showing strong bullish positioning");
       } else if (context.futures.score < -50) {
         insights.push("📉 Futures market showing strong bearish positioning");
+      }
+    }
+
+    // Social sentiment insights
+    if (context.social.confidence > 0.7) {
+      if (context.social.score > 50) {
+        insights.push(
+          "🚀 Social sentiment extremely positive - high community interest"
+        );
+      } else if (context.social.score < -50) {
+        insights.push(
+          "😰 Social sentiment very negative - community concern rising"
+        );
       }
     }
 

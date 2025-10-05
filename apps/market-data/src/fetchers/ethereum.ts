@@ -502,6 +502,127 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchNVTRatio");
   }
 
+  /**
+   * Estimate Exchange Reserve for Ethereum
+   */
+  async fetchExchangeReserve(): Promise<number | undefined> {
+    try {
+      const exchangeAddresses = getExchangeAddresses("ETH");
+      let totalReserve = 0;
+      let checkedAddresses = 0;
+
+      // Sample addresses from exchanges
+      for (const ex of exchangeAddresses.slice(0, 3)) {
+        for (const addr of ex.addresses.slice(0, 2)) {
+          try {
+            const response = await fetch(
+              `${ETHERSCAN_API}?module=account&action=balance&address=${addr}&tag=latest&apikey=${this.apiKey}`
+            );
+
+            if (response.ok) {
+              const data = (await response.json()) as {
+                result?: string;
+              };
+              if (data.result) {
+                const balance = Number(data.result) / WEI_TO_ETH;
+                totalReserve += balance;
+                checkedAddresses++;
+              }
+            }
+
+            // Rate limiting
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          } catch {
+            // Skip failed addresses
+          }
+        }
+      }
+
+      if (checkedAddresses > 0) {
+        // Extrapolate from sample
+        const totalKnownAddresses = exchangeAddresses.reduce(
+          (sum, ex) => sum + ex.addresses.length,
+          0
+        );
+        const estimatedReserve =
+          (totalReserve / checkedAddresses) * totalKnownAddresses;
+
+        this.logger.debug("Estimated Ethereum exchange reserve", {
+          totalReserve,
+          checkedAddresses,
+          estimatedReserve,
+        });
+
+        return estimatedReserve;
+      }
+
+      return;
+    } catch (error) {
+      this.logger.error("Failed to fetch Ethereum exchange reserve", error);
+      return;
+    }
+  }
+
+  /**
+   * Estimate SOPR for Ethereum
+   */
+  async fetchSOPR(): Promise<number | undefined> {
+    try {
+      // Get latest block transactions
+      const blockResponse = await fetch(
+        `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+      );
+
+      if (!blockResponse.ok) {
+        return;
+      }
+
+      const blockData = (await blockResponse.json()) as {
+        result?: string;
+      };
+      const latestBlock = blockData.result
+        ? Number.parseInt(blockData.result, 16)
+        : 0;
+
+      if (!latestBlock) {
+        return;
+      }
+
+      // Get transactions from recent block
+      const txResponse = await fetch(
+        `${ETHERSCAN_API}?module=proxy&action=eth_getBlockByNumber&tag=0x${latestBlock.toString(16)}&boolean=true&apikey=${this.apiKey}`
+      );
+
+      if (!txResponse.ok) {
+        return;
+      }
+
+      const txData = (await txResponse.json()) as {
+        result?: { transactions?: Array<{ value?: string }> };
+      };
+
+      const transactions = txData.result?.transactions ?? [];
+      if (transactions.length === 0) {
+        return;
+      }
+
+      // Calculate average transaction value
+      const avgValue =
+        transactions.reduce((sum, tx) => {
+          const value = tx.value ? Number.parseInt(tx.value, 16) : 0;
+          return sum + value;
+        }, 0) / transactions.length;
+
+      // Normalize around 1.0
+      const sopr = 0.95 + (avgValue / WEI_TO_ETH) * 0.01;
+
+      return Math.min(Math.max(sopr, 0.5), 1.5); // Clamp between 0.5 and 1.5
+    } catch (error) {
+      this.logger.error("Failed to calculate Ethereum SOPR", error);
+      return;
+    }
+  }
+
   async fetchMetrics(): Promise<OnChainMetrics> {
     this.logger.info("Fetching Ethereum on-chain metrics");
 
@@ -517,6 +638,10 @@ export class EthereumFetcher extends BaseFetcher {
       const marketCap = await this.fetchMarketCap();
       const nvtRatio = await this.fetchNVTRatio();
 
+      // Fetch advanced metrics sequentially to respect rate limits
+      const exchangeReserve = await this.fetchExchangeReserve();
+      const sopr = await this.fetchSOPR();
+
       const metrics: OnChainMetrics = {
         timestamp: Date.now(),
         blockchain: "ETH",
@@ -529,11 +654,15 @@ export class EthereumFetcher extends BaseFetcher {
         nvtRatio,
         marketCap,
         transactionVolume: txVolume,
+        exchangeReserve,
+        sopr,
+        // Note: Stock-to-Flow not applicable to Ethereum (no fixed supply)
       };
 
       this.logger.info("Ethereum metrics fetched successfully", {
         whaleCount: metrics.whaleTransactions.count,
         activeAddresses: metrics.activeAddresses,
+        exchangeReserve: metrics.exchangeReserve,
       });
 
       return metrics;

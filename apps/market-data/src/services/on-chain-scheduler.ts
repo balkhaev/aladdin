@@ -278,6 +278,12 @@ export class MetricsScheduler {
           nvt_ratio: metrics.nvtRatio,
           market_cap: metrics.marketCap ?? null,
           transaction_volume: metrics.transactionVolume,
+          mvrv_ratio: metrics.mvrvRatio ?? null,
+          sopr: metrics.sopr ?? null,
+          nupl: metrics.nupl ?? null,
+          exchange_reserve: metrics.exchangeReserve ?? null,
+          puell_multiple: metrics.puellMultiple ?? null,
+          stock_to_flow: metrics.stockToFlow ?? null,
         },
       ]);
     } catch (error) {

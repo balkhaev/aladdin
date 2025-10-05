@@ -7,7 +7,7 @@ import { BitcoinMempoolFetcher } from "../fetchers/bitcoin-mempool";
 import { EthereumFetcher } from "../fetchers/ethereum";
 import type { BlockchainFetcher } from "../fetchers/types";
 import { MarketCapProvider } from "./market-cap-provider";
-import { MetricsScheduler } from "./scheduler";
+import { MetricsScheduler } from "./on-chain-scheduler";
 
 const DEFAULT_WHALE_THRESHOLD_BTC = 10;
 const DEFAULT_WHALE_THRESHOLD_ETH = 100;

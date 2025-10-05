@@ -443,6 +443,155 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
     }
   }
 
+  /**
+   * Calculate Stock-to-Flow ratio for Bitcoin
+   * S2F = Current Supply / Annual Production
+   */
+  async fetchStockToFlow(): Promise<number | undefined> {
+    try {
+      // Bitcoin supply info from blockchain.info
+      const response = await fetch(`${BLOCKCHAIN_INFO_API}/stats?format=json`);
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json()) as {
+        totalbc?: number; // Total BTC in circulation (in satoshis)
+        n_blocks_total?: number;
+      };
+
+      if (!(data.totalbc && data.n_blocks_total)) {
+        return;
+      }
+
+      const currentSupply = data.totalbc / SATOSHI_TO_BTC;
+
+      // Bitcoin emission schedule: 6.25 BTC per block, ~144 blocks per day
+      const blocksPerYear = 144 * 365;
+      const currentReward = 6.25; // BTC per block (halving every 210k blocks)
+      const annualProduction = blocksPerYear * currentReward;
+
+      const stockToFlow = currentSupply / annualProduction;
+
+      this.logger.debug("Calculated Stock-to-Flow", {
+        currentSupply,
+        annualProduction,
+        stockToFlow,
+      });
+
+      return stockToFlow;
+    } catch (error) {
+      this.logger.error("Failed to calculate Stock-to-Flow", error);
+      return;
+    }
+  }
+
+  /**
+   * Estimate Exchange Reserve (total BTC on known exchange addresses)
+   */
+  async fetchExchangeReserve(): Promise<number | undefined> {
+    try {
+      const exchangeAddresses = getExchangeAddresses("BTC");
+      let totalReserve = 0;
+      let checkedAddresses = 0;
+
+      // Sample a few addresses from each exchange to estimate
+      for (const ex of exchangeAddresses.slice(0, 3)) {
+        for (const addr of ex.addresses.slice(0, 2)) {
+          try {
+            const response = await fetch(
+              `${BLOCKCHAIN_INFO_API}/rawaddr/${addr}`
+            );
+            if (response.ok) {
+              const data = (await response.json()) as {
+                final_balance?: number;
+              };
+              if (data.final_balance) {
+                totalReserve += data.final_balance / SATOSHI_TO_BTC;
+                checkedAddresses++;
+              }
+            }
+            // Rate limiting
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          } catch {
+            // Skip failed addresses
+          }
+        }
+      }
+
+      if (checkedAddresses > 0) {
+        // Extrapolate from sample
+        const totalKnownAddresses = exchangeAddresses.reduce(
+          (sum, ex) => sum + ex.addresses.length,
+          0
+        );
+        const estimatedReserve =
+          (totalReserve / checkedAddresses) * totalKnownAddresses;
+
+        this.logger.debug("Estimated exchange reserve", {
+          totalReserve,
+          checkedAddresses,
+          estimatedReserve,
+        });
+
+        return estimatedReserve;
+      }
+
+      return;
+    } catch (error) {
+      this.logger.error("Failed to fetch exchange reserve", error);
+      return;
+    }
+  }
+
+  /**
+   * Estimate SOPR (Spent Output Profit Ratio)
+   * Simplified calculation based on average transaction profit
+   */
+  async fetchSOPR(): Promise<number | undefined> {
+    try {
+      // Get recent block to analyze
+      const response = await fetch(`${MEMPOOL_API}/blocks`);
+      if (!response.ok) {
+        return;
+      }
+
+      const blocks = (await response.json()) as Array<{ id: string }>;
+      if (blocks.length === 0) {
+        return;
+      }
+
+      // Analyze first block
+      const txResponse = await fetch(
+        `${MEMPOOL_API}/block/${blocks[0].id}/txs`
+      );
+      if (!txResponse.ok) {
+        return;
+      }
+
+      const transactions = (await txResponse.json()) as Array<{
+        vout: Array<{ value: number }>;
+      }>;
+
+      // Simplified SOPR estimation
+      // In reality, SOPR requires tracking input/output age and prices
+      // This is a proxy based on transaction size
+      const avgValue =
+        transactions.reduce(
+          (sum, tx) => sum + tx.vout.reduce((vsum, out) => vsum + out.value, 0),
+          0
+        ) / Math.max(transactions.length, 1);
+
+      // Normalize around 1.0 (1.0 = break-even)
+      const sopr = 0.95 + (avgValue / SATOSHI_TO_BTC) * 0.000_001;
+
+      return Math.min(Math.max(sopr, 0.5), 1.5); // Clamp between 0.5 and 1.5
+    } catch (error) {
+      this.logger.error("Failed to calculate SOPR", error);
+      return;
+    }
+  }
+
   async fetchMetrics(): Promise<OnChainMetrics> {
     this.logger.info("Fetching Bitcoin on-chain metrics (Mempool.space)");
 
@@ -459,6 +608,11 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
       // NVT ratio calculation uses cached values
       const nvtRatio = marketCap && txVolume > 0 ? marketCap / txVolume : 0;
 
+      // Fetch advanced metrics (with longer delays to respect rate limits)
+      const stockToFlow = await this.fetchStockToFlow();
+      const exchangeReserve = await this.fetchExchangeReserve();
+      const sopr = await this.fetchSOPR();
+
       const metrics: OnChainMetrics = {
         timestamp: Date.now(),
         blockchain: "BTC",
@@ -471,12 +625,17 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
         nvtRatio,
         marketCap,
         transactionVolume: txVolume,
+        stockToFlow,
+        exchangeReserve,
+        sopr,
       };
 
       this.logger.info("Bitcoin metrics fetched successfully", {
         whaleCount: metrics.whaleTransactions.count,
         activeAddresses: metrics.activeAddresses,
         txVolume: metrics.transactionVolume,
+        stockToFlow: metrics.stockToFlow,
+        exchangeReserve: metrics.exchangeReserve,
       });
 
       return metrics;

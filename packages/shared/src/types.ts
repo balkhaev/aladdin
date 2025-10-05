@@ -324,15 +324,8 @@ export type OnChainMetrics = {
   nvtRatio: number;
   marketCap?: number;
   transactionVolume: number;
-};
 
-/**
- * Advanced on-chain metrics
- */
-export type AdvancedOnChainMetrics = {
-  timestamp: number;
-  blockchain: string;
-
+  // Advanced on-chain metrics (optional)
   // MVRV Ratio - Market Value to Realized Value
   // Indicates if asset is overvalued (>3.7) or undervalued (<1)
   mvrvRatio?: number;

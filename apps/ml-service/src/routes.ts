@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import type { BacktestingService } from "./services/backtesting";
+import type { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
 import type { LSTMPredictionService } from "./services/lstm-prediction";
 import type { MarketRegimeService } from "./services/market-regime";
 import type { ModelPersistenceService } from "./services/model-persistence";
@@ -8,6 +9,7 @@ import {
   BacktestConfigSchema,
   CompareModelsRequestSchema,
   MarketRegimeRequestSchema,
+  OptimizationConfigSchema,
   PredictionRequestSchema,
 } from "./types";
 
@@ -23,7 +25,8 @@ export function setupMLRoutes(
   regimeService: MarketRegimeService,
   lstmService: LSTMPredictionService,
   persistenceService: ModelPersistenceService,
-  backtestingService: BacktestingService
+  backtestingService: BacktestingService,
+  hpoService: HyperparameterOptimizationService
 ) {
   /**
    * POST /api/ml/predict - Предсказать цену
@@ -441,6 +444,98 @@ export function setupMLRoutes(
           success: false,
           error: {
             code: "COMPARISON_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/optimize - Run hyperparameter optimization
+   */
+  app.post("/api/ml/optimize", async (c) => {
+    try {
+      const body = await c.req.json();
+
+      // Validate request
+      const validation = OptimizationConfigSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: validation.error.message,
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const result = await hpoService.optimize(validation.data);
+
+      return c.json({
+        success: true,
+        data: result,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "OPTIMIZATION_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * GET /api/ml/optimize/recommendations - Get hyperparameter recommendations
+   */
+  app.get("/api/ml/optimize/recommendations", async (c) => {
+    try {
+      const symbol = c.req.query("symbol");
+      const modelType = c.req.query("modelType") as "LSTM" | "HYBRID";
+
+      if (!(symbol && modelType)) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "symbol and modelType are required",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const recommendations = await hpoService.getRecommendations(
+        symbol,
+        modelType
+      );
+
+      return c.json({
+        success: true,
+        data: recommendations,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "RECOMMENDATIONS_FAILED",
             message: error instanceof Error ? error.message : String(error),
           },
           timestamp: Date.now(),

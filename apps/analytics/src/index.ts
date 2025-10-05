@@ -50,7 +50,8 @@ let sentimentService: SentimentAnalysisService | undefined;
 // Combined sentiment service instance
 let combinedSentimentService: CombinedSentimentService | undefined;
 
-// Note: Sentiment aggregator from old sentiment service could be integrated here if needed
+// Note: Social sentiment is provided by social-integrations service via API
+// We don't instantiate SentimentAggregator here to avoid dependencies
 
 // Helper function to format report as CSV
 function formatReportAsCSV(
@@ -134,6 +135,9 @@ initializeService({
         deps.logger
       );
       deps.logger.info("Sentiment Analysis service initialized");
+
+      // Note: Social Sentiment is provided by social-integrations service
+      // We fetch it via API in Combined Sentiment Service
 
       // Initialize Combined Sentiment service
       const analyticsBaseUrl =
@@ -634,6 +638,83 @@ initializeService({
         data: sentiment,
         timestamp: Date.now(),
       });
+    });
+
+    /**
+     * GET /api/analytics/social-sentiment/:symbol
+     * Get social sentiment (Telegram + Twitter) for a symbol
+     * Note: This is a proxy to social-integrations service
+     */
+    app.get("/api/analytics/social-sentiment/:symbol", async (c: Context) => {
+      const symbol = c.req.param("symbol").toUpperCase();
+
+      // Try cache first
+      if (cacheService) {
+        const cacheKey = `social-sentiment:${symbol}`;
+        const cached = await cacheService.get(cacheKey);
+        if (cached) {
+          return c.json({
+            success: true,
+            data: cached,
+            cached: true,
+            timestamp: Date.now(),
+          });
+        }
+      }
+
+      // Fetch from social-integrations service
+      try {
+        const socialIntegrationsUrl =
+          process.env.SOCIAL_INTEGRATIONS_URL || "http://localhost:3018";
+        const response = await fetch(
+          `${socialIntegrationsUrl}/api/social/sentiment/${symbol}`
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Social integrations API error: ${response.statusText}`
+          );
+        }
+
+        const result = await response.json();
+
+        // Cache for 2 minutes (social sentiment changes frequently)
+        if (cacheService && result.success) {
+          const cacheKey = `social-sentiment:${symbol}`;
+          await cacheService.set(
+            cacheKey,
+            result.data,
+            CACHE_MARKET_OVERVIEW_TTL
+          );
+        }
+
+        return c.json(result);
+      } catch (error) {
+        service.logger.error("Failed to fetch social sentiment", {
+          symbol,
+          error,
+        });
+
+        // Return empty/neutral sentiment on error
+        return c.json({
+          success: true,
+          data: {
+            symbol,
+            overall: 0,
+            telegram: { score: 0, bullish: 0, bearish: 0, signals: 0 },
+            twitter: {
+              score: 0,
+              positive: 0,
+              negative: 0,
+              neutral: 0,
+              tweets: 0,
+            },
+            confidence: 0,
+            timestamp: new Date().toISOString(),
+          },
+          timestamp: Date.now(),
+        });
+      }
     });
 
     /**

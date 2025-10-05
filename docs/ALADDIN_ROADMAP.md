@@ -509,7 +509,30 @@ async analyzeSentiment(symbol: string): Promise<{
 - ✅ Comprehensive documentation
 - Приоритет: Medium → ✅ DONE
 
-#### 3.4 Reinforcement Learning для Trading
+#### 3.4 Model Ensemble ✅ COMPLETED (2025-10-05)
+
+##### ✅ Ensemble Prediction Service
+
+**Implementation:**
+- ✅ Weighted Average strategy (balanced 50/50)
+- ✅ Voting strategy (direction-focused with confidence boost)
+- ✅ Stacking strategy (regime-adaptive weights)
+- ✅ Combines LSTM + Hybrid predictions
+- ✅ Dynamic confidence calculation
+- ✅ Model agreement tracking
+- ✅ Price spread analysis
+- ✅ API endpoint `/api/ml/predict/ensemble`
+- ✅ ~400 LOC ensemble logic
+- ✅ Comprehensive documentation
+
+**Benefits:**
+- Expected +5-15% accuracy improvement
+- Better stability (reduced variance)
+- Regime-adaptive (LSTM for trends, Hybrid for sideways)
+- Confidence boosting when models agree
+- Приоритет: High → ✅ DONE
+
+#### 3.5 Reinforcement Learning для Trading
 
 ##### Deep Q-Network (DQN) для оптимизации стратегий
 

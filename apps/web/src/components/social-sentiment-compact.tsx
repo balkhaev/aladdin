@@ -79,6 +79,24 @@ export function SocialSentimentCompact({
     );
   }
 
+  // Ensure sentiments is an array
+  const sentimentsArray = Array.isArray(sentiments) ? sentiments : [];
+
+  if (sentimentsArray.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Combined Sentiment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-muted-foreground text-xs">
+            No sentiment data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -86,7 +104,7 @@ export function SocialSentimentCompact({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {sentiments.map((sentiment) => (
+          {sentimentsArray.map((sentiment) => (
             <SentimentRow key={sentiment.symbol} sentiment={sentiment} />
           ))}
         </div>

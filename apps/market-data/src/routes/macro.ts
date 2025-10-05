@@ -1,5 +1,5 @@
-import { NotFoundError } from "@aladdin/shared/errors";
 import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
+import { NotFoundError } from "@aladdin/shared/errors";
 import type { Context, Hono } from "hono";
 
 const DEFAULT_LIMIT = 1;
@@ -10,7 +10,10 @@ const MIN_CORRELATION_COUNT = 2;
 const DEFAULT_TOP_COINS_LIMIT = 50;
 const TRENDING_COINS_LIMIT = 10;
 
-export function setupMacroRoutes(app: Hono, clickhouse: ClickHouseClient | undefined) {
+export function setupMacroRoutes(
+  app: Hono,
+  clickhouse: ClickHouseClient | undefined
+) {
   /**
    * GET /api/market-data/macro/global - Получить глобальные рыночные метрики
    */
@@ -215,6 +218,11 @@ export function setupMacroRoutes(app: Hono, clickhouse: ClickHouseClient | undef
     }
 
     const query = `
+      WITH latest_day AS (
+        SELECT MAX(day) as max_day
+        FROM aladdin.category_daily_stats_mv
+        WHERE category != ''
+      )
       SELECT 
         category,
         SUM(total_market_cap) as total_market_cap,
@@ -223,7 +231,7 @@ export function setupMacroRoutes(app: Hono, clickhouse: ClickHouseClient | undef
         AVG(avg_price_change_7d) as avg_price_change_7d,
         SUM(coins_count) as coins_count
       FROM aladdin.category_daily_stats_mv
-      WHERE day = today()
+      WHERE day = (SELECT max_day FROM latest_day)
         AND category != ''
       GROUP BY category
       ORDER BY total_market_cap DESC
@@ -365,15 +373,17 @@ export function setupMacroRoutes(app: Hono, clickhouse: ClickHouseClient | undef
   /**
    * GET /api/market-data/macro/categories/correlation - Correlation matrix категорий
    */
-  app.get("/api/market-data/macro/categories/correlation", async (c: Context) => {
-    if (!clickhouse) {
-      throw new NotFoundError("ClickHouse connection");
-    }
+  app.get(
+    "/api/market-data/macro/categories/correlation",
+    async (c: Context) => {
+      if (!clickhouse) {
+        throw new NotFoundError("ClickHouse connection");
+      }
 
-    const days = Number(c.req.query("days") ?? "7");
-    const limitDays = Math.min(days, MAX_CORRELATION_DAYS);
+      const days = Number(c.req.query("days") ?? "7");
+      const limitDays = Math.min(days, MAX_CORRELATION_DAYS);
 
-    const query = `
+      const query = `
       WITH category_changes AS (
         SELECT 
           category,
@@ -397,16 +407,16 @@ export function setupMacroRoutes(app: Hono, clickhouse: ClickHouseClient | undef
       ORDER BY c1.category, c2.category
     `;
 
-    const result = await clickhouse.query<{
-      category1: string;
-      category2: string;
-      correlation: number;
-    }>(query, { limitDays, minCount: MIN_CORRELATION_COUNT });
+      const result = await clickhouse.query<{
+        category1: string;
+        category2: string;
+        correlation: number;
+      }>(query, { limitDays, minCount: MIN_CORRELATION_COUNT });
 
-    return c.json({
-      success: true,
-      data: result,
-    });
-  });
+      return c.json({
+        success: true,
+        data: result,
+      });
+    }
+  );
 }
-

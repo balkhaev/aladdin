@@ -4,21 +4,28 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getExecutorConfig,
-  getExecutorStats,
-  getPendingSignals,
-  manualExecuteSignal,
-  setExecutionMode,
-  toggleAutoExecute,
-  updateExecutorConfig,
   type ExecutionMode,
   type ExecutorConfig,
   type ExecutorStats,
+  getExecutorConfig,
+  getExecutorStats,
+  getPendingSignals,
   type ManualExecuteParams,
+  manualExecuteSignal,
+  setExecutionMode,
   type TradingSignal,
+  toggleAutoExecute,
+  updateExecutorConfig,
 } from "@/lib/api/executor";
 
-const REFETCH_INTERVAL = 5_000; // 5 seconds for real-time updates
+const MILLISECONDS_IN_SECOND = 1000;
+const SECONDS_FOR_REFETCH = 5;
+const SECONDS_FOR_SHORT_STALE = 3;
+const SECONDS_FOR_LONG_STALE = 30;
+
+const REFETCH_INTERVAL = SECONDS_FOR_REFETCH * MILLISECONDS_IN_SECOND; // 5 seconds for real-time updates
+const STALE_TIME_SHORT = SECONDS_FOR_SHORT_STALE * MILLISECONDS_IN_SECOND; // 3 seconds
+const STALE_TIME_LONG = SECONDS_FOR_LONG_STALE * MILLISECONDS_IN_SECOND; // 30 seconds
 
 /**
  * Hook to fetch executor statistics
@@ -28,7 +35,7 @@ export function useExecutorStats() {
     queryKey: ["executor-stats"],
     queryFn: getExecutorStats,
     refetchInterval: REFETCH_INTERVAL,
-    staleTime: 3_000,
+    staleTime: STALE_TIME_SHORT,
   });
 }
 
@@ -39,7 +46,7 @@ export function useExecutorConfig() {
   return useQuery<ExecutorConfig>({
     queryKey: ["executor-config"],
     queryFn: getExecutorConfig,
-    staleTime: 30_000, // Config changes less frequently
+    staleTime: STALE_TIME_LONG, // Config changes less frequently
   });
 }
 
@@ -51,7 +58,7 @@ export function usePendingSignals() {
     queryKey: ["pending-signals"],
     queryFn: getPendingSignals,
     refetchInterval: REFETCH_INTERVAL,
-    staleTime: 3_000,
+    staleTime: STALE_TIME_SHORT,
   });
 }
 
@@ -116,4 +123,3 @@ export function useManualExecuteSignal() {
     },
   });
 }
-

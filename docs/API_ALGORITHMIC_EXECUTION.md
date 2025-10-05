@@ -49,18 +49,18 @@ API для алгоритмического исполнения ордеров 
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `symbol` | `string` | ✅ | Торговая пара (e.g., "BTCUSDT") |
-| `side` | `"BUY" \| "SELL"` | ✅ | Направление сделки |
-| `totalQuantity` | `number` | ✅ | Общее количество для исполнения |
-| `strategy` | `"VWAP" \| "TWAP" \| "ICEBERG"` | ✅ | Стратегия исполнения |
-| `duration` | `number` | ⚠️ | Длительность (секунды, обязательно для VWAP/TWAP) |
-| `sliceInterval` | `number` | ❌ | Интервал между slices (секунды, для TWAP) |
-| `visibleQuantity` | `number` | ⚠️ | Видимая часть (обязательно для ICEBERG) |
-| `volumeProfile` | `Array<{hour, volume}>` | ❌ | Historical volume data (для VWAP) |
-| `minSliceSize` | `number` | ❌ | Минимальный размер slice |
-| `maxSliceSize` | `number` | ❌ | Максимальный размер slice |
+| Parameter         | Type                            | Required | Description                                       |
+| ----------------- | ------------------------------- | -------- | ------------------------------------------------- |
+| `symbol`          | `string`                        | ✅       | Торговая пара (e.g., "BTCUSDT")                   |
+| `side`            | `"BUY" \| "SELL"`               | ✅       | Направление сделки                                |
+| `totalQuantity`   | `number`                        | ✅       | Общее количество для исполнения                   |
+| `strategy`        | `"VWAP" \| "TWAP" \| "ICEBERG"` | ✅       | Стратегия исполнения                              |
+| `duration`        | `number`                        | ⚠️       | Длительность (секунды, обязательно для VWAP/TWAP) |
+| `sliceInterval`   | `number`                        | ❌       | Интервал между slices (секунды, для TWAP)         |
+| `visibleQuantity` | `number`                        | ⚠️       | Видимая часть (обязательно для ICEBERG)           |
+| `volumeProfile`   | `Array<{hour, volume}>`         | ❌       | Historical volume data (для VWAP)                 |
+| `minSliceSize`    | `number`                        | ❌       | Минимальный размер slice                          |
+| `maxSliceSize`    | `number`                        | ❌       | Максимальный размер slice                         |
 
 **Response 200 OK:**
 
@@ -160,9 +160,9 @@ API для алгоритмического исполнения ордеров 
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `string` | Execution ID |
+| Parameter | Type     | Description  |
+| --------- | -------- | ------------ |
+| `id`      | `string` | Execution ID |
 
 **Response 200 OK:**
 
@@ -224,9 +224,9 @@ API для алгоритмического исполнения ордеров 
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `string` | Execution ID |
+| Parameter | Type     | Description  |
+| --------- | -------- | ------------ |
+| `id`      | `string` | Execution ID |
 
 **Response 200 OK:**
 
@@ -420,83 +420,87 @@ API для алгоритмического исполнения ордеров 
 
 ```typescript
 // Создать VWAP execution
-const response = await fetch('/api/trading/executor/algorithmic', {
-  method: 'POST',
+const response = await fetch("/api/trading/executor/algorithmic", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    symbol: 'BTCUSDT',
-    side: 'BUY',
+    symbol: "BTCUSDT",
+    side: "BUY",
     totalQuantity: 10,
-    strategy: 'VWAP',
+    strategy: "VWAP",
     duration: 3600,
     volumeProfile: [
       { hour: 9, volume: 1500000 },
       { hour: 10, volume: 2000000 },
     ],
   }),
-});
+})
 
-const { data } = await response.json();
-console.log('Execution ID:', data.executionId);
-console.log('Total slices:', data.schedule.slices.length);
+const { data } = await response.json()
+console.log("Execution ID:", data.executionId)
+console.log("Total slices:", data.schedule.slices.length)
 
 // Получить статус
 const statusResponse = await fetch(
   `/api/trading/executor/algorithmic/${data.executionId}`
-);
-const { data: execution } = await statusResponse.json();
-console.log('Progress:', execution.filled / execution.schedule.totalQuantity);
+)
+const { data: execution } = await statusResponse.json()
+console.log("Progress:", execution.filled / execution.schedule.totalQuantity)
 
 // Отменить execution
 await fetch(`/api/trading/executor/algorithmic/${data.executionId}`, {
-  method: 'DELETE',
-});
+  method: "DELETE",
+})
 ```
 
 #### WebSocket
 
 ```typescript
-const ws = new WebSocket('ws://localhost:3016/ws');
+const ws = new WebSocket("ws://localhost:3016/ws")
 
 ws.onopen = () => {
   // Authenticate
-  ws.send(JSON.stringify({
-    type: 'auth',
-    token: 'user:my-user-id',
-  }));
-};
+  ws.send(
+    JSON.stringify({
+      type: "auth",
+      token: "user:my-user-id",
+    })
+  )
+}
 
 ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  
-  if (message.type === 'authenticated') {
+  const message = JSON.parse(event.data)
+
+  if (message.type === "authenticated") {
     // Subscribe to executions
-    ws.send(JSON.stringify({
-      type: 'subscribe',
-      channels: ['executions'],
-    }));
+    ws.send(
+      JSON.stringify({
+        type: "subscribe",
+        channels: ["executions"],
+      })
+    )
   }
-  
-  if (message.type === 'execution') {
+
+  if (message.type === "execution") {
     switch (message.event) {
-      case 'trading.execution.created':
-        console.log('New execution:', message.data.executionId);
-        break;
-      case 'trading.execution.progress':
-        console.log('Progress:', message.data.completion * 100 + '%');
-        break;
-      case 'trading.execution.completed':
-        console.log('Execution completed!');
-        break;
+      case "trading.execution.created":
+        console.log("New execution:", message.data.executionId)
+        break
+      case "trading.execution.progress":
+        console.log("Progress:", message.data.completion * 100 + "%")
+        break
+      case "trading.execution.completed":
+        console.log("Execution completed!")
+        break
     }
   }
-  
-  if (message.type === 'ping') {
-    ws.send(JSON.stringify({ type: 'pong' }));
+
+  if (message.type === "ping") {
+    ws.send(JSON.stringify({ type: "pong" }))
   }
-};
+}
 ```
 
 ### Python
@@ -531,25 +535,25 @@ async def subscribe_executions():
             'type': 'auth',
             'token': 'user:my-user-id'
         }))
-        
+
         # Wait for auth confirmation
         auth_msg = await websocket.recv()
         print(f"Auth: {auth_msg}")
-        
+
         # Subscribe to executions
         await websocket.send(json.dumps({
             'type': 'subscribe',
             'channels': ['executions']
         }))
-        
+
         # Listen for events
         async for message in websocket:
             data = json.loads(message)
-            
+
             if data['type'] == 'execution':
                 print(f"Event: {data['event']}")
                 print(f"Data: {data['data']}")
-            
+
             if data['type'] == 'ping':
                 await websocket.send(json.dumps({'type': 'pong'}))
 
@@ -569,11 +573,13 @@ asyncio.run(subscribe_executions())
 Распределяет ордер пропорционально историческому объему торгов.
 
 **Когда использовать:**
+
 - Крупные ордера (> 1% дневного объема)
 - Длительность: 1+ час
 - Есть доступ к volume profile
 
 **Параметры:**
+
 - `duration` (required)
 - `volumeProfile` (optional, fallback to TWAP)
 - `maxSliceSize` (optional)
@@ -583,11 +589,13 @@ asyncio.run(subscribe_executions())
 Равномерно распределяет ордер во времени.
 
 **Когда использовать:**
+
 - Средние ордера
 - Длительность: 5-60 минут
 - Нет historical volume data
 
 **Параметры:**
+
 - `duration` (required)
 - `sliceInterval` (optional, default: 60s)
 
@@ -596,11 +604,13 @@ asyncio.run(subscribe_executions())
 Скрывает общий размер ордера, показывая только visible quantity.
 
 **Когда использовать:**
+
 - Очень крупные ордера
 - Необходимость скрыть размер позиции
 - Защита от front-running
 
 **Параметры:**
+
 - `visibleQuantity` (required)
 - `refreshThreshold` (optional, default: 0.8)
 
@@ -624,13 +634,13 @@ REST API: стандартные rate limits применяются.
 
 ### Общие ошибки
 
-| Code | HTTP Status | Описание |
-|------|-------------|----------|
-| `EXECUTOR_NOT_INITIALIZED` | 503 | Executor не инициализирован |
-| `INVALID_REQUEST` | 400 | Некорректные параметры |
-| `EXECUTION_NOT_FOUND` | 404 | Execution не найден |
-| `ALGORITHMIC_EXECUTION_FAILED` | 500 | Ошибка создания execution |
-| `CANCEL_EXECUTION_FAILED` | 500 | Ошибка отмены execution |
+| Code                           | HTTP Status | Описание                    |
+| ------------------------------ | ----------- | --------------------------- |
+| `EXECUTOR_NOT_INITIALIZED`     | 503         | Executor не инициализирован |
+| `INVALID_REQUEST`              | 400         | Некорректные параметры      |
+| `EXECUTION_NOT_FOUND`          | 404         | Execution не найден         |
+| `ALGORITHMIC_EXECUTION_FAILED` | 500         | Ошибка создания execution   |
+| `CANCEL_EXECUTION_FAILED`      | 500         | Ошибка отмены execution     |
 
 ### WebSocket ошибки
 
@@ -657,6 +667,7 @@ REST API: стандартные rate limits применяются.
 ### Metrics
 
 Отслеживайте:
+
 - `activeAlgorithmicExecutions` - количество активных executions
 - `completion` - прогресс исполнения (0-1)
 - `failedSlices` - количество failed slices
@@ -670,45 +681,46 @@ REST API: стандартные rate limits применяются.
 ### React Example
 
 ```tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react"
 
 function ExecutionMonitor({ executionId }: { executionId: string }) {
-  const [execution, setExecution] = useState(null);
-  const [progress, setProgress] = useState(0);
-  
+  const [execution, setExecution] = useState(null)
+  const [progress, setProgress] = useState(0)
+
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3016/ws');
-    
+    const ws = new WebSocket("ws://localhost:3016/ws")
+
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'auth', token: 'user:me' }));
-    };
-    
+      ws.send(JSON.stringify({ type: "auth", token: "user:me" }))
+    }
+
     ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      
-      if (msg.type === 'authenticated') {
-        ws.send(JSON.stringify({
-          type: 'subscribe',
-          channels: ['executions']
-        }));
+      const msg = JSON.parse(event.data)
+
+      if (msg.type === "authenticated") {
+        ws.send(
+          JSON.stringify({
+            type: "subscribe",
+            channels: ["executions"],
+          })
+        )
       }
-      
-      if (msg.type === 'execution' && 
-          msg.data.executionId === executionId) {
-        setProgress(msg.data.completion || 0);
+
+      if (msg.type === "execution" && msg.data.executionId === executionId) {
+        setProgress(msg.data.completion || 0)
       }
-    };
-    
-    return () => ws.close();
-  }, [executionId]);
-  
+    }
+
+    return () => ws.close()
+  }, [executionId])
+
   return (
     <div>
       <h3>Execution: {executionId}</h3>
       <progress value={progress * 100} max={100} />
       <span>{(progress * 100).toFixed(1)}%</span>
     </div>
-  );
+  )
 }
 ```
 
@@ -717,4 +729,3 @@ function ExecutionMonitor({ executionId }: { executionId: string }) {
 **Last Updated:** 5 октября 2025  
 **Version:** 1.0.0  
 **Contact:** Coffee Trading System
-

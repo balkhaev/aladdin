@@ -637,6 +637,78 @@ initializeService({
     });
 
     /**
+     * GET /api/analytics/sentiment/batch/combined
+     * Get combined sentiment for multiple symbols
+     * ВАЖНО: этот роут должен быть ПЕРЕД /api/analytics/sentiment/:symbol/combined
+     */
+    app.get("/api/analytics/sentiment/batch/combined", async (c: Context) => {
+      const symbolsParam = c.req.query("symbols");
+
+      if (!symbolsParam) {
+        throw new ValidationError("symbols query parameter is required");
+      }
+
+      const symbols = symbolsParam
+        .split(",")
+        .map((s) => s.trim().toUpperCase());
+
+      // Check if combined sentiment service is initialized
+      if (!combinedSentimentService) {
+        throw new InternalServerError(
+          "Combined sentiment service not initialized"
+        );
+      }
+
+      // Calculate sentiment for all symbols in parallel
+      const results = await Promise.allSettled(
+        symbols.map(async (symbol) => {
+          // Try cache first
+          if (cacheService) {
+            const cacheKey = `combined-sentiment:${symbol}`;
+            const cached = await cacheService.get(cacheKey);
+            if (cached) {
+              return { symbol, ...cached, cached: true };
+            }
+          }
+
+          if (!combinedSentimentService) {
+            throw new Error("Combined sentiment service not initialized");
+          }
+          const sentiment =
+            await combinedSentimentService.getCombinedSentiment(symbol);
+
+          // Cache for 2 minutes
+          if (cacheService) {
+            const cacheKey = `combined-sentiment:${symbol}`;
+            await cacheService.set(
+              cacheKey,
+              sentiment,
+              CACHE_COMBINED_SENTIMENT_TTL
+            );
+          }
+
+          return sentiment;
+        })
+      );
+
+      // Format results
+      const sentiments = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => (r as PromiseFulfilledResult<unknown>).value);
+
+      const errors = results
+        .filter((r) => r.status === "rejected")
+        .map((r) => (r as PromiseRejectedResult).reason);
+
+      return c.json({
+        success: true,
+        data: sentiments,
+        errors: errors.length > 0 ? errors : undefined,
+        timestamp: Date.now(),
+      });
+    });
+
+    /**
      * GET /api/analytics/sentiment/:symbol/combined
      * Get combined sentiment analysis (Analytics + Futures + Order Book)
      */
@@ -747,77 +819,6 @@ initializeService({
       return c.json({
         success: true,
         data: sentiments,
-        timestamp: Date.now(),
-      });
-    });
-
-    /**
-     * GET /api/analytics/sentiment/batch/combined
-     * Get combined sentiment for multiple symbols
-     */
-    app.get("/api/analytics/sentiment/batch/combined", async (c: Context) => {
-      const symbolsParam = c.req.query("symbols");
-
-      if (!symbolsParam) {
-        throw new ValidationError("symbols query parameter is required");
-      }
-
-      const symbols = symbolsParam
-        .split(",")
-        .map((s) => s.trim().toUpperCase());
-
-      // Check if combined sentiment service is initialized
-      if (!combinedSentimentService) {
-        throw new InternalServerError(
-          "Combined sentiment service not initialized"
-        );
-      }
-
-      // Calculate sentiment for all symbols in parallel
-      const results = await Promise.allSettled(
-        symbols.map(async (symbol) => {
-          // Try cache first
-          if (cacheService) {
-            const cacheKey = `combined-sentiment:${symbol}`;
-            const cached = await cacheService.get(cacheKey);
-            if (cached) {
-              return { symbol, ...cached, cached: true };
-            }
-          }
-
-          if (!combinedSentimentService) {
-            throw new Error("Combined sentiment service not initialized");
-          }
-          const sentiment =
-            await combinedSentimentService.getCombinedSentiment(symbol);
-
-          // Cache for 2 minutes
-          if (cacheService) {
-            const cacheKey = `combined-sentiment:${symbol}`;
-            await cacheService.set(
-              cacheKey,
-              sentiment,
-              CACHE_COMBINED_SENTIMENT_TTL
-            );
-          }
-
-          return sentiment;
-        })
-      );
-
-      // Format results
-      const sentiments = results
-        .filter((r) => r.status === "fulfilled")
-        .map((r) => (r as PromiseFulfilledResult<unknown>).value);
-
-      const errors = results
-        .filter((r) => r.status === "rejected")
-        .map((r) => (r as PromiseRejectedResult).reason);
-
-      return c.json({
-        success: true,
-        data: sentiments,
-        errors: errors.length > 0 ? errors : undefined,
         timestamp: Date.now(),
       });
     });

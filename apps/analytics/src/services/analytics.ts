@@ -927,6 +927,8 @@ export class AnalyticsService extends BaseService {
       change24h: number;
       changePercent24h: number;
       volume24h: number;
+      high24h: number;
+      low24h: number;
     }>;
     topLosers: Array<{
       symbol: string;
@@ -934,6 +936,8 @@ export class AnalyticsService extends BaseService {
       change24h: number;
       changePercent24h: number;
       volume24h: number;
+      high24h: number;
+      low24h: number;
     }>;
     volumeLeaders: Array<{
       symbol: string;
@@ -945,6 +949,9 @@ export class AnalyticsService extends BaseService {
       totalVolume24h: number;
       totalSymbols: number;
       avgVolatility: number;
+      gainersCount: number;
+      losersCount: number;
+      unchangedCount: number;
       timestamp: Date;
     };
   }> {
@@ -981,6 +988,8 @@ export class AnalyticsService extends BaseService {
             symbol,
             sum(volume) AS volume_24h,
             sum(trades) AS trades_24h,
+            max(high) AS high_24h,
+            min(low) AS low_24h,
             stddevPop(close) / nullIf(avg(close), 0) * 100 AS volatility
           FROM aladdin.candles
           WHERE timestamp >= {oneDayAgo:DateTime}
@@ -995,6 +1004,8 @@ export class AnalyticsService extends BaseService {
         (c.current_price - d.day_ago_price) / d.day_ago_price * 100 AS change_percent_24h,
         v.volume_24h AS volume_24h,
         v.trades_24h AS trades_24h,
+        v.high_24h AS high_24h,
+        v.low_24h AS low_24h,
         v.volatility AS volatility
       FROM current_prices c
       INNER JOIN day_ago_prices d ON c.symbol = d.symbol
@@ -1011,6 +1022,8 @@ export class AnalyticsService extends BaseService {
       change_percent_24h: string;
       volume_24h: string;
       trades_24h: string;
+      high_24h: string;
+      low_24h: string;
       volatility: string;
     }>(query, {
       oneDayAgo: formatDateForClickHouse(oneDayAgo),
@@ -1024,6 +1037,8 @@ export class AnalyticsService extends BaseService {
       changePercent24h: Number.parseFloat(row.change_percent_24h),
       volume24h: Number.parseFloat(row.volume_24h),
       trades24h: Number.parseInt(row.trades_24h, 10),
+      high24h: Number.parseFloat(row.high_24h),
+      low24h: Number.parseFloat(row.low_24h),
       volatility: Number.parseFloat(row.volatility),
     }));
 
@@ -1038,11 +1053,12 @@ export class AnalyticsService extends BaseService {
         change24h: d.change24h,
         changePercent24h: d.changePercent24h,
         volume24h: d.volume24h,
+        high24h: d.high24h,
+        low24h: d.low24h,
       }));
 
-    // Get top losers (bottom 10)
+    // Get top losers (bottom 10 by change percentage, regardless of sign)
     const topLosers = marketData
-      .filter((d) => d.changePercent24h < 0)
       .sort((a, b) => a.changePercent24h - b.changePercent24h)
       .slice(0, 10)
       .map((d) => ({
@@ -1051,6 +1067,8 @@ export class AnalyticsService extends BaseService {
         change24h: d.change24h,
         changePercent24h: d.changePercent24h,
         volume24h: d.volume24h,
+        high24h: d.high24h,
+        low24h: d.low24h,
       }));
 
     // Get volume leaders (top 10 by volume)
@@ -1070,6 +1088,13 @@ export class AnalyticsService extends BaseService {
     const avgVolatility =
       marketData.reduce((sum, d) => sum + d.volatility, 0) / totalSymbols;
 
+    // Calculate market breadth
+    const gainersCount = marketData.filter(
+      (d) => d.changePercent24h > 0
+    ).length;
+    const losersCount = marketData.filter((d) => d.changePercent24h < 0).length;
+    const unchangedCount = totalSymbols - gainersCount - losersCount;
+
     return {
       topGainers,
       topLosers,
@@ -1078,6 +1103,9 @@ export class AnalyticsService extends BaseService {
         totalVolume24h,
         totalSymbols,
         avgVolatility,
+        gainersCount,
+        losersCount,
+        unchangedCount,
         timestamp: now,
       },
     };

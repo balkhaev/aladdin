@@ -4,8 +4,10 @@
  */
 
 import {
+  Activity,
   ArrowDown,
   ArrowUp,
+  Minus,
   TrendingDown,
   TrendingUp,
   Volume2,
@@ -90,7 +92,7 @@ export function MarketOverview() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Market Stats Summary */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div className="rounded-lg border bg-card p-3">
             <div className="text-muted-foreground text-xs">Total Volume</div>
             <div className="font-bold text-lg">
@@ -109,41 +111,121 @@ export function MarketOverview() {
               {overview.marketStats.avgVolatility.toFixed(2)}%
             </div>
           </div>
+          <div className="rounded-lg border bg-card p-3">
+            <div className="text-muted-foreground text-xs">Market Breadth</div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-green-500">
+                {overview.marketStats.gainersCount}
+              </span>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-red-500">
+                {overview.marketStats.losersCount}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Market Breadth Visualization */}
+        <div className="space-y-2 rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-500" />
+              <span className="font-medium">Market Sentiment</span>
+            </div>
+            <span className="text-muted-foreground">
+              {(
+                (overview.marketStats.gainersCount /
+                  overview.marketStats.totalSymbols) *
+                100
+              ).toFixed(1)}
+              % Positive
+            </span>
+          </div>
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 transition-all"
+              style={{
+                width: `${(overview.marketStats.gainersCount / overview.marketStats.totalSymbols) * 100}%`,
+              }}
+            />
+            <div
+              className="absolute top-0 right-0 h-full bg-gradient-to-l from-red-500 to-red-600 transition-all"
+              style={{
+                width: `${(overview.marketStats.losersCount / overview.marketStats.totalSymbols) * 100}%`,
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-green-500" />
+              <span className="text-muted-foreground">
+                {overview.marketStats.gainersCount} gainers
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Minus className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {overview.marketStats.unchangedCount} unchanged
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <TrendingDown className="h-3 w-3 text-red-500" />
+              <span className="text-muted-foreground">
+                {overview.marketStats.losersCount} losers
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Top Gainers */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <h3 className="font-semibold text-sm">Top Gainers</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              <h3 className="font-semibold text-sm">Top Gainers</h3>
+            </div>
+            <span className="text-muted-foreground text-xs">24h Range</span>
           </div>
           <div className="space-y-1">
             {overview.topGainers.map((gainer) => (
               <div
-                className="flex items-center justify-between rounded-md border bg-card p-2 transition-colors hover:bg-accent/50"
+                className="rounded-md border bg-card p-3 transition-colors hover:bg-accent/50"
                 key={gainer.symbol}
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">
-                    {gainer.symbol.replace("USDT", "")}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {formatPrice(gainer.price)}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">
+                      {gainer.symbol.replace("USDT", "")}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {formatPrice(gainer.price)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-xs">
+                      <Volume2 className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        {formatVolume(gainer.volume24h)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <ArrowUp className="h-3 w-3 text-green-500" />
+                      <span className="font-semibold text-green-500 text-sm">
+                        {formatPercent(gainer.changePercent24h)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-xs">
-                    <Volume2 className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {formatVolume(gainer.volume24h)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <ArrowUp className="h-3 w-3 text-green-500" />
-                    <span className="font-semibold text-green-500 text-sm">
-                      {formatPercent(gainer.changePercent24h)}
-                    </span>
-                  </div>
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">L:</span>
+                  <span className="text-red-400">
+                    {formatPrice(gainer.low24h)}
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">H:</span>
+                  <span className="text-green-400">
+                    {formatPrice(gainer.high24h)}
+                  </span>
                 </div>
               </div>
             ))}
@@ -152,37 +234,53 @@ export function MarketOverview() {
 
         {/* Top Losers */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <h3 className="font-semibold text-sm">Top Losers</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-500" />
+              <h3 className="font-semibold text-sm">Top Losers</h3>
+            </div>
+            <span className="text-muted-foreground text-xs">24h Range</span>
           </div>
           <div className="space-y-1">
             {overview.topLosers.map((loser) => (
               <div
-                className="flex items-center justify-between rounded-md border bg-card p-2 transition-colors hover:bg-accent/50"
+                className="rounded-md border bg-card p-3 transition-colors hover:bg-accent/50"
                 key={loser.symbol}
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">
-                    {loser.symbol.replace("USDT", "")}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {formatPrice(loser.price)}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">
+                      {loser.symbol.replace("USDT", "")}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {formatPrice(loser.price)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-xs">
+                      <Volume2 className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        {formatVolume(loser.volume24h)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <ArrowDown className="h-3 w-3 text-red-500" />
+                      <span className="font-semibold text-red-500 text-sm">
+                        {formatPercent(loser.changePercent24h)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-xs">
-                    <Volume2 className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {formatVolume(loser.volume24h)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <ArrowDown className="h-3 w-3 text-red-500" />
-                    <span className="font-semibold text-red-500 text-sm">
-                      {formatPercent(loser.changePercent24h)}
-                    </span>
-                  </div>
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">L:</span>
+                  <span className="text-red-400">
+                    {formatPrice(loser.low24h)}
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">H:</span>
+                  <span className="text-green-400">
+                    {formatPrice(loser.high24h)}
+                  </span>
                 </div>
               </div>
             ))}

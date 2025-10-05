@@ -9,6 +9,8 @@ export type MarketMover = {
   change24h: number;
   changePercent24h: number;
   volume24h: number;
+  high24h: number;
+  low24h: number;
 };
 
 export type VolumeLeader = {
@@ -22,6 +24,9 @@ export type MarketStats = {
   totalVolume24h: number;
   totalSymbols: number;
   avgVolatility: number;
+  gainersCount: number;
+  losersCount: number;
+  unchangedCount: number;
   timestamp: Date;
 };
 

@@ -1,0 +1,21 @@
+{
+  "name": "@aladdin/ml-service",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "tsc",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aladdin/database": "workspace:*",
+    "@aladdin/shared": "workspace:*",
+    "hono": "^4.7.11",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.23",
+    "typescript": "^5.8.2"
+  }
+}

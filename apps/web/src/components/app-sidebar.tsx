@@ -9,6 +9,7 @@ import {
   Search,
   Settings,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,12 @@ const navigation = [
         to: "/screener",
         icon: Search,
         description: "Поиск возможностей",
+      },
+      {
+        title: "Автотрейдинг",
+        to: "/executor",
+        icon: Zap,
+        description: "Автоматическое исполнение",
       },
     ],
   },

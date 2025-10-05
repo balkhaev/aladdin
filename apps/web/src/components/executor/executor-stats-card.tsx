@@ -3,13 +3,14 @@
  * Displays real-time statistics for the strategy executor
  */
 
-import { Activity, CheckCircle, XCircle, TrendingUp } from "lucide-react";
+import { Activity, CheckCircle, TrendingUp, XCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { useExecutorStats } from "@/hooks/use-executor";
 
 const PERCENT_DECIMALS = 1;
+const PERCENT_MULTIPLIER = 100;
 
 export function ExecutorStatsCard() {
   const { data: stats, isLoading, error } = useExecutorStats();
@@ -44,7 +45,8 @@ export function ExecutorStatsCard() {
 
   const successRate =
     stats.totalOrdersExecuted > 0
-      ? (stats.totalOrdersSuccessful / stats.totalOrdersExecuted) * 100
+      ? (stats.totalOrdersSuccessful / stats.totalOrdersExecuted) *
+        PERCENT_MULTIPLIER
       : 0;
 
   return (
@@ -125,9 +127,7 @@ export function ExecutorStatsCard() {
         {/* Active Positions */}
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border bg-card p-3">
-            <div className="text-muted-foreground text-xs">
-              Open Positions
-            </div>
+            <div className="text-muted-foreground text-xs">Open Positions</div>
             <div className="mt-2 font-bold text-xl">
               {stats.currentOpenPositions}
             </div>
@@ -146,4 +146,3 @@ export function ExecutorStatsCard() {
     </Card>
   );
 }
-

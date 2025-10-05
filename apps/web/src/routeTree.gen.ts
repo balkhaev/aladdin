@@ -20,6 +20,7 @@ import { Route as AuthScreenerRouteImport } from './routes/_auth.screener'
 import { Route as AuthPortfolioRouteImport } from './routes/_auth.portfolio'
 import { Route as AuthOnChainRouteImport } from './routes/_auth.on-chain'
 import { Route as AuthMarketRouteImport } from './routes/_auth.market'
+import { Route as AuthExecutorRouteImport } from './routes/_auth.executor'
 import { Route as AuthDebugRouteImport } from './routes/_auth.debug'
 import { Route as AuthBacktestRouteImport } from './routes/_auth.backtest'
 import { Route as AuthAnalyticsUnifiedRouteImport } from './routes/_auth.analytics-unified'
@@ -77,6 +78,11 @@ const AuthMarketRoute = AuthMarketRouteImport.update({
   path: '/market',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthExecutorRoute = AuthExecutorRouteImport.update({
+  id: '/executor',
+  path: '/executor',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDebugRoute = AuthDebugRouteImport.update({
   id: '/debug',
   path: '/debug',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/analytics-unified': typeof AuthAnalyticsUnifiedRoute
   '/backtest': typeof AuthBacktestRoute
   '/debug': typeof AuthDebugRoute
+  '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/analytics-unified': typeof AuthAnalyticsUnifiedRoute
   '/backtest': typeof AuthBacktestRoute
   '/debug': typeof AuthDebugRoute
+  '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_auth/analytics-unified': typeof AuthAnalyticsUnifiedRoute
   '/_auth/backtest': typeof AuthBacktestRoute
   '/_auth/debug': typeof AuthDebugRoute
+  '/_auth/executor': typeof AuthExecutorRoute
   '/_auth/market': typeof AuthMarketRoute
   '/_auth/on-chain': typeof AuthOnChainRoute
   '/_auth/portfolio': typeof AuthPortfolioRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/analytics-unified'
     | '/backtest'
     | '/debug'
+    | '/executor'
     | '/market'
     | '/on-chain'
     | '/portfolio'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/analytics-unified'
     | '/backtest'
     | '/debug'
+    | '/executor'
     | '/market'
     | '/on-chain'
     | '/portfolio'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/_auth/analytics-unified'
     | '/_auth/backtest'
     | '/_auth/debug'
+    | '/_auth/executor'
     | '/_auth/market'
     | '/_auth/on-chain'
     | '/_auth/portfolio'
@@ -271,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthMarketRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/executor': {
+      id: '/_auth/executor'
+      path: '/executor'
+      fullPath: '/executor'
+      preLoaderRoute: typeof AuthExecutorRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/debug': {
       id: '/_auth/debug'
       path: '/debug'
@@ -299,6 +318,7 @@ interface AuthRouteChildren {
   AuthAnalyticsUnifiedRoute: typeof AuthAnalyticsUnifiedRoute
   AuthBacktestRoute: typeof AuthBacktestRoute
   AuthDebugRoute: typeof AuthDebugRoute
+  AuthExecutorRoute: typeof AuthExecutorRoute
   AuthMarketRoute: typeof AuthMarketRoute
   AuthOnChainRoute: typeof AuthOnChainRoute
   AuthPortfolioRoute: typeof AuthPortfolioRoute
@@ -311,6 +331,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAnalyticsUnifiedRoute: AuthAnalyticsUnifiedRoute,
   AuthBacktestRoute: AuthBacktestRoute,
   AuthDebugRoute: AuthDebugRoute,
+  AuthExecutorRoute: AuthExecutorRoute,
   AuthMarketRoute: AuthMarketRoute,
   AuthOnChainRoute: AuthOnChainRoute,
   AuthPortfolioRoute: AuthPortfolioRoute,

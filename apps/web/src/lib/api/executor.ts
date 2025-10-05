@@ -80,8 +80,12 @@ export function updateExecutorConfig(
 /**
  * Get pending signals
  */
-export function getPendingSignals(): Promise<TradingSignal[]> {
-  return apiClient.get<TradingSignal[]>("/api/trading/executor/pending");
+export async function getPendingSignals(): Promise<TradingSignal[]> {
+  const response = await apiClient.get<{
+    signals: TradingSignal[];
+    count: number;
+  }>("/api/trading/executor/pending");
+  return response.signals;
 }
 
 /**
@@ -116,4 +120,3 @@ export function manualExecuteSignal(
 ): Promise<OrderResult> {
   return apiClient.post<OrderResult>("/api/trading/executor/manual", params);
 }
-

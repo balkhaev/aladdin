@@ -90,11 +90,12 @@ export function useBatchCombinedSentiment(
       }
 
       const result = await response.json();
-      return result.data;
+      // Ensure we return an array
+      const data = result.data;
+      return Array.isArray(data) ? data : [];
     },
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 60_000,
     enabled: enabled && !!symbols && symbols.length > 0,
   });
 }
-

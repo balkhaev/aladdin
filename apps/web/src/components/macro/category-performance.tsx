@@ -150,33 +150,44 @@ export function CategoryPerformance() {
             );
           })}
         </div>
-        <div className="mt-4 border-t pt-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground">Total Volume (24h)</div>
-              <div className="font-medium">
-                {formatMarketCap(
-                  data.reduce((sum, cat) => sum + cat.totalVolume24h, 0)
-                )}
+        {sortedData.length > 0 && (
+          <div className="mt-4 border-t pt-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground">Total Volume (24h)</div>
+                <div className="font-medium">
+                  {formatMarketCap(
+                    sortedData.reduce(
+                      (sum, cat) => sum + (cat.totalVolume24h || 0),
+                      0
+                    )
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-muted-foreground">Avg Performance (24h)</div>
-              <div
-                className={`font-medium ${getPriceChangeColor(
-                  data.reduce((sum, cat) => sum + cat.avgPriceChange24h, 0) /
-                    data.length
-                )}`}
-              >
-                {(
-                  data.reduce((sum, cat) => sum + cat.avgPriceChange24h, 0) /
-                  data.length
-                ).toFixed(2)}
-                %
+              <div className="text-right">
+                <div className="text-muted-foreground">
+                  Avg Performance (24h)
+                </div>
+                <div
+                  className={`font-medium ${getPriceChangeColor(
+                    sortedData.reduce(
+                      (sum, cat) => sum + (cat.avgPriceChange24h || 0),
+                      0
+                    ) / sortedData.length
+                  )}`}
+                >
+                  {(
+                    sortedData.reduce(
+                      (sum, cat) => sum + (cat.avgPriceChange24h || 0),
+                      0
+                    ) / sortedData.length
+                  ).toFixed(2)}
+                  %
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

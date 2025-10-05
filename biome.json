@@ -7,7 +7,13 @@
         "noParameterProperties": "off",
         "useNamingConvention": "off",
         "useReadonlyClassProperties": "off",
-        "useExportType": "off"
+        "useExportType": "off",
+        "noMagicNumbers": {
+          "level": "off"
+        }
+      },
+      "nursery": {
+        "useMaxParams": "off"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
@@ -22,6 +28,9 @@
         "noArrayIndexKey": "off"
       }
     }
+  },
+  "javascript": {
+    "globals": ["Bun"]
   },
   "files": {
     "ignoreUnknown": false,

@@ -45,6 +45,20 @@
         "typescript": "^5.7.3",
       },
     },
+    "apps/ml-service": {
+      "name": "@aladdin/ml-service",
+      "version": "1.0.0",
+      "dependencies": {
+        "@aladdin/database": "workspace:*",
+        "@aladdin/shared": "workspace:*",
+        "hono": "^4.7.11",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.2.23",
+        "typescript": "^5.8.2",
+      },
+    },
     "apps/portfolio": {
       "name": "@aladdin/portfolio",
       "version": "1.0.0",
@@ -245,6 +259,8 @@
     "@aladdin/database": ["@aladdin/database@workspace:packages/database"],
 
     "@aladdin/market-data": ["@aladdin/market-data@workspace:apps/market-data"],
+
+    "@aladdin/ml-service": ["@aladdin/ml-service@workspace:apps/ml-service"],
 
     "@aladdin/portfolio": ["@aladdin/portfolio@workspace:apps/portfolio"],
 
@@ -2051,6 +2067,8 @@
     "@aladdin/market-data/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
     "@aladdin/market-data/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
+    "@aladdin/ml-service/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@aladdin/server/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 

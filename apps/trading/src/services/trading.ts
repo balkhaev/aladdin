@@ -265,13 +265,91 @@ export class TradingService extends BaseService {
   }
 
   /**
+   * Get exchange connector by credentials ID
+   */
+  async getExchangeConnectorById(
+    exchangeCredentialsId: string,
+    userId: string
+  ): Promise<ExchangeConnector> {
+    const cacheKey = `cred:${exchangeCredentialsId}`;
+
+    // Check cache
+    const cached = this.connectorCache.get(cacheKey);
+    if (cached) {
+      // Check if not expired
+      if (Date.now() - cached.createdAt < CACHE_TTL_MS) {
+        return cached.connector;
+      }
+      // Remove expired entry
+      this.connectorCache.delete(cacheKey);
+    }
+
+    if (!this.prisma) {
+      throw new Error("Prisma client not initialized");
+    }
+
+    // Get credentials from database by ID
+    const credentials = await this.prisma.exchangeCredentials.findUnique({
+      where: {
+        id: exchangeCredentialsId,
+      },
+    });
+
+    if (!credentials) {
+      throw new NotFoundError(
+        `Exchange credentials not found with ID ${exchangeCredentialsId}. Please select valid exchange credentials.`
+      );
+    }
+
+    // Verify ownership
+    if (credentials.userId !== userId) {
+      throw new NotFoundError(
+        "Exchange credentials not found. Access denied."
+      );
+    }
+
+    // Check if active
+    if (!credentials.isActive) {
+      throw new NotFoundError(
+        "Exchange credentials are disabled. Please enable them in settings."
+      );
+    }
+
+    // Decrypt API secret
+    const apiSecret = decrypt(
+      credentials.apiSecret,
+      credentials.apiSecretIv,
+      credentials.apiSecretAuthTag
+    );
+
+    // Create connector using factory method
+    const connector = this.createConnector(credentials.exchange, {
+      apiKey: credentials.apiKey,
+      apiSecret,
+      testnet: credentials.testnet,
+      category: credentials.category,
+    });
+
+    // Cache connector with timestamp
+    this.connectorCache.set(cacheKey, {
+      connector,
+      createdAt: Date.now(),
+    });
+
+    return connector;
+  }
+
+  /**
    * Create a new order
    * TODO: Add rate limiting per user/exchange to prevent API abuse
    * TODO: Add idempotency key support to prevent duplicate orders
    * TODO: Implement retry logic with exponential backoff for transient failures
    */
   async createOrder(
-    params: CreateOrderParams & { exchange: string }
+    params: CreateOrderParams & {
+      exchange?: string;
+      exchangeCredentialsId?: string;
+    }
   ): Promise<Order> {
     this.logger.info("Creating order", {
       symbol: params.symbol,
@@ -279,6 +357,7 @@ export class TradingService extends BaseService {
       side: params.side,
       quantity: params.quantity,
       exchange: params.exchange,
+      exchangeCredentialsId: params.exchangeCredentialsId,
     });
 
     if (!this.prisma) {
@@ -317,11 +396,29 @@ export class TradingService extends BaseService {
       }
     }
 
-    // Get exchange connector for user
-    const connector = await this.getExchangeConnector(
-      params.userId,
-      params.exchange
-    );
+    // Get exchange connector and exchange name
+    let connector: ExchangeConnector;
+    let exchangeName: string;
+
+    if (params.exchangeCredentialsId) {
+      // Use exchangeCredentialsId (new method)
+      connector = await this.getExchangeConnectorById(
+        params.exchangeCredentialsId,
+        params.userId
+      );
+      
+      // Get exchange name from credentials
+      const credentials = await this.prisma.exchangeCredentials.findUnique({
+        where: { id: params.exchangeCredentialsId },
+      });
+      exchangeName = credentials?.exchange || "unknown";
+    } else if (params.exchange) {
+      // Use exchange (legacy method)
+      connector = await this.getExchangeConnector(params.userId, params.exchange);
+      exchangeName = params.exchange;
+    } else {
+      throw new Error("Either exchangeCredentialsId or exchange must be provided");
+    }
 
     // TODO: Add pre-order validation (min/max order size, price filters, lot size)
     // Create order on exchange
@@ -349,7 +446,7 @@ export class TradingService extends BaseService {
         status: this.convertStatus(exchangeOrder.status),
         filledQty: exchangeOrder.filledQty.toString(),
         avgPrice: exchangeOrder.avgPrice?.toString(),
-        exchange: params.exchange.toLowerCase(),
+        exchange: exchangeName.toLowerCase(),
         exchangeOrderId: exchangeOrder.orderId,
       },
     });

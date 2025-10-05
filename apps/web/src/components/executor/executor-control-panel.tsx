@@ -25,6 +25,7 @@ import {
   useToggleAutoExecute,
   useUpdateExecutorConfig,
 } from "@/hooks/use-executor";
+import { useExchangeCredentials } from "@/hooks/use-exchange-credentials";
 
 const POSITION_LIMIT_MIN = 1;
 const POSITION_LIMIT_SMALL = 3;
@@ -44,6 +45,7 @@ const MAX_POSITION_OPTIONS = [
 
 export function ExecutorControlPanel() {
   const { data: config, isLoading } = useExecutorConfig();
+  const { data: credentials, isLoading: credentialsLoading } = useExchangeCredentials();
   const setModeMutation = useSetExecutionMode();
   const toggleAutoMutation = useToggleAutoExecute();
   const updateConfigMutation = useUpdateExecutorConfig();
@@ -163,6 +165,28 @@ export function ExecutorControlPanel() {
     );
   };
 
+  const handleExchangeCredentialsChange = (value: string) => {
+    updateConfigMutation.mutate(
+      { exchangeCredentialsId: value },
+      {
+        onSuccess: () => {
+          const selectedCred = credentials?.find((c) => c.id === value);
+          toast({
+            title: "API Key Updated",
+            description: `Executor will now use ${selectedCred?.label || "selected"} credentials`,
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to update API key",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -218,6 +242,31 @@ export function ExecutorControlPanel() {
             {config.mode === "PAPER"
               ? "Simulated trading with no real orders"
               : "Real trading with actual orders on exchanges"}
+          </p>
+        </div>
+
+        {/* Exchange Credentials Selection */}
+        <div className="space-y-2">
+          <Label>Exchange API Key</Label>
+          <Select
+            defaultValue={config.exchangeCredentialsId}
+            disabled={credentialsLoading || updateConfigMutation.isPending}
+            onValueChange={handleExchangeCredentialsChange}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select API key..." />
+            </SelectTrigger>
+            <SelectContent>
+              {credentials?.map((cred) => (
+                <SelectItem key={cred.id} value={cred.id}>
+                  {cred.label} ({cred.exchange.toUpperCase()})
+                  {cred.testnet && " [TESTNET]"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-xs">
+            API key to use for order execution
           </p>
         </div>
 
@@ -290,7 +339,7 @@ export function ExecutorControlPanel() {
             )}
           </div>
           <Badge className="text-xs" variant="outline">
-            {config.defaultExchange}
+            {credentials?.find((c) => c.id === config.exchangeCredentialsId)?.exchange.toUpperCase() || "Not Set"}
           </Badge>
         </div>
       </CardContent>

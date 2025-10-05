@@ -4,6 +4,81 @@
 
 ---
 
+## [2025-10-05] v2.1 - Service Consolidation & Documentation Update
+
+### 🏗️ Архитектурный рефакторинг
+
+**Сокращение сервисов: 14 → 8 (43%)**
+
+Объединены следующие сервисы:
+
+- **market-data** ← macro-data + on-chain (порт 3010)
+- **trading** ← strategy-executor (порт 3011)
+- **portfolio** ← risk (порт 3012)
+- **analytics** ← sentiment (порт 3014)
+- **social-integrations** ← telega + twity (порт 3018)
+- **screener** - без изменений (порт 3017)
+
+**Преимущества:**
+
+- ✅ Упрощенная архитектура (меньше процессов)
+- ✅ Быстрее dev startup
+- ✅ Меньше memory usage
+- ✅ Проще deployment
+- ✅ Backward compatibility сохранена через API Gateway
+
+**Deleted code:** ~13,700 строк
+
+### 📚 Документация
+
+**Оптимизация: 22 файла → 14 файлов**
+
+Удалены устаревшие статусные файлы:
+
+- FINAL_STATUS.md
+- MIGRATION_COMPLETE.md
+- REFACTOR_COMPLETE.md
+- REFACTORING_SUMMARY.md
+- PHASE_2_COMPLETED.md
+
+Объединены файлы про Trading Execution:
+
+- ALGORITHMIC_EXECUTION.md
+- ALGORITHMIC_EXECUTION_SUMMARY.md
+- API_ALGORITHMIC_EXECUTION.md
+- SMART_ORDER_ROUTING.md
+- MARKET_IMPACT.md
+
+→ Создан единый **TRADING_EXECUTION.md** (comprehensive guide)
+
+**Итоговая структура docs/:**
+
+- API.md - полный API reference
+- TRADING_EXECUTION.md - алгоритмы исполнения, SOR, market impact
+- ALADDIN_ROADMAP.md - план развития
+- FEATURES.md - основные функции
+- CHANGELOG.md - история изменений
+- - 9 других специализированных документов
+
+### 🔧 Технические детали
+
+**Backend:**
+
+- Backward compatibility routes работают через API Gateway
+- ClickHouse client экспонирован для macro/on-chain
+- 0 linter errors
+
+**Frontend:**
+
+- Обновлен для API Gateway
+- Все endpoints используют VITE_API_URL
+
+**Тесты:**
+
+- Все 14 тестов алгоритмического исполнения пройдены ✅
+
+---
+
 ## [2025-10-04] Исправления и улучшения
 
 ### 🐛 Исправления Combined Sentiment Analysis

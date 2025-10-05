@@ -314,7 +314,7 @@ export function MarketOverview() {
                     </span>
                   </div>
                   <div className="font-semibold text-blue-500 text-sm">
-                    {formatVolume(leader.volume24h)}
+                    {formatVolume(leader.volumeUsd)}
                   </div>
                 </div>
               </div>

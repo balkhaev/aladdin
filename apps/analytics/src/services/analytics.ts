@@ -943,6 +943,7 @@ export class AnalyticsService extends BaseService {
       symbol: string;
       price: number;
       volume24h: number;
+      volumeUsd: number;
       trades24h: number;
     }>;
     marketStats: {
@@ -962,25 +963,36 @@ export class AnalyticsService extends BaseService {
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     // Query for 24h price changes and volumes
+    // Get the most recent price and price from ~24h ago for each symbol
     const query = `
       WITH 
+        all_prices AS (
+          SELECT
+            symbol,
+            timestamp,
+            close,
+            volume,
+            trades,
+            high,
+            low
+          FROM aladdin.candles
+          WHERE timeframe = '1h'
+          GROUP BY symbol, timestamp, close, volume, trades, high, low
+        ),
         current_prices AS (
           SELECT
             symbol,
             argMax(close, timestamp) AS current_price,
-            max(timestamp) AS last_update
-          FROM aladdin.candles
-          WHERE timestamp >= {oneDayAgo:DateTime}
-            AND timeframe = '1h'
+            max(timestamp) AS last_timestamp
+          FROM all_prices
           GROUP BY symbol
         ),
         day_ago_prices AS (
           SELECT
             symbol,
-            argMin(close, timestamp) AS day_ago_price
-          FROM aladdin.candles
-          WHERE timestamp >= {oneDayAgo:DateTime}
-            AND timeframe = '1h'
+            argMax(close, timestamp) AS day_ago_price
+          FROM all_prices
+          WHERE timestamp <= {oneDayAgo:DateTime}
           GROUP BY symbol
         ),
         volume_stats AS (
@@ -991,9 +1003,8 @@ export class AnalyticsService extends BaseService {
             max(high) AS high_24h,
             min(low) AS low_24h,
             stddevPop(close) / nullIf(avg(close), 0) * 100 AS volatility
-          FROM aladdin.candles
+          FROM all_prices
           WHERE timestamp >= {oneDayAgo:DateTime}
-            AND timeframe = '1h'
           GROUP BY symbol
         )
       SELECT
@@ -1071,19 +1082,23 @@ export class AnalyticsService extends BaseService {
         low24h: d.low24h,
       }));
 
-    // Get volume leaders (top 10 by volume)
+    // Get volume leaders (top 10 by volume in USD)
     const volumeLeaders = marketData
-      .sort((a, b) => b.volume24h - a.volume24h)
-      .slice(0, 10)
       .map((d) => ({
         symbol: d.symbol,
         price: d.price,
         volume24h: d.volume24h,
+        volumeUsd: d.volume24h * d.price,
         trades24h: d.trades24h,
-      }));
+      }))
+      .sort((a, b) => b.volumeUsd - a.volumeUsd)
+      .slice(0, 10);
 
-    // Calculate market stats
-    const totalVolume24h = marketData.reduce((sum, d) => sum + d.volume24h, 0);
+    // Calculate market stats (total volume in USD)
+    const totalVolume24h = marketData.reduce(
+      (sum, d) => sum + d.volume24h * d.price,
+      0
+    );
     const totalSymbols = marketData.length;
     const avgVolatility =
       marketData.reduce((sum, d) => sum + d.volatility, 0) / totalSymbols;

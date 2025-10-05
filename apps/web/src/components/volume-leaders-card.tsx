@@ -67,15 +67,15 @@ export function VolumeLeadersCard() {
 
   const formatVolume = (value: number) => {
     if (value >= BILLION) {
-      return `${(value / BILLION).toFixed(MIN_FRACTION_DIGITS)}B`;
+      return `$${(value / BILLION).toFixed(MIN_FRACTION_DIGITS)}B`;
     }
     if (value >= MILLION) {
-      return `${(value / MILLION).toFixed(MIN_FRACTION_DIGITS)}M`;
+      return `$${(value / MILLION).toFixed(MIN_FRACTION_DIGITS)}M`;
     }
     if (value >= THOUSAND) {
-      return `${(value / THOUSAND).toFixed(MIN_FRACTION_DIGITS)}K`;
+      return `$${(value / THOUSAND).toFixed(MIN_FRACTION_DIGITS)}K`;
     }
-    return value.toFixed(MIN_FRACTION_DIGITS);
+    return `$${value.toFixed(MIN_FRACTION_DIGITS)}`;
   };
 
   const formatTrades = (value: number) => {
@@ -119,7 +119,7 @@ export function VolumeLeadersCard() {
                   <div className="flex items-center gap-1">
                     <BarChart2 className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold text-sm">
-                      {formatVolume(coin.volume24h)}
+                      {formatVolume(coin.volumeUsd)}
                     </span>
                   </div>
                   <p className="text-muted-foreground text-xs">

@@ -10,7 +10,8 @@
         "useExportType": "off",
         "noMagicNumbers": {
           "level": "off"
-        }
+        },
+        "useForOf": "off"
       },
       "nursery": {
         "useMaxParams": "off"

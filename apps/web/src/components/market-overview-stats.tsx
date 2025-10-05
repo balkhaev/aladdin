@@ -65,15 +65,15 @@ export function MarketOverviewStats() {
 
   const formatVolume = (value: number) => {
     if (value >= BILLION) {
-      return `${(value / BILLION).toFixed(DECIMAL_PLACES)}B`;
+      return `$${(value / BILLION).toFixed(DECIMAL_PLACES)}B`;
     }
     if (value >= MILLION) {
-      return `${(value / MILLION).toFixed(DECIMAL_PLACES)}M`;
+      return `$${(value / MILLION).toFixed(DECIMAL_PLACES)}M`;
     }
     if (value >= THOUSAND) {
-      return `${(value / THOUSAND).toFixed(DECIMAL_PLACES)}K`;
+      return `$${(value / THOUSAND).toFixed(DECIMAL_PLACES)}K`;
     }
-    return value.toFixed(DECIMAL_PLACES);
+    return `$${value.toFixed(DECIMAL_PLACES)}`;
   };
 
   return (

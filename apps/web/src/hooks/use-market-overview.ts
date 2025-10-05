@@ -17,6 +17,7 @@ export type VolumeLeader = {
   symbol: string;
   price: number;
   volume24h: number;
+  volumeUsd: number;
   trades24h: number;
 };
 

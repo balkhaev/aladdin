@@ -64,6 +64,7 @@ export const exchangeSchema = z.enum(["binance", "bybit"], {
 
 /**
  * Create order request schema
+ * Supports both legacy exchange parameter and new exchangeCredentialsId
  */
 export const createOrderSchema = z
   .object({
@@ -96,7 +97,13 @@ export const createOrderSchema = z
       .positive("Stop price must be positive")
       .finite("Stop price must be finite")
       .optional(),
-    exchange: exchangeSchema.default("binance"),
+    // New: exchangeCredentialsId for API key binding
+    exchangeCredentialsId: z
+      .string()
+      .cuid({ message: "Invalid exchange credentials ID format" })
+      .optional(),
+    // Legacy: exchange parameter (for backward compatibility)
+    exchange: exchangeSchema.optional(),
   })
   .strict()
   .refine(
@@ -135,6 +142,16 @@ export const createOrderSchema = z
       message:
         "STOP_LOSS_LIMIT and TAKE_PROFIT_LIMIT orders must include both price and stopPrice",
       path: ["price", "stopPrice"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Either exchangeCredentialsId or exchange must be provided
+      return Boolean(data.exchangeCredentialsId) || Boolean(data.exchange);
+    },
+    {
+      message: "Either exchangeCredentialsId or exchange must be provided",
+      path: ["exchangeCredentialsId", "exchange"],
     }
   );
 

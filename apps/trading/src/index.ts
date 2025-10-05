@@ -52,9 +52,9 @@ await initializeService<TradingService, WebSocketData>({
     const executorConfig: Partial<ExecutorConfig> = {
       mode: (process.env.EXECUTOR_MODE as "PAPER" | "LIVE") || "PAPER",
       maxOpenPositions: Number(process.env.MAX_OPEN_POSITIONS || "5"),
-      defaultUserId: process.env.DEFAULT_USER_ID || "",
-      defaultPortfolioId: process.env.DEFAULT_PORTFOLIO_ID || "",
-      defaultExchange: process.env.DEFAULT_EXCHANGE || "binance",
+      userId: process.env.DEFAULT_USER_ID || "",
+      portfolioId: process.env.DEFAULT_PORTFOLIO_ID || "",
+      exchangeCredentialsId: process.env.DEFAULT_EXCHANGE_CREDENTIALS_ID || "",
       autoExecute: process.env.AUTO_EXECUTE !== "false",
     };
     
@@ -82,6 +82,7 @@ await initializeService<TradingService, WebSocketData>({
           price: validatedData.price,
           stopPrice: validatedData.stopPrice,
           exchange: validatedData.exchange,
+          exchangeCredentialsId: validatedData.exchangeCredentialsId,
         });
 
         return c.json(createSuccessResponse(order), HTTP_STATUS.CREATED);
@@ -434,7 +435,7 @@ await initializeService<TradingService, WebSocketData>({
   });
 
     // Setup Strategy Executor routes
-    setupExecutorRoutes(app, executor);
+    setupExecutorRoutes(app, executor, service.getPrisma());
   },
 
   websocket: {

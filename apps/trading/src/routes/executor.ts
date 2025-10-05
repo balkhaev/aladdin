@@ -1,10 +1,12 @@
 import { createSuccessResponse, HTTP_STATUS } from "@aladdin/shared/http";
+import type { PrismaClient } from "@aladdin/database";
 import type { Hono } from "hono";
 import type { StrategyExecutor } from "../services/executor";
 
 export function setupExecutorRoutes(
   app: Hono,
-  executor: StrategyExecutor | undefined
+  executor: StrategyExecutor | undefined,
+  prisma: PrismaClient
 ) {
   /**
    * GET /api/trading/executor/stats - Get executor statistics
@@ -69,7 +71,59 @@ export function setupExecutorRoutes(
     }
 
     try {
+      // TODO: Get userId from auth middleware
+      const userId = c.req.header("x-user-id") ?? "test-user";
       const body = await c.req.json<Record<string, unknown>>();
+
+      // Validate exchangeCredentialsId if provided
+      if (body.exchangeCredentialsId && typeof body.exchangeCredentialsId === "string") {
+        const credentials = await prisma.exchangeCredentials.findUnique({
+          where: { id: body.exchangeCredentialsId },
+        });
+
+        if (!credentials) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: "INVALID_CREDENTIALS",
+                message: "Exchange credentials not found",
+              },
+              timestamp: Date.now(),
+            },
+            HTTP_STATUS.BAD_REQUEST
+          );
+        }
+
+        if (credentials.userId !== userId) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: "ACCESS_DENIED",
+                message: "You do not have access to these credentials",
+              },
+              timestamp: Date.now(),
+            },
+            HTTP_STATUS.FORBIDDEN
+          );
+        }
+
+        if (!credentials.isActive) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: "CREDENTIALS_DISABLED",
+                message: "These credentials are disabled",
+              },
+              timestamp: Date.now(),
+            },
+            HTTP_STATUS.BAD_REQUEST
+          );
+        }
+      }
+
       executor.updateConfig(body);
 
       return c.json(

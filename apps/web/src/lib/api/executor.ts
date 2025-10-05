@@ -22,9 +22,9 @@ export type ExecutorStats = {
 export type ExecutorConfig = {
   mode: ExecutionMode;
   maxOpenPositions: number;
-  defaultUserId: string;
-  defaultPortfolioId: string;
-  defaultExchange: "binance" | "bybit" | "okx" | "kraken";
+  userId: string;
+  portfolioId: string;
+  exchangeCredentialsId: string;
   autoExecute: boolean;
   enableAlgorithmicExecution: boolean;
 };

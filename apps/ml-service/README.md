@@ -36,12 +36,14 @@ bun dev
 ### 1. Price Prediction
 
 Гибридный подход к прогнозированию цен:
+
 - Linear regression с техническими индикаторами
 - Exponential smoothing
 - Market regime adaptation
 - Confidence intervals
 
 **Horizons:**
+
 - `1h` - 1 час (1 step)
 - `4h` - 4 часа (4 steps)
 - `1d` - 1 день (24 steps)
@@ -50,12 +52,14 @@ bun dev
 ### 2. Market Regime Detection
 
 Классификация рынка на основе:
+
 - Trend analysis (linear regression slope)
 - Volatility (annualized std dev)
 - Momentum (rate of change)
 - Volume profile
 
 **Regimes:**
+
 - `BULL` - восходящий тренд
 - `BEAR` - нисходящий тренд
 - `SIDEWAYS` - боковое движение
@@ -65,12 +69,14 @@ bun dev
 Автоматическое извлечение features:
 
 **Price Features:**
+
 - Returns & log returns
 - Volatility
 - High-low spread
 - Open-close spread
 
 **Technical Indicators:**
+
 - RSI (Relative Strength Index)
 - MACD (Moving Average Convergence Divergence)
 - EMA/SMA (20, 50, 200)
@@ -88,6 +94,7 @@ bun dev
 Предсказать цену для символа.
 
 **Request:**
+
 ```json
 {
   "symbol": "BTCUSDT",
@@ -97,6 +104,7 @@ bun dev
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -106,9 +114,9 @@ bun dev
     "predictions": [
       {
         "timestamp": 1728127056789,
-        "predictedPrice": 65432.10,
-        "lowerBound": 64000.50,
-        "upperBound": 66863.70,
+        "predictedPrice": 65432.1,
+        "lowerBound": 64000.5,
+        "upperBound": 66863.7,
         "confidence": 0.95
       }
     ],
@@ -116,7 +124,7 @@ bun dev
       "technicalIndicators": {
         "rsi": 54.2,
         "macd": 123.45,
-        "ema20": 65000.00
+        "ema20": 65000.0
       },
       "onChainMetrics": {},
       "sentimentScore": 0,
@@ -141,6 +149,7 @@ bun dev
 Batch predictions для нескольких символов.
 
 **Request:**
+
 ```json
 {
   "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
@@ -154,6 +163,7 @@ Batch predictions для нескольких символов.
 Определить market regime.
 
 **Request:**
+
 ```json
 {
   "symbol": "BTCUSDT",
@@ -162,6 +172,7 @@ Batch predictions для нескольких символов.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -184,7 +195,7 @@ Batch predictions для нескольких символов.
     },
     "nextRegimeProb": {
       "BULL": 0.75,
-      "BEAR": 0.10,
+      "BEAR": 0.1,
       "SIDEWAYS": 0.15
     },
     "generatedAt": 1728123456789
@@ -267,6 +278,7 @@ CLICKHOUSE_URL=http://localhost:8123
 ### ClickHouse Tables
 
 **candles_1m** - minute candles for feature engineering:
+
 ```sql
 SELECT timestamp, open, high, low, close, volume
 FROM candles_1m
@@ -275,6 +287,7 @@ ORDER BY timestamp ASC
 ```
 
 **candles_1h** - hourly candles for regime detection:
+
 ```sql
 SELECT timestamp, close, volume, high, low
 FROM candles_1h
@@ -305,17 +318,20 @@ curl -X POST http://localhost:3019/api/ml/regime \
 ## 🚧 Future Improvements
 
 ### Phase 3.1 (Current)
+
 - ✅ Feature Engineering
 - ✅ Market Regime Detection
 - ✅ Price Prediction (Hybrid)
 
 ### Phase 3.2 (Next)
+
 - [ ] LSTM Price Prediction
 - [ ] Transformer Models
 - [ ] Model Training Pipeline
 - [ ] Model Persistence (save/load)
 
 ### Phase 3.3 (Future)
+
 - [ ] Reinforcement Learning (DQN/A3C)
 - [ ] Anomaly Detection (Autoencoders)
 - [ ] Sentiment Integration
@@ -335,4 +351,3 @@ curl -X POST http://localhost:3019/api/ml/regime \
 **Version:** 1.0.0  
 **Status:** Production Ready ✅  
 **Last Updated:** 5 октября 2025
-

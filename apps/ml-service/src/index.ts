@@ -5,7 +5,9 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { setupMLRoutes } from "./routes";
 import { FeatureEngineeringService } from "./services/feature-engineering";
+import { LSTMPredictionService } from "./services/lstm-prediction";
 import { MarketRegimeService } from "./services/market-regime";
+import { ModelPersistenceService } from "./services/model-persistence";
 import { PricePredictionService } from "./services/price-prediction";
 
 const PORT = Number.parseInt(process.env.PORT || "3019", 10);
@@ -42,13 +44,31 @@ function initializeServices() {
       regimeService,
       logger
     );
+    const lstmService = new LSTMPredictionService(
+      clickhouse,
+      featureService,
+      logger
+    );
+    const persistenceService = new ModelPersistenceService(logger);
 
     // Setup routes
-    setupMLRoutes(app, predictionService, regimeService);
+    setupMLRoutes(
+      app,
+      predictionService,
+      regimeService,
+      lstmService,
+      persistenceService
+    );
 
     logger.info("ML Service initialized successfully");
 
-    return { featureService, regimeService, predictionService };
+    return {
+      featureService,
+      regimeService,
+      predictionService,
+      lstmService,
+      persistenceService,
+    };
   } catch (error) {
     logger.error("Failed to initialize ML Service", error);
     throw error;
@@ -67,9 +87,14 @@ function start() {
 
     logger.info(`🤖 ML Service running on port ${server.port}`);
     logger.info("Available endpoints:");
-    logger.info("  POST /api/ml/predict - Price prediction");
+    logger.info("  POST /api/ml/predict - Price prediction (Hybrid)");
+    logger.info("  POST /api/ml/predict/lstm - Price prediction (LSTM)");
     logger.info("  POST /api/ml/predict/batch - Batch predictions");
     logger.info("  POST /api/ml/regime - Market regime detection");
+    logger.info("  GET /api/ml/models - List saved models");
+    logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
+    logger.info("  DELETE /api/ml/models/:symbol - Delete model");
+    logger.info("  POST /api/ml/models/cleanup - Cleanup old models");
     logger.info("  GET /api/ml/health - Health check");
   } catch (error) {
     logger.error("Failed to start ML Service", error);

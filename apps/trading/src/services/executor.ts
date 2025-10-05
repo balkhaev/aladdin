@@ -28,9 +28,9 @@ const MILLISECONDS_TO_SECONDS = 1000;
 export type ExecutorConfig = {
   mode: "PAPER" | "LIVE";
   maxOpenPositions: number;
-  defaultUserId: string;
-  defaultPortfolioId: string;
-  defaultExchange: string;
+  userId: string;
+  portfolioId: string;
+  exchangeCredentialsId: string;
   autoExecute: boolean;
   enableAlgorithmicExecution?: boolean;
 };
@@ -67,9 +67,9 @@ export class StrategyExecutor extends BaseService {
     this.config = {
       mode: config?.mode || "PAPER",
       maxOpenPositions: config?.maxOpenPositions || DEFAULT_MAX_OPEN_POSITIONS,
-      defaultUserId: config?.defaultUserId || "",
-      defaultPortfolioId: config?.defaultPortfolioId || "",
-      defaultExchange: config?.defaultExchange || "binance",
+      userId: config?.userId || "",
+      portfolioId: config?.portfolioId || "",
+      exchangeCredentialsId: config?.exchangeCredentialsId || "",
       autoExecute: config?.autoExecute ?? true,
       enableAlgorithmicExecution: config?.enableAlgorithmicExecution ?? true,
     };
@@ -304,9 +304,9 @@ export class StrategyExecutor extends BaseService {
     for (const signal of filtered) {
       const result = await this.orderManager.executeOrder(
         signal,
-        this.config.defaultUserId,
-        this.config.defaultPortfolioId,
-        this.config.defaultExchange
+        this.config.userId,
+        this.config.portfolioId,
+        this.config.exchangeCredentialsId
       );
 
       results.push(result);
@@ -392,9 +392,9 @@ export class StrategyExecutor extends BaseService {
 
     const result = await this.orderManager.executeOrder(
       signal,
-      this.config.defaultUserId,
-      this.config.defaultPortfolioId,
-      this.config.defaultExchange
+      this.config.userId,
+      this.config.portfolioId,
+      this.config.exchangeCredentialsId
     );
 
     this.stats.totalOrdersExecuted++;

@@ -32,7 +32,7 @@ export class OrderManager {
     signal: ProcessedSignal,
     userId: string,
     portfolioId: string,
-    exchange: string
+    exchangeCredentialsId: string
   ): Promise<OrderResult> {
     this.logger.info("Executing order", {
       mode: this.mode,
@@ -43,7 +43,7 @@ export class OrderManager {
 
     try {
       // 1. Get current price
-      const price = await this.getCurrentPrice(signal.symbol, exchange);
+      const price = await this.getCurrentPrice(signal.symbol, exchangeCredentialsId);
 
       // 2. Calculate position size
       const portfolio = await this.getPortfolio(portfolioId);
@@ -103,7 +103,7 @@ export class OrderManager {
         side: "BUY",
         type: "MARKET",
         quantity,
-        exchange,
+        exchangeCredentialsId,
       });
 
       if (!orderResult.success) {
@@ -149,10 +149,10 @@ export class OrderManager {
   /**
    * Get current price for a symbol
    */
-  private async getCurrentPrice(
-    symbol: string,
-    exchange: string
-  ): Promise<number> {
+  private getCurrentPrice(
+    _symbol: string,
+    _exchangeCredentialsId: string
+  ): number {
     // In real implementation, fetch from market-data service
     // For now, return mock price
     return 50_000; // Mock BTC price
@@ -234,7 +234,7 @@ export class OrderManager {
     side: "BUY" | "SELL";
     type: "MARKET" | "LIMIT";
     quantity: number;
-    exchange: string;
+    exchangeCredentialsId: string;
   }): Promise<{
     success: boolean;
     orderId?: string;

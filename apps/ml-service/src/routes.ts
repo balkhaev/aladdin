@@ -61,7 +61,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -88,6 +91,7 @@ export function setupMLRoutes(
         symbols: string[];
         horizon: "1h" | "4h" | "1d" | "7d";
         confidence?: number;
+        includeSentiment?: boolean;
       };
 
       if (!Array.isArray(body.symbols) || body.symbols.length === 0) {
@@ -107,7 +111,8 @@ export function setupMLRoutes(
       const results = await predictionService.batchPredict(
         body.symbols,
         body.horizon,
-        body.confidence
+        body.confidence,
+        body.includeSentiment ?? true
       );
 
       return c.json({
@@ -115,6 +120,7 @@ export function setupMLRoutes(
         data: {
           predictions: results,
           count: results.length,
+          includeSentiment: body.includeSentiment ?? true,
         },
         timestamp: Date.now(),
       });
@@ -160,7 +166,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -205,7 +214,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -396,7 +408,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -441,7 +456,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -486,7 +504,10 @@ export function setupMLRoutes(
 
       return c.json({
         success: true,
-        data: result,
+        data: {
+          ...result,
+          includeSentiment: validation.data.includeSentiment,
+        },
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -577,7 +598,8 @@ export function setupMLRoutes(
       const predictions = await ensembleService.predict(
         validation.data.symbol,
         validation.data.horizon,
-        validation.data.strategy
+        validation.data.strategy,
+        validation.data.includeSentiment
       );
 
       return c.json({
@@ -586,6 +608,7 @@ export function setupMLRoutes(
           symbol: validation.data.symbol,
           horizon: validation.data.horizon,
           strategy: validation.data.strategy,
+          includeSentiment: validation.data.includeSentiment,
           predictions,
         },
         timestamp: Date.now(),

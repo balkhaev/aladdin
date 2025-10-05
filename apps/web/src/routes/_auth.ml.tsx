@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
 import {
   Tabs,
   TabsContent,
@@ -48,6 +49,7 @@ function MachineLearningPage() {
   const [walkForward, setWalkForward] = useState(true);
   const [retrainInterval, setRetrainInterval] = useState(30);
   const [days, setDays] = useState(30);
+  const [includeSentiment, setIncludeSentiment] = useState(true);
 
   // Mutations
   const runBacktestMutation = useRunBacktest();
@@ -67,6 +69,7 @@ function MachineLearningPage() {
       endDate,
       walkForward,
       retrainInterval: walkForward ? retrainInterval : undefined,
+      includeSentiment,
     });
   };
 
@@ -82,6 +85,7 @@ function MachineLearningPage() {
       endDate,
       walkForward,
       retrainInterval: walkForward ? retrainInterval : undefined,
+      includeSentiment,
     });
   };
 
@@ -160,6 +164,21 @@ function MachineLearningPage() {
                 type="number"
                 value={days}
               />
+            </div>
+
+            {/* Include Sentiment */}
+            <div className="flex flex-col justify-between">
+              <Label htmlFor="includeSentiment">Include Sentiment</Label>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={includeSentiment}
+                  id="includeSentiment"
+                  onCheckedChange={setIncludeSentiment}
+                />
+                <span className="text-slate-400 text-sm">
+                  {includeSentiment ? "Using sentiment data" : "Technical only"}
+                </span>
+              </div>
             </div>
 
             {/* Walk-Forward */}
@@ -367,6 +386,7 @@ function MachineLearningPage() {
                   endDate,
                   optimizationMetric: config.optimizationMetric,
                   hyperparameterSpace: config.hyperparameterSpace,
+                  includeSentiment: config.includeSentiment,
                 });
               }}
             />

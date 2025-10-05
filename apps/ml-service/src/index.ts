@@ -1,146 +1,98 @@
-import { createClickHouseClient } from "@aladdin/shared/clickhouse";
-import { createLogger } from "@aladdin/shared/logger";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { logger as honoLogger } from "hono/logger";
+import { createSuccessResponse } from "@aladdin/shared/http";
+import { initializeService } from "@aladdin/shared/service-bootstrap";
 import { setupMLRoutes } from "./routes";
-import { AnomalyDetectionService } from "./services/anomaly-detection";
-import { BacktestingService } from "./services/backtesting";
-import { EnsembleService } from "./services/ensemble";
-import { FeatureEngineeringService } from "./services/feature-engineering";
-import { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
-import { LSTMPredictionService } from "./services/lstm-prediction";
-import { MarketRegimeService } from "./services/market-regime";
-import { ModelPersistenceService } from "./services/model-persistence";
-import { PricePredictionService } from "./services/price-prediction";
+import { MLService } from "./services/ml-service";
+import "dotenv/config";
 
-const PORT = Number.parseInt(process.env.PORT || "3019", 10);
-const CLICKHOUSE_URL = process.env.CLICKHOUSE_URL || "http://localhost:8123";
-const CLICKHOUSE_DATABASE = process.env.CLICKHOUSE_DATABASE || "crypto";
-const CLICKHOUSE_USER = process.env.CLICKHOUSE_USER || "default";
-const CLICKHOUSE_PASSWORD = process.env.CLICKHOUSE_PASSWORD || "";
+const DEFAULT_PORT = 3019;
+const PORT = process.env.PORT ? Number(process.env.PORT) : DEFAULT_PORT;
 
-const app = new Hono();
-const logger = createLogger({
-  service: "ml-service",
-  logFile: "logs/ml-service.log",
-  errorLogFile: "logs/ml-service-error.log",
-});
+await initializeService<MLService>({
+  serviceName: "ml-service",
+  port: PORT,
 
-// Middleware
-app.use("*", cors());
-app.use("*", honoLogger());
+  dependencies: {
+    clickhouse: true,
+    nats: false,
+  },
 
-// Initialize services
-function initializeServices() {
-  try {
-    logger.info("Initializing ML Service...");
+  createService: (deps) => new MLService(deps),
 
-    // ClickHouse client
-    const clickhouse = createClickHouseClient({
-      url: CLICKHOUSE_URL,
-      database: CLICKHOUSE_DATABASE,
-      username: CLICKHOUSE_USER,
-      password: CLICKHOUSE_PASSWORD,
-      logger,
-    });
-
-    // Create service instances
-    const featureService = new FeatureEngineeringService(clickhouse, logger);
-    const regimeService = new MarketRegimeService(clickhouse, logger);
-    const predictionService = new PricePredictionService(
-      clickhouse,
-      featureService,
-      regimeService,
-      logger
-    );
-    const lstmService = new LSTMPredictionService(
-      clickhouse,
-      featureService,
-      logger
-    );
-    const persistenceService = new ModelPersistenceService(logger);
-    const backtestingService = new BacktestingService(
-      clickhouse,
-      lstmService,
-      predictionService,
-      featureService,
-      logger
-    );
-    const hpoService = new HyperparameterOptimizationService(
-      clickhouse,
-      backtestingService,
-      logger
-    );
-    const anomalyService = new AnomalyDetectionService(clickhouse, logger);
-    const ensembleService = new EnsembleService(
-      clickhouse,
-      lstmService,
-      predictionService,
-      featureService,
-      regimeService,
-      logger
-    );
-
-    // Setup routes
+  setupRoutes: (app, service) => {
+    // Настраиваем маршруты ML Service
     setupMLRoutes(
       app,
-      predictionService,
-      regimeService,
-      lstmService,
-      persistenceService,
-      backtestingService,
-      hpoService,
-      anomalyService,
-      ensembleService
+      service.predictionService,
+      service.regimeService,
+      service.lstmService,
+      service.persistenceService,
+      service.backtestingService,
+      service.hpoService,
+      service.anomalyService,
+      service.ensembleService
     );
 
-    logger.info("ML Service initialized successfully");
+    // Health check endpoint
+    app.get("/api/ml/health", (c) =>
+      c.json(
+        createSuccessResponse({
+          status: "healthy",
+          service: "ml-service",
+          components: {
+            featureEngineering: true,
+            marketRegime: true,
+            pricePrediction: true,
+            lstm: true,
+            modelPersistence: true,
+            backtesting: true,
+            hyperparameterOptimization: true,
+            anomalyDetection: true,
+            ensemble: true,
+          },
+        })
+      )
+    );
+  },
 
-    return {
-      featureService,
-      regimeService,
-      predictionService,
-      lstmService,
-      persistenceService,
-    };
-  } catch (error) {
-    logger.error("Failed to initialize ML Service", error);
-    throw error;
-  }
-}
-
-// Start server
-function start() {
-  try {
-    initializeServices();
-
-    const server = Bun.serve<never>({
-      port: PORT,
-      fetch: app.fetch,
-    });
-
-    logger.info(`🤖 ML Service running on port ${server.port}`);
-    logger.info("Available endpoints:");
-      logger.info("  POST /api/ml/predict - Price prediction (Hybrid)");
-      logger.info("  POST /api/ml/predict/lstm - Price prediction (LSTM)");
-      logger.info("  POST /api/ml/predict/ensemble - Ensemble prediction");
-      logger.info("  POST /api/ml/predict/batch - Batch predictions");
-    logger.info("  POST /api/ml/regime - Market regime detection");
-    logger.info("  POST /api/ml/backtest - Run backtest");
-    logger.info("  POST /api/ml/backtest/compare - Compare models");
-    logger.info("  POST /api/ml/optimize - Hyperparameter optimization");
-    logger.info("  GET /api/ml/optimize/recommendations - HPO recommendations");
-    logger.info("  POST /api/ml/anomalies/detect - Detect anomalies");
-    logger.info("  GET /api/ml/models - List saved models");
-    logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
-    logger.info("  DELETE /api/ml/models/:symbol - Delete model");
-    logger.info("  POST /api/ml/models/cleanup - Cleanup old models");
-    logger.info("  GET /api/ml/health - Health check");
-  } catch (error) {
-    logger.error("Failed to start ML Service", error);
-    process.exit(1);
-  }
-}
-
-start();
+  afterInit: (_service, deps) => {
+    deps.logger.info("🤖 ML Service initialized successfully");
+    deps.logger.info("Available endpoints:");
+    deps.logger.info(
+      "  POST /api/ml/predict - Price prediction (Hybrid) [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/predict/lstm - Price prediction (LSTM) [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/predict/ensemble - Ensemble prediction [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/predict/batch - Batch predictions [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/regime - Market regime detection [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/backtest - Run backtest [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/backtest/compare - Compare models [includeSentiment]"
+    );
+    deps.logger.info(
+      "  POST /api/ml/optimize - Hyperparameter optimization [includeSentiment]"
+    );
+    deps.logger.info(
+      "  GET /api/ml/optimize/recommendations - HPO recommendations"
+    );
+    deps.logger.info("  POST /api/ml/anomalies/detect - Detect anomalies");
+    deps.logger.info("  GET /api/ml/models - List saved models");
+    deps.logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
+    deps.logger.info("  DELETE /api/ml/models/:symbol - Delete model");
+    deps.logger.info("  POST /api/ml/models/cleanup - Cleanup old models");
+    deps.logger.info("  GET /api/ml/health - Health check");
+    deps.logger.info("");
+    deps.logger.info(
+      "💡 All prediction endpoints support 'includeSentiment' query param (default: true)"
+    );
+  },
+});

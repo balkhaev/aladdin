@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import type { FeatureEngineeringService } from "./feature-engineering";
 import type { MarketRegimeService } from "./market-regime";
+import { SentimentIntegrationService } from "./sentiment-integration";
 
 const HORIZON_TO_HOURS: Record<PredictionHorizon, number> = {
   "1h": 1,
@@ -28,12 +29,16 @@ const HORIZON_TO_STEPS: Record<PredictionHorizon, number> = {
  * Использует гибридный подход для прогнозирования цен
  */
 export class PricePredictionService {
+  private sentimentService: SentimentIntegrationService;
+
   constructor(
     _clickhouse: ClickHouseClient,
     private featureService: FeatureEngineeringService,
     private regimeService: MarketRegimeService,
     private logger: Logger
-  ) {}
+  ) {
+    this.sentimentService = new SentimentIntegrationService(logger);
+  }
 
   /**
    * Предсказать цену для символа
@@ -65,12 +70,16 @@ export class PricePredictionService {
         lookback: 30,
       });
 
+      // Получить sentiment данные
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+
       // Текущая цена
       const currentPrice = features.at(-1)?.price.close;
 
       // Генерировать predictions
       const steps = HORIZON_TO_STEPS[horizon];
-      const predictions = this.generatePredictions(
+      let predictions = this.generatePredictions(
         currentPrice,
         features,
         steps,
@@ -78,8 +87,17 @@ export class PricePredictionService {
         regimeResult.currentRegime
       );
 
-      // Вычислить sentiment score (simplified)
-      const sentimentScore = this.getSentimentScore(symbol);
+      // Применить sentiment adjustments
+      if (sentimentData) {
+        predictions = this.applySentimentAdjustments(
+          predictions,
+          sentimentData,
+          regimeResult.currentRegime
+        );
+      }
+
+      // Вычислить sentiment score
+      const sentimentScore = sentimentData?.overall || 0;
 
       return {
         symbol,
@@ -256,10 +274,67 @@ export class PricePredictionService {
   /**
    * Получить sentiment score (mock)
    */
-  private getSentimentScore(_symbol: string): number {
-    // TODO: Integrate with sentiment service
-    // For now, return neutral sentiment
-    return 0;
+  /**
+   * Применить sentiment adjustments к predictions
+   */
+  private applySentimentAdjustments(
+    predictions: PredictionPoint[],
+    sentimentData: import("../types").SentimentData,
+    currentRegime: import("../types").MarketRegime
+  ): PredictionPoint[] {
+    // Get sentiment multiplier (0.9 to 1.1x based on sentiment)
+    const sentimentMultiplier =
+      this.sentimentService.getSentimentMultiplier(sentimentData);
+
+    // Check for divergence between sentiment and regime
+    const sentimentBias =
+      this.sentimentService.getSentimentRegimeBias(sentimentData);
+    const hasDivergence =
+      (sentimentBias === "BULLISH" && currentRegime === "BEAR") ||
+      (sentimentBias === "BEARISH" && currentRegime === "BULL");
+
+    this.logger.debug("Applying sentiment adjustments", {
+      sentimentMultiplier,
+      sentimentBias,
+      currentRegime,
+      hasDivergence,
+    });
+
+    return predictions.map((pred) => {
+      // Apply sentiment multiplier to price prediction
+      const adjustedPrice = pred.predictedPrice * sentimentMultiplier;
+
+      // Adjust confidence based on divergence
+      let adjustedConfidence = pred.confidence;
+      if (hasDivergence) {
+        // Reduce confidence by up to 20% when divergence detected
+        adjustedConfidence *= 0.8;
+        this.logger.warn("Sentiment-technical divergence detected", {
+          sentimentBias,
+          currentRegime,
+          confidenceReduction: "20%",
+        });
+      } else if (
+        (sentimentBias === "BULLISH" && currentRegime === "BULL") ||
+        (sentimentBias === "BEARISH" && currentRegime === "BEAR")
+      ) {
+        // Boost confidence by up to 10% when aligned
+        adjustedConfidence = Math.min(1, adjustedConfidence * 1.1);
+      }
+
+      // Adjust confidence intervals based on sentiment multiplier
+      const priceAdjustment = adjustedPrice - pred.predictedPrice;
+      const adjustedLowerBound = pred.lowerBound + priceAdjustment;
+      const adjustedUpperBound = pred.upperBound + priceAdjustment;
+
+      return {
+        ...pred,
+        predictedPrice: adjustedPrice,
+        lowerBound: adjustedLowerBound,
+        upperBound: adjustedUpperBound,
+        confidence: adjustedConfidence,
+      };
+    });
   }
 
   /**

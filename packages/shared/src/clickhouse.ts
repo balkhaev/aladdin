@@ -7,7 +7,7 @@ import type { Logger } from "./logger";
 export type ClickHouseClient = ClickHouseService;
 
 const DEFAULT_CLICKHOUSE_PORT = 8123;
-const SQL_PREVIEW_LENGTH = 100;
+const SQL_PREVIEW_LENGTH = 500;
 
 type ClickHouseClientOptions = {
   url?: string;
@@ -43,7 +43,7 @@ export class ClickHouseService {
       });
 
       this.options.logger?.info("ClickHouse client initialized", {
-        url: clickhouseUrl,
+        url: clickhouseUrl.replace(/:[^:@]+@/, ":***@"),
         database,
         username,
       });

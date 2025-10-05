@@ -54,34 +54,7 @@ export const ExecutorControlPanel = memo(
     const updateConfigMutation = useUpdateExecutorConfig();
     const { toast } = useToast();
 
-    if (isLoading) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Control Panel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-48 w-full" />
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (!config) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Control Panel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-muted-foreground text-sm">
-              Failed to load executor configuration
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
+    // All hooks must be called before any conditional returns
     const handleModeChange = useCallback(
       (mode: "PAPER" | "LIVE") => {
         setModeMutation.mutate(mode, {
@@ -215,6 +188,35 @@ export const ExecutorControlPanel = memo(
           ?.exchange.toUpperCase() || "Not Set",
       [credentials, config?.exchangeCredentialsId]
     );
+
+    // Conditional returns must come after all hooks
+    if (isLoading) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Control Panel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (!config) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Control Panel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-muted-foreground text-sm">
+              Failed to load executor configuration
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
 
     return (
       <Card>

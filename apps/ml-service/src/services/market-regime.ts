@@ -5,6 +5,7 @@ import type {
   MarketRegimeRequest,
   MarketRegimeResult,
 } from "../types";
+import { SentimentIntegrationService } from "./sentiment-integration";
 
 type CandleData = {
   timestamp: number;
@@ -19,10 +20,14 @@ type CandleData = {
  * Определяет текущее состояние рынка: BULL, BEAR или SIDEWAYS
  */
 export class MarketRegimeService {
+  private sentimentService: SentimentIntegrationService;
+
   constructor(
     private clickhouse: ClickHouseClient,
     private logger: Logger
-  ) {}
+  ) {
+    this.sentimentService = new SentimentIntegrationService(logger);
+  }
 
   /**
    * Определить текущий режим рынка
@@ -38,15 +43,29 @@ export class MarketRegimeService {
         throw new Error("Insufficient data for regime detection");
       }
 
+      // Получить sentiment данные
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+
       // Вычислить индикаторы
       const trend = this.calculateTrend(candles);
       const volatility = this.calculateVolatility(candles);
       const volume = this.calculateVolumeProfile(candles);
       const momentum = this.calculateMomentum(candles);
 
-      // Определить режим на основе индикаторов
-      const currentRegime = this.classifyRegime(trend, volatility, momentum);
-      const confidence = this.calculateConfidence(trend, volatility, momentum);
+      // Определить режим на основе индикаторов + sentiment
+      const currentRegime = this.classifyRegime(
+        trend,
+        volatility,
+        momentum,
+        sentimentData
+      );
+      const confidence = this.calculateConfidence(
+        trend,
+        volatility,
+        momentum,
+        sentimentData
+      );
 
       // Вычислить историю режимов
       const regimeHistory = this.calculateRegimeHistory(candles);
@@ -190,16 +209,41 @@ export class MarketRegimeService {
   private classifyRegime(
     trend: number,
     volatility: number,
-    momentum: number
+    momentum: number,
+    sentimentData: import("../types").SentimentData | null
   ): MarketRegime {
-    // BULL: positive trend, high momentum, moderate volatility
-    const bullScore = trend * 0.5 + momentum * 0.3 + (1 - volatility / 2) * 0.2;
+    // Base scores from technical indicators
+    const baseBullScore =
+      trend * 0.5 + momentum * 0.3 + (1 - volatility / 2) * 0.2;
+    const baseBearScore = -trend * 0.5 - momentum * 0.3 + volatility * 0.2;
+    const baseSidewaysScore = 1 - Math.abs(trend) - Math.abs(momentum);
 
-    // BEAR: negative trend, negative momentum, high volatility
-    const bearScore = -trend * 0.5 - momentum * 0.3 + volatility * 0.2;
+    let bullScore = baseBullScore;
+    let bearScore = baseBearScore;
+    const sidewaysScore = baseSidewaysScore;
 
-    // SIDEWAYS: low trend, low momentum
-    const sidewaysScore = 1 - Math.abs(trend) - Math.abs(momentum);
+    // Adjust scores based on sentiment (if available)
+    if (sentimentData && sentimentData.confidence > 0.5) {
+      const sentimentBias =
+        this.sentimentService.getSentimentRegimeBias(sentimentData);
+      const sentimentWeight = 0.15 * sentimentData.confidence; // Max 15% влияния
+
+      if (sentimentBias === "BULLISH") {
+        bullScore += sentimentWeight;
+        bearScore -= sentimentWeight * 0.5;
+      } else if (sentimentBias === "BEARISH") {
+        bearScore += sentimentWeight;
+        bullScore -= sentimentWeight * 0.5;
+      }
+
+      this.logger.debug("Sentiment-adjusted regime scores", {
+        sentimentBias,
+        sentimentWeight,
+        bullScore,
+        bearScore,
+        sidewaysScore,
+      });
+    }
 
     const scores = {
       BULL: bullScore,
@@ -222,15 +266,31 @@ export class MarketRegimeService {
   private calculateConfidence(
     trend: number,
     volatility: number,
-    momentum: number
+    momentum: number,
+    sentimentData: import("../types").SentimentData | null
   ): number {
     // Higher confidence when indicators are aligned
     const trendStrength = Math.abs(trend);
     const momentumStrength = Math.abs(momentum);
     const stabilityFactor = 1 - Math.min(volatility, 1);
 
-    const confidence =
+    let confidence =
       trendStrength * 0.4 + momentumStrength * 0.3 + stabilityFactor * 0.3;
+
+    // Boost confidence if sentiment aligns with technical indicators
+    if (sentimentData && sentimentData.confidence > 0.5) {
+      const sentimentBias =
+        this.sentimentService.getSentimentRegimeBias(sentimentData);
+      const isAligned =
+        (sentimentBias === "BULLISH" && trend > 0 && momentum > 0) ||
+        (sentimentBias === "BEARISH" && trend < 0 && momentum < 0) ||
+        (sentimentBias === "NEUTRAL" && Math.abs(trend) < 0.2);
+
+      if (isAligned) {
+        // Boost confidence by up to 10% when aligned
+        confidence = Math.min(1, confidence + 0.1 * sentimentData.confidence);
+      }
+    }
 
     return Math.max(0, Math.min(1, confidence));
   }

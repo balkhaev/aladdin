@@ -17,8 +17,8 @@ const UNIQUE_ADDRESS_RATIO = 0.7;
 const AVG_TX_VALUE = 0.1;
 const WEI_TO_ETH = 1_000_000_000_000_000_000; // 10^18
 const BLOCKS_TO_CHECK = 100; // Check last 100 blocks (~20 minutes)
-const BLOCKS_TO_SAMPLE = 5; // Sample blocks
-const BLOCKS_SAMPLING_DIVISOR = 20;
+const BLOCKS_TO_SAMPLE = 25; // Sample blocks (increased from 5 to 25)
+const BLOCKS_SAMPLING_DIVISOR = 4; // Check every 4th block (increased from 20)
 const BLOCKS_FOR_EXCHANGE_FLOWS = 10;
 const EXCHANGE_SAMPLE_LIMIT = 3;
 const TX_LIST_OFFSET = 50;
@@ -144,7 +144,7 @@ export class EthereumFetcher extends BaseFetcher {
                 const toExchange = exchangeSet.has(toAddr);
 
                 // Only include if involves exchange or very large transfer
-                const VERY_LARGE_MULTIPLIER = 10;
+                const VERY_LARGE_MULTIPLIER = 3; // Reduced from 10 to 3 (300 ETH = ~$1.4M)
                 const veryLargeThreshold = BigInt(
                   Math.floor(threshold * VERY_LARGE_MULTIPLIER * WEI_TO_ETH)
                 );
@@ -172,9 +172,13 @@ export class EthereumFetcher extends BaseFetcher {
           }
         }
 
-        this.logger.debug("Fetched Ethereum whale transactions", {
+        this.logger.info("Fetched Ethereum whale transactions", {
           count: whaleTransactions.length,
           blocksChecked: blocksToFetch,
+          latestBlock,
+          startBlock,
+          threshold,
+          veryLargeThreshold: threshold * 3,
         });
 
         return whaleTransactions;

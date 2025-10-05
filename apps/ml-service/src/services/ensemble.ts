@@ -258,7 +258,7 @@ export class EnsembleService {
    * Stacking Strategy
    * Use meta-model to combine predictions
    */
-  private async stackingStrategy(
+  private stackingStrategy(
     _symbol: string,
     lstmPred: { timestamp: number; price: number; confidence: number },
     hybridPred: {
@@ -268,7 +268,7 @@ export class EnsembleService {
     },
     weights: EnsembleWeights,
     regime: string
-  ): Promise<EnsemblePrediction> {
+  ): EnsemblePrediction {
     // Simple stacking: adjust weights based on regime
     const adjustedWeights = { ...weights };
 
@@ -300,11 +300,11 @@ export class EnsembleService {
   /**
    * Calculate optimal weights for models
    */
-  private async calculateWeights(
+  private calculateWeights(
     _symbol: string,
     horizon: PredictionHorizon,
     strategy: EnsembleStrategy
-  ): Promise<EnsembleWeights> {
+  ): EnsembleWeights {
     // For now, use fixed weights based on general performance
     // TODO: Calculate from historical backtest results
 
@@ -348,15 +348,15 @@ export class EnsembleService {
   /**
    * Get ensemble performance metrics
    */
-  async getPerformanceMetrics(
+  getPerformanceMetrics(
     _symbol: string,
     _horizon: PredictionHorizon
-  ): Promise<{
+  ): {
     weightedAverage: { accuracy: number; mae: number };
     voting: { accuracy: number; mae: number };
     stacking: { accuracy: number; mae: number };
     bestStrategy: EnsembleStrategy;
-  }> {
+  } {
     // TODO: Implement based on historical backtest results
     // For now, return mock data
 

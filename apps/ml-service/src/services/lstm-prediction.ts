@@ -11,6 +11,7 @@ import type {
   PredictionResult,
 } from "../types";
 import type { FeatureEngineeringService } from "./feature-engineering";
+import { SentimentIntegrationService } from "./sentiment-integration";
 
 const SEQUENCE_LENGTH = 20; // 20 candles lookback
 const HIDDEN_SIZE = 32; // Hidden layer size
@@ -31,12 +32,15 @@ type ModelCache = {
 export class LSTMPredictionService {
   private models: Map<string, ModelCache> = new Map();
   private readonly modelExpiry = 86_400_000; // 24 hours
+  private sentimentService: SentimentIntegrationService;
 
   constructor(
     _clickhouse: ClickHouseClient,
     private featureService: FeatureEngineeringService,
     private logger: Logger
-  ) {}
+  ) {
+    this.sentimentService = new SentimentIntegrationService(logger);
+  }
 
   /**
    * Predict price using LSTM
@@ -68,12 +72,22 @@ export class LSTMPredictionService {
       const rawPredictions = modelCache.model.predictMultiStep(sequence, steps);
 
       // Convert to price predictions with confidence intervals
-      const predictions = this.convertToPredictions(
+      let predictions = this.convertToPredictions(
         rawPredictions,
         currentPrice,
         confidence,
         features.at(-1)?.price.volatility || 0.1
       );
+
+      // Get sentiment data and apply adjustments
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+      if (sentimentData) {
+        predictions = this.applySentimentAdjustments(
+          predictions,
+          sentimentData
+        );
+      }
 
       // Calculate technical indicators
       const lastFeature = features.at(-1);
@@ -345,5 +359,52 @@ export class LSTMPredictionService {
     }
 
     return stats;
+  }
+
+  /**
+   * Apply sentiment adjustments to LSTM predictions
+   */
+  private applySentimentAdjustments(
+    predictions: PredictionPoint[],
+    sentimentData: import("../types").SentimentData
+  ): PredictionPoint[] {
+    // Get sentiment multiplier (0.9 to 1.1x based on sentiment)
+    const sentimentMultiplier =
+      this.sentimentService.getSentimentMultiplier(sentimentData);
+
+    this.logger.debug("Applying sentiment adjustments to LSTM predictions", {
+      sentimentMultiplier,
+      sentimentScore: sentimentData.overall,
+      sentimentConfidence: sentimentData.confidence,
+    });
+
+    return predictions.map((pred) => {
+      // Apply sentiment multiplier to price prediction
+      const adjustedPrice = pred.predictedPrice * sentimentMultiplier;
+
+      // Adjust confidence based on sentiment confidence
+      // Higher sentiment confidence = more reliable adjustment
+      let adjustedConfidence = pred.confidence;
+      if (sentimentData.confidence > 0.7) {
+        // Boost confidence when sentiment is very confident
+        adjustedConfidence = Math.min(1, adjustedConfidence * 1.05);
+      } else if (sentimentData.confidence < 0.3) {
+        // Reduce confidence when sentiment is uncertain
+        adjustedConfidence *= 0.95;
+      }
+
+      // Adjust confidence intervals based on sentiment multiplier
+      const priceAdjustment = adjustedPrice - pred.predictedPrice;
+      const adjustedLowerBound = pred.lowerBound + priceAdjustment;
+      const adjustedUpperBound = pred.upperBound + priceAdjustment;
+
+      return {
+        ...pred,
+        predictedPrice: adjustedPrice,
+        lowerBound: adjustedLowerBound,
+        upperBound: adjustedUpperBound,
+        confidence: adjustedConfidence,
+      };
+    });
   }
 }

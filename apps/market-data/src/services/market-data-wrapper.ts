@@ -98,7 +98,7 @@ export class MarketDataServiceWrapper extends BaseService {
     }
 
     // Initialize On-Chain Service if configured
-    const enabledChains = getEnv("BLOCKCHAIN_CHAINS", "");
+    const enabledChains = getEnv("ENABLED_CHAINS", "");
     const etherscanApiKey = getEnv("ETHERSCAN_API_KEY", "");
     const cmcApiKey = getEnv("CMC_API_KEY", "");
 

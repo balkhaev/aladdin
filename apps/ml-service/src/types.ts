@@ -4,6 +4,33 @@ import { z } from "zod";
 export type PredictionHorizon = "1h" | "4h" | "1d" | "7d";
 export type MarketRegime = "BULL" | "BEAR" | "SIDEWAYS";
 
+// Sentiment types
+export type SentimentData = {
+  overall: number; // -1 to 1
+  twitter: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    tweets: number;
+  };
+  reddit: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    posts: number;
+  };
+  telegram: {
+    score: number;
+    bullish: number;
+    bearish: number;
+    signals: number;
+  };
+  confidence: number;
+  timestamp: string;
+};
+
 const DEFAULT_CONFIDENCE = 0.95;
 const MAX_DAYS = 365;
 const DEFAULT_LOOKBACK_DAYS = 30;
@@ -12,6 +39,7 @@ export const PredictionRequestSchema = z.object({
   symbol: z.string().min(1),
   horizon: z.enum(["1h", "4h", "1d", "7d"]),
   confidence: z.number().min(0).max(1).optional().default(DEFAULT_CONFIDENCE),
+  includeSentiment: z.boolean().optional().default(true),
 });
 
 export type PredictionRequest = z.infer<typeof PredictionRequestSchema>;
@@ -54,6 +82,7 @@ export const MarketRegimeRequestSchema = z.object({
     .max(MAX_DAYS)
     .optional()
     .default(DEFAULT_LOOKBACK_DAYS),
+  includeSentiment: z.boolean().optional().default(true),
 });
 
 export type MarketRegimeRequest = z.infer<typeof MarketRegimeRequestSchema>;
@@ -101,6 +130,17 @@ export type TechnicalFeatures = {
   obv: number;
 };
 
+export type SentimentFeatures = {
+  overall: number; // -1 to 1
+  twitterScore: number;
+  redditScore: number;
+  telegramScore: number;
+  socialVolume: number; // Total tweets + posts + signals
+  socialConfidence: number;
+  bullishRatio: number; // positive / (positive + negative)
+  bearishRatio: number; // negative / (positive + negative)
+};
+
 export type PriceFeatures = {
   open: number;
   high: number;
@@ -118,8 +158,8 @@ export type FeatureSet = {
   timestamp: number;
   price: PriceFeatures;
   technical: TechnicalFeatures;
+  sentiment?: SentimentFeatures;
   onChain?: Record<string, number>;
-  sentiment?: number;
 };
 
 // Model training
@@ -160,6 +200,7 @@ export const BacktestConfigSchema = z.object({
   endDate: z.number().min(0),
   walkForward: z.boolean().optional().default(false),
   retrainInterval: z.number().min(1).optional().default(30), // days
+  includeSentiment: z.boolean().optional().default(true),
 });
 
 export type BacktestConfig = z.infer<typeof BacktestConfigSchema>;
@@ -171,6 +212,7 @@ export const CompareModelsRequestSchema = z.object({
   endDate: z.number().min(0),
   walkForward: z.boolean().optional().default(false),
   retrainInterval: z.number().min(1).optional().default(30), // days
+  includeSentiment: z.boolean().optional().default(true),
 });
 
 // Hyperparameter Optimization
@@ -201,8 +243,8 @@ export const OptimizationConfigSchema = z.object({
     "directionalAccuracy",
   ]),
   crossValidationFolds: z.number().min(2).max(10).optional().default(3),
+  includeSentiment: z.boolean().optional().default(true),
 });
-
 
 // Anomaly Detection
 export const AnomalyDetectionRequestSchema = z.object({
@@ -210,14 +252,21 @@ export const AnomalyDetectionRequestSchema = z.object({
   lookbackMinutes: z.number().min(5).max(1440).optional().default(60),
 });
 
-export type AnomalyDetectionRequest = z.infer<typeof AnomalyDetectionRequestSchema>;
-
+export type AnomalyDetectionRequest = z.infer<
+  typeof AnomalyDetectionRequestSchema
+>;
 
 // Ensemble Predictions
 export const EnsemblePredictionRequestSchema = z.object({
   symbol: z.string().min(1),
   horizon: z.enum(["1h", "4h", "1d", "7d"]),
-  strategy: z.enum(["WEIGHTED_AVERAGE", "VOTING", "STACKING"]).optional().default("WEIGHTED_AVERAGE"),
+  strategy: z
+    .enum(["WEIGHTED_AVERAGE", "VOTING", "STACKING"])
+    .optional()
+    .default("WEIGHTED_AVERAGE"),
+  includeSentiment: z.boolean().optional().default(true),
 });
 
-export type EnsemblePredictionRequest = z.infer<typeof EnsemblePredictionRequestSchema>;
+export type EnsemblePredictionRequest = z.infer<
+  typeof EnsemblePredictionRequestSchema
+>;

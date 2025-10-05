@@ -384,31 +384,82 @@ async predictPrice(params: {
 }>
 ```
 
-#### 3.2 Sentiment Analysis
+#### 3.2 Sentiment Analysis ✅ COMPLETED
 
-##### News & Social Media Sentiment
+##### ✅ News & Social Media Sentiment (COMPLETED - 2025-10-05)
 
-- Twitter/X sentiment (Crypto Twitter influence)
-- Reddit sentiment (r/cryptocurrency, r/bitcoin)
-- News sentiment (CoinDesk, Cointelegraph, etc.)
-- Real-time sentiment tracking
-- Приоритет: High
+- ✅ Twitter/X sentiment (Crypto Twitter influence) - Puppeteer scraping
+- ✅ Reddit sentiment (r/cryptocurrency, r/bitcoin + 6 more subreddits) - Puppeteer scraping
+- ✅ Advanced NLP analysis (weighted lexicon with crypto-specific keywords)
+- ✅ Intensifiers & Negators support
+- ✅ Multi-source weighted averaging (Twitter + Reddit + Telegram)
+- ✅ Confidence calculation based on data volume
+- ✅ Real-time sentiment tracking from ClickHouse
+- ⚠️ News sentiment (CoinDesk, Cointelegraph, etc.) - TODO
+- Приоритет: High → ✅ DONE
+
+**Implementation Details:**
+
+**Scraper Service (formerly social-integrations, port 3018):**
+
+- Reddit scraping: 8 monitored subreddits with weighted importance
+- Twitter scraping: Live tweets with engagement metrics
+- Telegram: Channel monitoring (placeholder for full integration)
+- ClickHouse storage: `reddit_posts`, `twitter_tweets` tables with 90-day TTL
+- Puppeteer-based scraping with rate limiting
+
+**Advanced Sentiment Analyzer:**
+
+- **Bullish keywords** with weights: moon (2.0), pump (1.5), rally (1.4), gains (1.0)
+- **Bearish keywords** with weights: crash (-2.0), dump (-1.5), fall (-0.9)
+- **Intensifiers**: very, extremely, super (1.5-2.0x multiplier)
+- **Negators**: not, no, never (sentiment flip)
+- **Confidence**: Based on sentiment word count (0-1)
+- **Magnitude**: Strength regardless of direction
+
+**API Response:**
 
 ```typescript
-async analyzeSentiment(symbol: string): Promise<{
-  overallSentiment: number; // -1 to 1
-  sources: {
-    twitter: { score: number; volume: number; trending: boolean };
-    reddit: { score: number; volume: number };
-    news: { score: number; articles: number };
-  };
-  signals: Array<{
-    type: "BULLISH" | "BEARISH" | "NEUTRAL";
-    source: string;
-    confidence: number;
-    reason: string;
-  }>;
-}>
+{
+  symbol: "BTCUSDT",
+  overall: 0.45,  // -1 to 1
+  twitter: {
+    score: 0.6,
+    positive: 45,
+    negative: 15,
+    neutral: 10,
+    tweets: 70
+  },
+  reddit: {
+    score: 0.4,
+    positive: 20,
+    negative: 10,
+    neutral: 5,
+    posts: 35
+  },
+  telegram: {
+    score: 0.3,
+    bullish: 15,
+    bearish: 5,
+    signals: 20
+  },
+  confidence: 0.85,
+  timestamp: "2025-10-05T12:00:00Z"
+}
+```
+
+**Weighted Averaging:**
+
+```typescript
+twitterWeight = min(tweets / 50, 1)
+redditWeight = min(posts / 25, 1)
+telegramWeight = min(signals / 10, 1)
+
+overall =
+  (twitter * twitterWeight +
+    reddit * redditWeight +
+    telegram * telegramWeight) /
+  totalWeight
 ```
 
 ##### On-Chain Sentiment Integration
@@ -514,6 +565,7 @@ async analyzeSentiment(symbol: string): Promise<{
 ##### ✅ Ensemble Prediction Service
 
 **Implementation:**
+
 - ✅ Weighted Average strategy (balanced 50/50)
 - ✅ Voting strategy (direction-focused with confidence boost)
 - ✅ Stacking strategy (regime-adaptive weights)
@@ -526,6 +578,7 @@ async analyzeSentiment(symbol: string): Promise<{
 - ✅ Comprehensive documentation
 
 **Benefits:**
+
 - Expected +5-15% accuracy improvement
 - Better stability (reduced variance)
 - Regime-adaptive (LSTM for trends, Hybrid for sideways)

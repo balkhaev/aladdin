@@ -24,7 +24,7 @@ export type PredictionResult = {
   features: {
     technicalIndicators: Record<string, number>;
     onChainMetrics: Record<string, number>;
-    sentimentScore: number;
+    sentimentScore?: number;
     marketRegime: MarketRegime;
     volatility: number;
     momentum: number;
@@ -35,6 +35,7 @@ export type PredictionResult = {
     accuracy: number;
     confidence: number;
   };
+  includeSentiment?: boolean;
   generatedAt: number;
 };
 
@@ -68,6 +69,7 @@ export type BacktestResult = {
     endDate: number;
     walkForward: boolean;
     retrainInterval?: number;
+    includeSentiment?: boolean;
   };
   metrics: EvaluationMetrics;
   predictions: BacktestPrediction[];
@@ -78,6 +80,7 @@ export type BacktestResult = {
     averageConfidence: number;
     modelRetrains: number;
   };
+  includeSentiment?: boolean;
   executionTime: number;
   completedAt: number;
 };
@@ -99,6 +102,7 @@ export async function predictPrice(params: {
   symbol: string;
   horizon: PredictionHorizon;
   confidence?: number;
+  includeSentiment?: boolean;
 }): Promise<PredictionResult> {
   const response = await fetch(`${ML_API_URL}/api/ml/predict`, {
     method: "POST",
@@ -121,6 +125,7 @@ export async function predictPriceLSTM(params: {
   symbol: string;
   horizon: PredictionHorizon;
   confidence?: number;
+  includeSentiment?: boolean;
 }): Promise<PredictionResult> {
   const response = await fetch(`${ML_API_URL}/api/ml/predict/lstm`, {
     method: "POST",
@@ -147,6 +152,7 @@ export async function runBacktest(config: {
   endDate: number;
   walkForward?: boolean;
   retrainInterval?: number;
+  includeSentiment?: boolean;
 }): Promise<BacktestResult> {
   const response = await fetch(`${ML_API_URL}/api/ml/backtest`, {
     method: "POST",
@@ -172,6 +178,7 @@ export async function compareModels(config: {
   endDate: number;
   walkForward?: boolean;
   retrainInterval?: number;
+  includeSentiment?: boolean;
 }): Promise<ComparisonResult> {
   const response = await fetch(`${ML_API_URL}/api/ml/backtest/compare`, {
     method: "POST",
@@ -193,6 +200,7 @@ export async function compareModels(config: {
 export async function getMarketRegime(params: {
   symbol: string;
   lookback?: number;
+  includeSentiment?: boolean;
 }): Promise<{
   symbol: string;
   currentRegime: MarketRegime;
@@ -213,6 +221,7 @@ export async function getMarketRegime(params: {
     BEAR: number;
     SIDEWAYS: number;
   };
+  includeSentiment?: boolean;
   generatedAt: number;
 }> {
   const response = await fetch(`${ML_API_URL}/api/ml/regime`, {
@@ -296,6 +305,7 @@ export async function runOptimization(config: {
   endDate: number;
   optimizationMetric: OptimizationMetric;
   crossValidationFolds?: number;
+  includeSentiment?: boolean;
 }): Promise<OptimizationResult> {
   const response = await fetch(`${ML_API_URL}/api/ml/optimize`, {
     method: "POST",

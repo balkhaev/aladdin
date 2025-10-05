@@ -5,13 +5,17 @@
 
 import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
 import type { Logger } from "@aladdin/shared/logger";
+import { SentimentIntegrationService } from "./sentiment-integration";
 
 export type AnomalyType =
   | "PUMP_AND_DUMP"
   | "FLASH_CRASH"
   | "UNUSUAL_VOLUME"
   | "PRICE_MANIPULATION"
-  | "WHALE_MOVEMENT";
+  | "WHALE_MOVEMENT"
+  | "SENTIMENT_DIVERGENCE"
+  | "SOCIAL_VOLUME_SPIKE"
+  | "SENTIMENT_WHIPLASH";
 
 export type AnomalySeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -44,10 +48,14 @@ export type FlashCrashRisk = {
 };
 
 export class AnomalyDetectionService {
+  private sentimentService: SentimentIntegrationService;
+
   constructor(
     private readonly clickhouse: ClickHouseClient,
     private readonly logger: Logger
-  ) {}
+  ) {
+    this.sentimentService = new SentimentIntegrationService(logger);
+  }
 
   /**
    * Detect all anomalies for a symbol
@@ -60,14 +68,21 @@ export class AnomalyDetectionService {
 
     const anomalies: AnomalyDetection[] = [];
 
-    // Run all detection algorithms
-    const [pumpDump, flashCrash] = await Promise.all([
-      this.detectPumpAndDump(symbol, lookbackMinutes),
-      this.detectFlashCrashRisk(symbol),
-    ]);
+    // Run all detection algorithms (including sentiment-based)
+    const [pumpDump, flashCrash, sentimentDiv, socialSpike, sentimentWhiplash] =
+      await Promise.all([
+        this.detectPumpAndDump(symbol, lookbackMinutes),
+        this.detectFlashCrashRisk(symbol),
+        this.detectSentimentDivergence(symbol, lookbackMinutes),
+        this.detectSocialVolumeSpike(symbol, lookbackMinutes),
+        this.detectSentimentWhiplash(symbol, lookbackMinutes),
+      ]);
 
     if (pumpDump) anomalies.push(pumpDump);
     if (flashCrash) anomalies.push(flashCrash);
+    if (sentimentDiv) anomalies.push(sentimentDiv);
+    if (socialSpike) anomalies.push(socialSpike);
+    if (sentimentWhiplash) anomalies.push(sentimentWhiplash);
 
     return anomalies;
   }
@@ -457,6 +472,281 @@ export class AnomalyDetectionService {
     recommendations.push("Consider hedging with options or futures");
 
     return recommendations;
+  }
+
+  /**
+   * Detect Sentiment Divergence
+   * When price action contradicts strong sentiment
+   */
+  async detectSentimentDivergence(
+    symbol: string,
+    lookbackMinutes = 60
+  ): Promise<AnomalyDetection | null> {
+    try {
+      // Get sentiment data
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+      if (!sentimentData || sentimentData.confidence < 0.5) {
+        return null; // Not enough confidence
+      }
+
+      // Get recent price change
+      const query = `
+        SELECT
+          (last - first) / first * 100 as priceChangePercent
+        FROM (
+          SELECT
+            first_value(close) OVER (ORDER BY timestamp ASC) as first,
+            last_value(close) OVER (ORDER BY timestamp DESC) as last
+          FROM candles
+          WHERE symbol = {symbol:String}
+            AND timeframe = '1m'
+            AND timestamp >= now() - INTERVAL {minutes:UInt32} MINUTE
+          LIMIT 1
+        )
+      `;
+
+      const result = await this.clickhouse.query<{
+        priceChangePercent: number;
+      }>(query, { symbol, minutes: lookbackMinutes });
+
+      if (!result || result.length === 0) {
+        return null;
+      }
+
+      const priceChange = result[0].priceChangePercent;
+      const sentimentScore = sentimentData.overall;
+
+      // Divergence: Strong bearish sentiment (-0.5 to -1) but price up (+5%+)
+      // OR: Strong bullish sentiment (+0.5 to +1) but price down (-5%-+)
+      const strongBearishSentiment = sentimentScore < -0.5;
+      const strongBullishSentiment = sentimentScore > 0.5;
+      const priceUp = priceChange > 5;
+      const priceDown = priceChange < -5;
+
+      const hasDivergence =
+        (strongBearishSentiment && priceUp) ||
+        (strongBullishSentiment && priceDown);
+
+      if (!hasDivergence) {
+        return null;
+      }
+
+      // Calculate severity
+      const divergenceMagnitude = Math.abs(sentimentScore * priceChange);
+      let severity: AnomalySeverity;
+      if (divergenceMagnitude > 15) {
+        severity = "CRITICAL";
+      } else if (divergenceMagnitude > 10) {
+        severity = "HIGH";
+      } else if (divergenceMagnitude > 5) {
+        severity = "MEDIUM";
+      } else {
+        severity = "LOW";
+      }
+
+      return {
+        type: "SENTIMENT_DIVERGENCE",
+        severity,
+        confidence: sentimentData.confidence,
+        timestamp: Date.now(),
+        symbol,
+        description: `Strong sentiment-price divergence detected. ${strongBearishSentiment ? "Bearish" : "Bullish"} sentiment (${sentimentScore.toFixed(2)}) but price ${priceUp ? "up" : "down"} ${Math.abs(priceChange).toFixed(1)}%`,
+        metrics: {
+          sentimentScore,
+          priceChangePercent: priceChange,
+          divergenceMagnitude,
+          sentimentConfidence: sentimentData.confidence,
+        },
+        recommendations: [
+          strongBearishSentiment && priceUp
+            ? "Possible pump & dump or FOMO buying - exercise caution"
+            : "Possible panic selling or capitulation - check fundamentals",
+          "Monitor for trend reversal",
+          "Consider reducing position size until alignment",
+        ],
+      };
+    } catch (error) {
+      this.logger.error("Failed to detect sentiment divergence", {
+        symbol,
+        error,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Detect Social Volume Spike
+   * Sudden increase in social media activity without price movement
+   */
+  async detectSocialVolumeSpike(
+    symbol: string,
+    lookbackMinutes = 60
+  ): Promise<AnomalyDetection | null> {
+    try {
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+      if (!sentimentData) {
+        return null;
+      }
+
+      const features = sentimentData
+        ? this.sentimentService.calculateSentimentFeatures(sentimentData)
+        : null;
+
+      if (!features) {
+        return null;
+      }
+
+      const socialVolume = features.socialVolume;
+
+      // Threshold: more than 100 social items in recent period
+      if (socialVolume < 100) {
+        return null;
+      }
+
+      // Get price volatility
+      const query = `
+        SELECT
+          stddevSamp(close) / avg(close) * 100 as volatilityPercent
+        FROM candles
+        WHERE symbol = {symbol:String}
+          AND timeframe = '1m'
+          AND timestamp >= now() - INTERVAL {minutes:UInt32} MINUTE
+      `;
+
+      const result = await this.clickhouse.query<{ volatilityPercent: number }>(
+        query,
+        { symbol, minutes: lookbackMinutes }
+      );
+
+      if (!result || result.length === 0) {
+        return null;
+      }
+
+      const volatility = result[0].volatilityPercent;
+
+      // Spike: High social volume but low price volatility
+      if (volatility > 2) {
+        return null; // Price is moving, not a spike
+      }
+
+      let severity: AnomalySeverity;
+      if (socialVolume > 300) {
+        severity = "HIGH";
+      } else if (socialVolume > 200) {
+        severity = "MEDIUM";
+      } else {
+        severity = "LOW";
+      }
+
+      return {
+        type: "SOCIAL_VOLUME_SPIKE",
+        severity,
+        confidence: 0.7,
+        timestamp: Date.now(),
+        symbol,
+        description: `Unusual social media activity spike detected (${socialVolume} mentions) with low price movement (${volatility.toFixed(2)}% volatility)`,
+        metrics: {
+          socialVolume,
+          volatilityPercent: volatility,
+          tweets: sentimentData.twitter.tweets,
+          redditPosts: sentimentData.reddit.posts,
+        },
+        recommendations: [
+          "Monitor for upcoming news or announcement",
+          "Possible pre-pump social campaign",
+          "Check for coordinated group activity",
+          "Watch for sudden price movement in next hours",
+        ],
+      };
+    } catch (error) {
+      this.logger.error("Failed to detect social volume spike", {
+        symbol,
+        error,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Detect Sentiment Whiplash
+   * Rapid change in sentiment direction
+   */
+  async detectSentimentWhiplash(
+    symbol: string,
+    _lookbackMinutes = 60
+  ): Promise<AnomalyDetection | null> {
+    try {
+      // For now, we only have current sentiment
+      // In production, we'd query historical sentiment from ClickHouse
+      const sentimentData =
+        await this.sentimentService.fetchSentimentData(symbol);
+      if (!sentimentData) {
+        return null;
+      }
+
+      // TODO: Implement historical sentiment comparison when we store sentiment history
+      // For now, check for extreme sentiment swings in social sources
+
+      const twitterScore = sentimentData.twitter.score;
+      const redditScore = sentimentData.reddit.score;
+      const telegramScore = sentimentData.telegram.score;
+
+      // Check if sources disagree significantly
+      const scores = [twitterScore, redditScore, telegramScore].filter(
+        (s) => s !== 0
+      );
+      if (scores.length < 2) {
+        return null;
+      }
+
+      const maxScore = Math.max(...scores);
+      const minScore = Math.min(...scores);
+      const disagreement = maxScore - minScore;
+
+      // Whiplash: Sources disagree by more than 1.0 on -1 to 1 scale
+      if (disagreement < 1.0) {
+        return null;
+      }
+
+      let severity: AnomalySeverity;
+      if (disagreement > 1.5) {
+        severity = "HIGH";
+      } else if (disagreement > 1.2) {
+        severity = "MEDIUM";
+      } else {
+        severity = "LOW";
+      }
+
+      return {
+        type: "SENTIMENT_WHIPLASH",
+        severity,
+        confidence: sentimentData.confidence,
+        timestamp: Date.now(),
+        symbol,
+        description: `Conflicting sentiment across social sources. Twitter: ${twitterScore.toFixed(2)}, Reddit: ${redditScore.toFixed(2)}, Telegram: ${telegramScore.toFixed(2)}`,
+        metrics: {
+          twitterScore,
+          redditScore,
+          telegramScore,
+          disagreement,
+          overall: sentimentData.overall,
+        },
+        recommendations: [
+          "Mixed social signals - wait for clarity",
+          "Different communities have different views",
+          "Check for conflicting news or narratives",
+          "Consider neutral position until alignment",
+        ],
+      };
+    } catch (error) {
+      this.logger.error("Failed to detect sentiment whiplash", {
+        symbol,
+        error,
+      });
+      return null;
+    }
   }
 
   /**

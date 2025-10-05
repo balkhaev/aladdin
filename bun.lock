@@ -51,6 +51,7 @@
       "dependencies": {
         "@aladdin/database": "workspace:*",
         "@aladdin/shared": "workspace:*",
+        "dotenv": "^17.2.3",
         "hono": "^4.7.11",
         "zod": "^3.23.8",
       },
@@ -73,6 +74,23 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+      },
+    },
+    "apps/scraper": {
+      "name": "@aladdin/scraper",
+      "version": "1.0.0",
+      "dependencies": {
+        "@aladdin/shared": "workspace:*",
+        "dotenv": "^16.4.5",
+        "hono": "^4.0.0",
+        "input": "^1.0.1",
+        "puppeteer": "^22.0.0",
+        "telegram": "^2.25.11",
+        "zod": "^3.22.4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.3.3",
       },
     },
     "apps/screener": {
@@ -107,23 +125,6 @@
         "@types/bun": "^1.2.6",
         "tsdown": "^0.15.1",
         "typescript": "^5.8.2",
-      },
-    },
-    "apps/social-integrations": {
-      "name": "@aladdin/social-integrations",
-      "version": "1.0.0",
-      "dependencies": {
-        "@aladdin/shared": "workspace:*",
-        "dotenv": "^16.4.5",
-        "hono": "^4.0.0",
-        "input": "^1.0.1",
-        "puppeteer": "^22.0.0",
-        "telegram": "^2.25.11",
-        "zod": "^3.22.4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5.3.3",
       },
     },
     "apps/trading": {
@@ -264,13 +265,13 @@
 
     "@aladdin/portfolio": ["@aladdin/portfolio@workspace:apps/portfolio"],
 
+    "@aladdin/scraper": ["@aladdin/scraper@workspace:apps/scraper"],
+
     "@aladdin/screener": ["@aladdin/screener@workspace:apps/screener"],
 
     "@aladdin/server": ["@aladdin/server@workspace:apps/server"],
 
     "@aladdin/shared": ["@aladdin/shared@workspace:packages/shared"],
-
-    "@aladdin/social-integrations": ["@aladdin/social-integrations@workspace:apps/social-integrations"],
 
     "@aladdin/trading": ["@aladdin/trading@workspace:apps/trading"],
 
@@ -2068,13 +2069,15 @@
 
     "@aladdin/market-data/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
+    "@aladdin/ml-service/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
+
     "@aladdin/ml-service/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
+    "@aladdin/scraper/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@aladdin/server/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
     "@aladdin/shared/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-
-    "@aladdin/social-integrations/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 

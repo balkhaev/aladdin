@@ -19,7 +19,7 @@
     "dev:portfolio": "turbo -F @aladdin/portfolio dev",
     "dev:analytics": "turbo -F @aladdin/analytics dev",
     "dev:screener": "turbo -F @aladdin/screener dev",
-    "dev:social": "turbo -F @aladdin/social-integrations dev",
+    "dev:scraper": "turbo -F @aladdin/scraper dev",
     "dev:ml": "turbo -F @aladdin/ml-service dev",
     "db:push": "turbo -F @aladdin/database db:push",
     "db:seed": "turbo -F @aladdin/database db:seed",

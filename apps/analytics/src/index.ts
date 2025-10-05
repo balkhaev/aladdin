@@ -50,7 +50,7 @@ let sentimentService: SentimentAnalysisService | undefined;
 // Combined sentiment service instance
 let combinedSentimentService: CombinedSentimentService | undefined;
 
-// Note: Social sentiment is provided by social-integrations service via API
+// Note: Social sentiment is provided by scraper service via API
 // We don't instantiate SentimentAggregator here to avoid dependencies
 
 // Helper function to format report as CSV
@@ -136,7 +136,7 @@ initializeService({
       );
       deps.logger.info("Sentiment Analysis service initialized");
 
-      // Note: Social Sentiment is provided by social-integrations service
+      // Note: Social Sentiment is provided by scraper service
       // We fetch it via API in Combined Sentiment Service
 
       // Initialize Combined Sentiment service
@@ -642,8 +642,8 @@ initializeService({
 
     /**
      * GET /api/analytics/social-sentiment/:symbol
-     * Get social sentiment (Telegram + Twitter) for a symbol
-     * Note: This is a proxy to social-integrations service
+     * Get social sentiment (Telegram + Twitter + Reddit) for a symbol
+     * Note: This is a proxy to scraper service
      */
     app.get("/api/analytics/social-sentiment/:symbol", async (c: Context) => {
       const symbol = c.req.param("symbol").toUpperCase();
@@ -662,12 +662,14 @@ initializeService({
         }
       }
 
-      // Fetch from social-integrations service
+      // Fetch from scraper service
       try {
-        const socialIntegrationsUrl =
-          process.env.SOCIAL_INTEGRATIONS_URL || "http://localhost:3018";
+        const scraperUrl =
+          process.env.SCRAPER_URL ||
+          process.env.SOCIAL_INTEGRATIONS_URL ||
+          "http://localhost:3018";
         const response = await fetch(
-          `${socialIntegrationsUrl}/api/social/sentiment/${symbol}`
+          `${scraperUrl}/api/social/sentiment/${symbol}`
         );
 
         if (!response.ok) {

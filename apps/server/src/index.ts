@@ -178,7 +178,7 @@ app.use(
 );
 
 // Старый /api/sentiment/* -> /api/analytics/sentiment/* (composite sentiment)
-// Note: /api/social/sentiment/* идет к social-integrations (Telegram + Twitter)
+// Note: /api/social/sentiment/* идет к scraper (Telegram + Twitter + Reddit)
 app.use(
   "/api/sentiment/*",
   proxyToService({
@@ -250,8 +250,11 @@ app.use(
 app.use(
   "/api/social/*",
   proxyToService({
-    targetUrl: process.env.SOCIAL_URL || "http://localhost:3018",
-    serviceName: "social-integrations",
+    targetUrl:
+      process.env.SOCIAL_URL ||
+      process.env.SCRAPER_URL ||
+      "http://localhost:3018",
+    serviceName: "scraper",
   })
 );
 

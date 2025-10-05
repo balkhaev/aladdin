@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Switch } from "../ui/switch";
 
 type HPOConfigFormProps = {
   onSubmit: (config: {
@@ -34,6 +35,7 @@ type HPOConfigFormProps = {
     days: number;
     optimizationMetric: OptimizationMetric;
     hyperparameterSpace: HyperparameterSpace;
+    includeSentiment: boolean;
   }) => void;
   isLoading?: boolean;
 };
@@ -48,6 +50,7 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
   const [metric, setMetric] = useState<OptimizationMetric>(
     "directionalAccuracy"
   );
+  const [includeSentiment, setIncludeSentiment] = useState(true);
 
   // Hyperparameter space (LSTM)
   const [hiddenSizes, setHiddenSizes] = useState("16,32,64");
@@ -110,6 +113,7 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
       days,
       optimizationMetric: metric,
       hyperparameterSpace: space,
+      includeSentiment,
     });
   };
 
@@ -240,6 +244,20 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
                 type="number"
                 value={days}
               />
+            </div>
+
+            <div className="flex flex-col justify-between">
+              <Label htmlFor="includeSentiment">Include Sentiment</Label>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={includeSentiment}
+                  id="includeSentiment"
+                  onCheckedChange={setIncludeSentiment}
+                />
+                <span className="text-slate-400 text-sm">
+                  {includeSentiment ? "Using sentiment data" : "Technical only"}
+                </span>
+              </div>
             </div>
           </div>
 

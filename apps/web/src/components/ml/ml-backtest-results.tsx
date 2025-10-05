@@ -3,7 +3,7 @@
  * Main component for displaying backtesting results
  */
 
-import { Calendar, Clock, TrendingUp } from "lucide-react";
+import { Calendar, Clock, MessageSquare, TrendingUp } from "lucide-react";
 import type { BacktestResult } from "../../lib/api/ml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -34,7 +34,7 @@ export function MLBacktestResults({ result }: MLBacktestResultsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             {/* Horizon */}
             <InfoItem
               icon={<TrendingUp className="h-4 w-4" />}
@@ -61,6 +61,17 @@ export function MLBacktestResults({ result }: MLBacktestResultsProps) {
               icon={<TrendingUp className="h-4 w-4" />}
               label="Predictions"
               value={`${summary.successfulPredictions}/${summary.totalPredictions}`}
+            />
+
+            {/* Sentiment Status */}
+            <InfoItem
+              icon={<MessageSquare className="h-4 w-4" />}
+              label="Sentiment"
+              value={
+                (result.includeSentiment ?? config.includeSentiment ?? true)
+                  ? "Enabled"
+                  : "Disabled"
+              }
             />
           </div>
 

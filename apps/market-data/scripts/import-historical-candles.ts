@@ -89,13 +89,7 @@ async function main() {
   console.log("");
 
   const clickhouse = new ClickHouseService({
-    host: process.env.CLICKHOUSE_HOST || "localhost",
-    port: process.env.CLICKHOUSE_PORT
-      ? Number(process.env.CLICKHOUSE_PORT)
-      : undefined,
-    username: process.env.CLICKHOUSE_USER || "default",
-    password: process.env.CLICKHOUSE_PASSWORD || "",
-    database: process.env.CLICKHOUSE_DATABASE || "aladdin",
+    url: process.env.CLICKHOUSE_URL || "http://localhost:8123",
   });
 
   console.log("✅ Подключение к ClickHouse установлено");

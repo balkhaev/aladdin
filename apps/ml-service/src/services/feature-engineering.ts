@@ -1,6 +1,7 @@
 import type { ClickHouseClient } from "@aladdin/shared/clickhouse";
 import type { Logger } from "@aladdin/shared/logger";
 import type { FeatureSet, PriceFeatures, TechnicalFeatures } from "../types";
+import { SentimentIntegrationService } from "./sentiment-integration";
 
 type CandleData = {
   timestamp: number;
@@ -16,15 +17,23 @@ type CandleData = {
  * Подготавливает данные для ML моделей
  */
 export class FeatureEngineeringService {
+  private sentimentService: SentimentIntegrationService;
+
   constructor(
     private clickhouse: ClickHouseClient,
     private logger: Logger
-  ) {}
+  ) {
+    this.sentimentService = new SentimentIntegrationService(logger);
+  }
 
   /**
    * Извлечь все features для символа за период
    */
-  async extractFeatures(symbol: string, lookback = 100): Promise<FeatureSet[]> {
+  async extractFeatures(
+    symbol: string,
+    lookback = 100,
+    includeSentiment = true
+  ): Promise<FeatureSet[]> {
     try {
       // Получить исторические данные
       const candles = await this.fetchHistoricalCandles(symbol, lookback);
@@ -32,6 +41,11 @@ export class FeatureEngineeringService {
       if (candles.length === 0) {
         throw new Error(`No historical data found for ${symbol}`);
       }
+
+      // Получить sentiment данные (если включено)
+      const sentimentData = includeSentiment
+        ? await this.sentimentService.fetchSentimentData(symbol)
+        : null;
 
       // Вычислить features для каждой свечи
       const features: FeatureSet[] = [];
@@ -48,11 +62,19 @@ export class FeatureEngineeringService {
         );
         const technicalFeatures = this.calculateTechnicalFeatures(window);
 
-        features.push({
+        const featureSet: FeatureSet = {
           timestamp: currentCandle.timestamp,
           price: priceFeatures,
           technical: technicalFeatures,
-        });
+        };
+
+        // Добавить sentiment features если доступны
+        if (sentimentData) {
+          featureSet.sentiment =
+            this.sentimentService.calculateSentimentFeatures(sentimentData);
+        }
+
+        features.push(featureSet);
       }
 
       return features;

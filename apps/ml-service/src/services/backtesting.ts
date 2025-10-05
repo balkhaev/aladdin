@@ -395,25 +395,93 @@ export class BacktestingService {
     startDate: number,
     endDate: number
   ): Promise<Array<{ timestamp: number; close: number }>> {
-    const query = `
-      SELECT
-        toUnixTimestamp(timestamp) * 1000 as timestamp,
-        close
-      FROM candles
-      WHERE symbol = {symbol:String}
-        AND timeframe = '1h'
-        AND timestamp >= fromUnixTimestamp({startDate:UInt64})
-        AND timestamp <= fromUnixTimestamp({endDate:UInt64})
-      ORDER BY timestamp ASC
-    `;
+    const startDateSeconds = Math.floor(startDate / 1000);
+    const endDateSeconds = Math.floor(endDate / 1000);
 
-    const result = await this.clickhouse.query<{
+    this.logger.info("Fetching historical data", {
+      symbol,
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      startDateSeconds,
+      endDateSeconds,
+    });
+
+    // Query historical candles from aladdin database
+    const queryParams = {
+      symbol,
+      startDate: startDateSeconds,
+      endDate: endDateSeconds,
+    };
+
+    this.logger.info("Query parameters", queryParams);
+
+    const query = `SELECT toUnixTimestamp(timestamp) * 1000 as timestamp, close FROM aladdin.candles WHERE symbol = '${symbol}' AND timeframe = '1h' AND toUnixTimestamp(timestamp) >= ${startDateSeconds} AND toUnixTimestamp(timestamp) <= ${endDateSeconds} ORDER BY timestamp ASC FORMAT JSONEachRow`;
+
+    // Use direct HTTP instead of @clickhouse/client due to database connection issues
+    // Hardcoded credentials because env doesn't reload with hot reload
+    const username = "default";
+    const password =
+      "j6tiT8DWCzoG7V4PiGxHptP6clqT20jlcerSFTIUdod2be4yz3WM4y0nwS1hUM1T";
+    const host = "49.13.216.63:8123";
+    const fullUrl = `http://${host}/`;
+
+    this.logger.info("Sending ClickHouse HTTP request", {
+      url: fullUrl,
+      username,
+      queryLength: query.length,
+    });
+
+    // Use fetch with X-ClickHouse headers
+    const headers = {
+      "X-ClickHouse-User": username,
+      "X-ClickHouse-Key": password,
+    };
+
+    this.logger.info("Sending request with headers", {
+      headers: Object.keys(headers),
+      hasUser: !!headers["X-ClickHouse-User"],
+      hasKey: !!headers["X-ClickHouse-Key"],
+      userLength: headers["X-ClickHouse-User"]?.length,
+      keyLength: headers["X-ClickHouse-Key"]?.length,
+    });
+
+    const response = await fetch(fullUrl, {
+      method: "POST",
+      headers,
+      body: query,
+    });
+
+    this.logger.info("ClickHouse HTTP response received", {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      this.logger.error("ClickHouse HTTP query failed", new Error(error));
+      throw new Error(`ClickHouse query failed: ${error}`);
+    }
+
+    const text = await response.text();
+
+    this.logger.info("ClickHouse HTTP response body", {
+      textLength: text.length,
+      firstChars: text.substring(0, 200),
+    });
+
+    const result = text
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line)) as Array<{
       timestamp: number;
       close: number;
-    }>(query, {
+    }>;
+
+    this.logger.info("Historical data fetched", {
       symbol,
-      startDate: Math.floor(startDate / 1000),
-      endDate: Math.floor(endDate / 1000),
+      rowCount: result.length,
     });
 
     return result;

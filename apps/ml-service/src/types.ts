@@ -211,3 +211,13 @@ export const AnomalyDetectionRequestSchema = z.object({
 });
 
 export type AnomalyDetectionRequest = z.infer<typeof AnomalyDetectionRequestSchema>;
+
+
+// Ensemble Predictions
+export const EnsemblePredictionRequestSchema = z.object({
+  symbol: z.string().min(1),
+  horizon: z.enum(["1h", "4h", "1d", "7d"]),
+  strategy: z.enum(["WEIGHTED_AVERAGE", "VOTING", "STACKING"]).optional().default("WEIGHTED_AVERAGE"),
+});
+
+export type EnsemblePredictionRequest = z.infer<typeof EnsemblePredictionRequestSchema>;

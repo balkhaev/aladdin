@@ -51,7 +51,9 @@ export function AnomalyAlertCard({ anomaly }: AnomalyAlertCardProps) {
                 style={{ width: `${confidence}%` }}
               />
             </div>
-            <span className="font-semibold text-sm">{confidence.toFixed(0)}%</span>
+            <span className="font-semibold text-sm">
+              {confidence.toFixed(0)}%
+            </span>
           </div>
         </div>
 
@@ -61,7 +63,10 @@ export function AnomalyAlertCard({ anomaly }: AnomalyAlertCardProps) {
             <div className="font-semibold text-sm">Recommendations</div>
             <ul className="space-y-1">
               {recommendations.map((rec, idx) => (
-                <li className="flex items-start gap-2 text-slate-300 text-sm" key={idx}>
+                <li
+                  className="flex items-start gap-2 text-slate-300 text-sm"
+                  key={idx}
+                >
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
                   <span>{rec}</span>
                 </li>
@@ -157,4 +162,3 @@ function getConfidenceColor(confidence: number): string {
   if (confidence >= 40) return "bg-yellow-500";
   return "bg-blue-500";
 }
-

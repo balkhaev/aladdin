@@ -485,6 +485,7 @@ async analyzeSentiment(symbol: string): Promise<{
 ##### ✅ Anomaly Detection (COMPLETED - 2025-10-05)
 
 **Pump & Dump Detection:**
+
 - ✅ Volume spike analysis (>100-500%)
 - ✅ Price momentum scoring
 - ✅ Rapidity & sustainability metrics
@@ -492,12 +493,14 @@ async analyzeSentiment(symbol: string): Promise<{
 - ✅ Severity levels (LOW/MEDIUM/HIGH/CRITICAL)
 
 **Flash Crash Prediction:**
+
 - ✅ Liquidation risk calculation
 - ✅ Order book imbalance detection
 - ✅ Market depth analysis
 - ✅ Cascade risk scoring
 
 **Implementation:**
+
 - ✅ AnomalyDetectionService (500+ LOC)
 - ✅ API endpoint `/api/ml/anomalies/detect`
 - ✅ Frontend components (alerts panel + cards)

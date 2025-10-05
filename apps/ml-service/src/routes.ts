@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import type { AnomalyDetectionService } from "./services/anomaly-detection";
 import type { BacktestingService } from "./services/backtesting";
+import type { EnsembleService } from "./services/ensemble";
 import type { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
 import type { LSTMPredictionService } from "./services/lstm-prediction";
 import type { MarketRegimeService } from "./services/market-regime";
@@ -10,6 +11,7 @@ import {
   AnomalyDetectionRequestSchema,
   BacktestConfigSchema,
   CompareModelsRequestSchema,
+  EnsemblePredictionRequestSchema,
   MarketRegimeRequestSchema,
   OptimizationConfigSchema,
   PredictionRequestSchema,
@@ -29,7 +31,8 @@ export function setupMLRoutes(
   persistenceService: ModelPersistenceService,
   backtestingService: BacktestingService,
   hpoService: HyperparameterOptimizationService,
-  anomalyService: AnomalyDetectionService
+  anomalyService: AnomalyDetectionService,
+  ensembleService: EnsembleService
 ) {
   /**
    * POST /api/ml/predict - Предсказать цену
@@ -539,6 +542,60 @@ export function setupMLRoutes(
           success: false,
           error: {
             code: "RECOMMENDATIONS_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/predict/ensemble - Ensemble prediction
+   */
+  app.post("/api/ml/predict/ensemble", async (c) => {
+    try {
+      const body = await c.req.json();
+
+      // Validate request
+      const validation = EnsemblePredictionRequestSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: validation.error.message,
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const predictions = await ensembleService.predict(
+        validation.data.symbol,
+        validation.data.horizon,
+        validation.data.strategy
+      );
+
+      return c.json({
+        success: true,
+        data: {
+          symbol: validation.data.symbol,
+          horizon: validation.data.horizon,
+          strategy: validation.data.strategy,
+          predictions,
+        },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "PREDICTION_FAILED",
             message: error instanceof Error ? error.message : String(error),
           },
           timestamp: Date.now(),

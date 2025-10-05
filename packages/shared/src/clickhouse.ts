@@ -91,14 +91,49 @@ export class ClickHouseService {
       const data = await resultSet.json<T>();
       const duration = Date.now() - startTime;
 
-      this.options.logger?.db("query", "clickhouse", duration, {
-        sql: sql.substring(0, SQL_PREVIEW_LENGTH),
-        rowCount: data.length,
-      });
+      if (
+        this.options.logger &&
+        "db" in this.options.logger &&
+        typeof this.options.logger.db === "function"
+      ) {
+        this.options.logger.db("query", "clickhouse", duration, {
+          sql: sql.substring(0, SQL_PREVIEW_LENGTH),
+          rowCount: data.length,
+        });
+      } else {
+        this.options.logger?.debug?.("ClickHouse query executed", {
+          sql: sql.substring(0, SQL_PREVIEW_LENGTH),
+          rowCount: data.length,
+          duration: `${duration}ms`,
+        });
+      }
 
       return data;
     } catch (error) {
-      this.options.logger?.error("ClickHouse query failed", error, { sql });
+      if (
+        this.options.logger &&
+        "error" in this.options.logger &&
+        typeof this.options.logger.error === "function"
+      ) {
+        // Check if it's our Logger class (has 3 parameters) or winston (has 1-2 parameters)
+        if (this.options.logger.error.length >= 2) {
+          // Our Logger class
+          this.options.logger.error("ClickHouse query failed", error, { sql });
+        } else {
+          // winston.Logger
+          this.options.logger.error("ClickHouse query failed", {
+            sql,
+            error:
+              error instanceof Error
+                ? {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                  }
+                : error,
+          });
+        }
+      }
       throw error;
     }
   }
@@ -117,11 +152,45 @@ export class ClickHouseService {
       });
 
       const duration = Date.now() - startTime;
-      this.options.logger?.db("insert", table, duration, {
-        rowCount: data.length,
-      });
+      if (
+        this.options.logger &&
+        "db" in this.options.logger &&
+        typeof this.options.logger.db === "function"
+      ) {
+        this.options.logger.db("insert", table, duration, {
+          rowCount: data.length,
+        });
+      } else {
+        this.options.logger?.debug?.("ClickHouse data inserted", {
+          table,
+          rowCount: data.length,
+          duration: `${duration}ms`,
+        });
+      }
     } catch (error) {
-      this.options.logger?.error("ClickHouse insert failed", error, { table });
+      if (
+        this.options.logger &&
+        "error" in this.options.logger &&
+        typeof this.options.logger.error === "function"
+      ) {
+        if (this.options.logger.error.length >= 2) {
+          this.options.logger.error("ClickHouse insert failed", error, {
+            table,
+          });
+        } else {
+          this.options.logger.error("ClickHouse insert failed", {
+            table,
+            error:
+              error instanceof Error
+                ? {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                  }
+                : error,
+          });
+        }
+      }
       throw error;
     }
   }
@@ -135,11 +204,44 @@ export class ClickHouseService {
     try {
       await this.client.command({ query: sql });
       const duration = Date.now() - startTime;
-      this.options.logger?.db("command", "clickhouse", duration, {
-        sql: sql.substring(0, SQL_PREVIEW_LENGTH),
-      });
+      if (
+        this.options.logger &&
+        "db" in this.options.logger &&
+        typeof this.options.logger.db === "function"
+      ) {
+        this.options.logger.db("command", "clickhouse", duration, {
+          sql: sql.substring(0, SQL_PREVIEW_LENGTH),
+        });
+      } else {
+        this.options.logger?.debug?.("ClickHouse command executed", {
+          sql: sql.substring(0, SQL_PREVIEW_LENGTH),
+          duration: `${duration}ms`,
+        });
+      }
     } catch (error) {
-      this.options.logger?.error("ClickHouse command failed", error, { sql });
+      if (
+        this.options.logger &&
+        "error" in this.options.logger &&
+        typeof this.options.logger.error === "function"
+      ) {
+        if (this.options.logger.error.length >= 2) {
+          this.options.logger.error("ClickHouse command failed", error, {
+            sql,
+          });
+        } else {
+          this.options.logger.error("ClickHouse command failed", {
+            sql,
+            error:
+              error instanceof Error
+                ? {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                  }
+                : error,
+          });
+        }
+      }
       throw error;
     }
   }
@@ -152,7 +254,26 @@ export class ClickHouseService {
       await this.client.ping();
       return true;
     } catch (error) {
-      this.options.logger?.error("ClickHouse ping failed", error);
+      if (
+        this.options.logger &&
+        "error" in this.options.logger &&
+        typeof this.options.logger.error === "function"
+      ) {
+        if (this.options.logger.error.length >= 2) {
+          this.options.logger.error("ClickHouse ping failed", error);
+        } else {
+          this.options.logger.error("ClickHouse ping failed", {
+            error:
+              error instanceof Error
+                ? {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                  }
+                : error,
+          });
+        }
+      }
       return false;
     }
   }
@@ -162,7 +283,9 @@ export class ClickHouseService {
    */
   async close(): Promise<void> {
     await this.client.close();
-    this.options.logger?.info("ClickHouse connection closed");
+    if (this.options.logger && "info" in this.options.logger) {
+      this.options.logger.info("ClickHouse connection closed");
+    }
   }
 }
 

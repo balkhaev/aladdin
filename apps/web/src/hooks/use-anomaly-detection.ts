@@ -23,4 +23,3 @@ export function useDetectAnomalies(
     refetchInterval: options?.refetchInterval,
   });
 }
-

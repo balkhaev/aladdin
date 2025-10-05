@@ -53,4 +53,3 @@ export async function detectAnomalies(
   const result = await response.json();
   return result.data;
 }
-

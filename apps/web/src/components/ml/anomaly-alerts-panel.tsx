@@ -19,7 +19,7 @@ export function AnomalyAlertsPanel() {
 
   const { data, isLoading, error, refetch } = useDetectAnomalies(
     { symbol, lookbackMinutes },
-    { enabled, refetchInterval: enabled ? 60000 : undefined } // Refetch every minute if enabled
+    { enabled, refetchInterval: enabled ? 60_000 : undefined } // Refetch every minute if enabled
   );
 
   const handleDetect = () => {
@@ -101,7 +101,9 @@ export function AnomalyAlertsPanel() {
             <div className="text-center text-slate-400">
               <AlertCircle className="mx-auto mb-2 h-12 w-12" />
               <p className="font-medium">No Anomalies Detected</p>
-              <p className="text-sm">Market activity appears normal for {symbol}</p>
+              <p className="text-sm">
+                Market activity appears normal for {symbol}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -126,4 +128,3 @@ export function AnomalyAlertsPanel() {
     </div>
   );
 }
-

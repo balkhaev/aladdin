@@ -98,9 +98,12 @@ export const backtestStrategySchema = z.object({
     .string()
     .min(1, "Symbol is required")
     .transform((val) => val.toUpperCase()),
-  strategy: z.enum(["SMA_CROSS", "RSI_OVERSOLD", "MACD_CROSS", "BB_BOUNCE"], {
-    message: "Invalid strategy",
-  }),
+  strategy: z.enum(
+    ["SMA_CROSSOVER", "RSI", "MACD", "BOLLINGER_BANDS", "CUSTOM"],
+    {
+      message: "Invalid strategy",
+    }
+  ),
   parameters: z
     .record(z.string(), z.union([z.string(), z.number()]))
     .optional(),
@@ -110,6 +113,11 @@ export const backtestStrategySchema = z.object({
     .number()
     .positive("Initial balance must be positive")
     .default(DEFAULT_INITIAL_BALANCE),
+  timeframe: z
+    .enum(["1m", "5m", "15m", "1h", "4h", "1d"], {
+      message: "Invalid timeframe",
+    })
+    .optional(),
 });
 
 // ============ TypeScript Types ============

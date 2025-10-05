@@ -69,8 +69,9 @@ export function BacktestResults({ result }: BacktestResultsProps) {
   const drawdownChartRef = useRef<HTMLDivElement>(null);
 
   // Load candles for the backtest period
-  // Use 1d timeframe for backtest visualization
-  const { data: candles } = useCandles(result.symbol, "1d", CANDLES_LIMIT);
+  // Use the same timeframe that was used for the backtest
+  const timeframe = result.timeframe || "1h"; // Default to 1h if not specified
+  const { data: candles } = useCandles(result.symbol, timeframe, CANDLES_LIMIT);
 
   useEffect(() => {
     if (!(equityChartRef.current && drawdownChartRef.current)) return;

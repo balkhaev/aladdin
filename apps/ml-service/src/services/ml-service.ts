@@ -51,7 +51,8 @@ export class MLService extends BaseService {
     this.persistenceService = new ModelPersistenceService(this.logger);
     this.backtestingService = new BacktestingService(
       this.clickhouse,
-      this.logger
+      this.logger,
+      this.lstmService
     );
     this.hpoService = new HyperparameterOptimizationService(
       this.clickhouse,
@@ -77,6 +78,7 @@ export class MLService extends BaseService {
   }
 
   protected async onInitialize(): Promise<void> {
+    await Promise.resolve();
     this.logger.info("ML Service components initialized", {
       components: [
         "FeatureEngineering",
@@ -93,10 +95,12 @@ export class MLService extends BaseService {
   }
 
   protected async onStart(): Promise<void> {
+    await Promise.resolve();
     this.logger.info("ML Service started");
   }
 
   protected async onStop(): Promise<void> {
+    await Promise.resolve();
     this.logger.info("ML Service stopped");
   }
 }

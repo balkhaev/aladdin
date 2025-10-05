@@ -1,5 +1,11 @@
 import type { ClickHouseClient } from "@aladdin/clickhouse";
 import type { Logger } from "@aladdin/logger";
+import {
+  type LSTMConfig,
+  LSTMNetwork,
+  type TrainingData,
+} from "../models/lstm";
+import type { LSTMPredictionService } from "./lstm-prediction";
 
 /**
  * Evaluation Metrics
@@ -26,6 +32,14 @@ export type BacktestConfig = {
   endDate: number; // timestamp
   walkForward: boolean; // Use walk-forward testing
   retrainInterval?: number; // Retrain every N days
+  // LSTM hyperparameters
+  hiddenSize?: number;
+  sequenceLength?: number;
+  learningRate?: number;
+  epochs?: number;
+  // Hybrid hyperparameters
+  lookbackWindow?: number;
+  smoothingFactor?: number;
 };
 
 /**
@@ -65,9 +79,12 @@ const HORIZON_TO_HOURS: Record<string, number> = {
  * Test model accuracy on historical data
  */
 export class BacktestingService {
+  private modelCache: Map<string, LSTMNetwork> = new Map();
+
   constructor(
     private readonly clickhouse: ClickHouseClient,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly lstmService: LSTMPredictionService
   ) {}
 
   /**
@@ -284,8 +301,7 @@ export class BacktestingService {
   }
 
   /**
-   * Make prediction using simple moving average (for backtesting)
-   * Uses historical data instead of calling ML services
+   * Make prediction using selected model
    */
   private makePrediction(
     config: BacktestConfig,
@@ -293,29 +309,169 @@ export class BacktestingService {
     historicalData: Array<{ timestamp: number; close: number }>
   ): { predictions: Array<{ predictedPrice: number }> } | null {
     try {
-      // Use simple moving average for prediction
-      const lookback = Math.min(20, historicalData.length);
+      if (config.modelType === "LSTM") {
+        return this.makeLSTMPrediction(config, historicalData);
+      }
+      return this.makeHybridPrediction(config, historicalData);
+    } catch (error) {
+      this.logger.error("Prediction failed", { error });
+      return null;
+    }
+  }
+
+  /**
+   * Make prediction using LSTM model
+   */
+  private makeLSTMPrediction(
+    config: BacktestConfig,
+    historicalData: Array<{ timestamp: number; close: number }>
+  ): { predictions: Array<{ predictedPrice: number }> } | null {
+    try {
+      // Use hyperparameters from config or defaults
+      const sequenceLength = config.sequenceLength || 20;
+      const hiddenSize = config.hiddenSize || 32;
+      const learningRate = config.learningRate || 0.001;
+      const epochs = config.epochs || 100;
+
+      // Need enough data for training
+      if (historicalData.length < sequenceLength + 10) {
+        return null;
+      }
+
+      // Get or train model with these hyperparameters
+      const cacheKey = `${config.symbol}_${hiddenSize}_${sequenceLength}_${learningRate}`;
+      let model = this.modelCache.get(cacheKey);
+
+      if (!model) {
+        // Train new model
+        const lstmConfig: LSTMConfig = {
+          inputSize: 1,
+          hiddenSize,
+          outputSize: 1,
+          learningRate,
+          sequenceLength,
+        };
+
+        model = new LSTMNetwork(lstmConfig);
+
+        // Prepare training data
+        const trainingData = this.prepareLSTMTrainingData(
+          historicalData,
+          sequenceLength
+        );
+
+        // Train model (without await - synchronous)
+        model.train(trainingData, epochs);
+
+        // Cache model
+        this.modelCache.set(cacheKey, model);
+      }
+
+      // Make prediction
+      const recentPrices = historicalData
+        .slice(-sequenceLength)
+        .map((d) => d.close);
+
+      // Normalize
+      const minPrice = Math.min(...recentPrices);
+      const maxPrice = Math.max(...recentPrices);
+      const range = maxPrice - minPrice || 1;
+      const normalizedPrices = recentPrices.map((p) => (p - minPrice) / range);
+
+      // Predict - LSTM expects input in same format as training: number[][]
+      // where each timestep is [price]
+      const input: number[][] = normalizedPrices.map((p) => [p]);
+      const normalizedPredictions = model.predict(input);
+
+      // Denormalize
+      const predictedPrice = normalizedPredictions[0] * range + minPrice;
+
+      return {
+        predictions: [{ predictedPrice }],
+      };
+    } catch (error) {
+      this.logger.error("LSTM prediction failed", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        historicalDataLength: historicalData.length,
+        config,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Make prediction using Hybrid model (SMA + momentum)
+   */
+  private makeHybridPrediction(
+    config: BacktestConfig,
+    historicalData: Array<{ timestamp: number; close: number }>
+  ): { predictions: Array<{ predictedPrice: number }> } | null {
+    try {
+      const lookbackWindow = config.lookbackWindow || 20;
+      const smoothingFactor = config.smoothingFactor || 0.2;
+
+      const lookback = Math.min(lookbackWindow, historicalData.length);
       const recentPrices = historicalData.slice(-lookback).map((d) => d.close);
 
+      // Calculate SMA
       const sma =
         recentPrices.reduce((sum, price) => sum + price, 0) / lookback;
+
+      // Calculate EMA with smoothing factor
+      let ema = recentPrices[0];
+      for (const price of recentPrices) {
+        ema = smoothingFactor * price + (1 - smoothingFactor) * ema;
+      }
 
       // Calculate trend (momentum)
       const oldPrice = recentPrices[0];
       const currentPrice = recentPrices.at(-1) || oldPrice;
       const momentum = (currentPrice - oldPrice) / oldPrice;
 
-      // Simple prediction: SMA + momentum
+      // Hybrid prediction: weighted average of SMA and EMA + momentum
       const horizonHours = HORIZON_TO_HOURS[config.horizon];
-      const predictedPrice = sma * (1 + (momentum * horizonHours) / 24);
+      const basePrediction = 0.5 * sma + 0.5 * ema;
+      const predictedPrice =
+        basePrediction * (1 + (momentum * horizonHours) / 24);
 
       return {
         predictions: [{ predictedPrice }],
       };
     } catch (error) {
-      this.logger.error("Prediction failed", { error });
+      this.logger.error("Hybrid prediction failed", { error });
       return null;
     }
+  }
+
+  /**
+   * Prepare training data for LSTM
+   */
+  private prepareLSTMTrainingData(
+    historicalData: Array<{ timestamp: number; close: number }>,
+    sequenceLength: number
+  ): TrainingData[] {
+    const prices = historicalData.map((d) => d.close);
+
+    // Normalize prices
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const range = maxPrice - minPrice || 1;
+    const normalizedPrices = prices.map((p) => (p - minPrice) / range);
+
+    const trainingData: TrainingData[] = [];
+
+    for (let i = 0; i < normalizedPrices.length - sequenceLength; i++) {
+      const input: number[][] = [];
+      for (let j = 0; j < sequenceLength; j++) {
+        input.push([normalizedPrices[i + j]]);
+      }
+      const output = [normalizedPrices[i + sequenceLength]];
+
+      trainingData.push({ input, output });
+    }
+
+    return trainingData;
   }
 
   /**

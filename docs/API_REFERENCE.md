@@ -48,6 +48,7 @@
 - **1000 запросов/час** на пользователя
 
 Headers:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -260,6 +261,7 @@ POST /api/analytics/backtest
 ```
 
 **Strategies:**
+
 - `RSI` - RSI oversold/overbought
 - `MACD` - MACD cross
 - `BOLLINGER` - Bollinger Bands breakout
@@ -330,7 +332,7 @@ GET /api/analytics/sentiment/:symbol/futures
     },
     "social": {
       "score": 48.0,
-      "confidence": 0.80,
+      "confidence": 0.8,
       "twitter": 0.6,
       "reddit": 0.4,
       "telegram": 0.5
@@ -350,13 +352,13 @@ GET /api/analytics/sentiment/:symbol/futures
 
 **Signal Classification:**
 
-| Score Range | Signal  | Strength | Action       |
-|-------------|---------|----------|--------------|
-| +60 to +100 | BULLISH | STRONG   | STRONG_BUY   |
-| +30 to +59  | BULLISH | MODERATE | BUY          |
-| -29 to +29  | NEUTRAL | WEAK     | HOLD         |
-| -59 to -30  | BEARISH | MODERATE | SELL         |
-| -100 to -60 | BEARISH | STRONG   | STRONG_SELL  |
+| Score Range | Signal  | Strength | Action      |
+| ----------- | ------- | -------- | ----------- |
+| +60 to +100 | BULLISH | STRONG   | STRONG_BUY  |
+| +30 to +59  | BULLISH | MODERATE | BUY         |
+| -29 to +29  | NEUTRAL | WEAK     | HOLD        |
+| -59 to -30  | BEARISH | MODERATE | SELL        |
+| -100 to -60 | BEARISH | STRONG   | STRONG_SELL |
 
 ## ⛓️ On-Chain Service (3015)
 
@@ -434,7 +436,7 @@ Response: [
   {
     "symbol": "ADAUSDT",
     "signal": "BUY",
-    "strategy": "RSI_OVERSOLD",
+    "strategy": "RSI",
     "confidence": 0.85,
     "price": 0.502,
     "indicators": { "rsi": 28.5 }

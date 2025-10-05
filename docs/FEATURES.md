@@ -9,176 +9,28 @@
 
 ## 📊 Combined Sentiment Analysis
 
-**Статус:** ✅ Production Ready
+Объединяет сигналы из Analytics (35%), Futures (25%), Order Book (15%), Social (25%).  
+Score range: -100 (bearish) → +100 (bullish)
 
-Интеллектуальная система, объединяющая сигналы из множественных источников.
-
-### Источники данных
-
-1. **Analytics** (35% weight) - Fear & Greed, On-Chain метрики, технические индикаторы
-2. **Futures** (25% weight) - Funding Rates, Open Interest
-3. **Order Book** (15% weight) - Bid/Ask imbalance, liquidity
-4. **Social** (25% weight) - Telegram, Twitter, Reddit
-
-### Formula
-
-```typescript
-combinedScore = (analytics.score × confidence × 0.35 +
-                 futures.score × confidence × 0.25 +
-                 orderBook.score × confidence × 0.15 +
-                 social.score × confidence × 0.25) / totalWeight
-```
-
-**Range:** -100 (extremely bearish) → +100 (extremely bullish)
-
-### Signal Classification
-
-| Score     | Signal  | Strength | Action      |
-| --------- | ------- | -------- | ----------- |
-| +60..+100 | BULLISH | STRONG   | STRONG_BUY  |
-| +30..+59  | BULLISH | MODERATE | BUY         |
-| -29..+29  | NEUTRAL | WEAK     | HOLD        |
-| -59..-30  | BEARISH | MODERATE | SELL        |
-| -100..-60 | BEARISH | STRONG   | STRONG_SELL |
-
-**API:**
-
-```bash
-GET /api/analytics/sentiment/:symbol/combined
-GET /api/analytics/sentiment/batch/combined?symbols=BTCUSDT,ETHUSDT
-```
+**API:** `/api/analytics/sentiment/:symbol/combined`
 
 ---
 
-## 📈 Futures Market Integration
+## 📈 Futures Market
 
-**Статус:** ✅ Production Ready
-
-### Funding Rates
-
-Мониторинг ставок финансирования с 3 бирж (Binance, Bybit, OKX).
-
-**Classification:**
-
-- Rate > 0.01% → EXTREME BULLISH (overheated)
-- Rate > 0.005% → BULLISH
-- -0.005..0.005% → NEUTRAL
-- Rate < -0.005% → BEARISH
-- Rate < -0.01% → EXTREME BEARISH (short squeeze risk)
-
-**API:**
-
-```bash
-GET /api/market-data/:symbol/funding-rate/all
-GET /api/market-data/:symbol/funding-rate/history
-```
-
-### Open Interest
-
-Анализ открытого интереса с корреляцией к цене:
-
-- OI↑ + Price↑ = 🟢 BULLISH (new longs)
-- OI↑ + Price↓ = 🔴 BEARISH (new shorts)
-- OI↓ + Price↑ = 🟡 NEUTRAL (short squeeze)
-- OI↓ + Price↓ = 🟡 NEUTRAL (long liquidation)
+Мониторинг Funding Rates и Open Interest с 3 бирж.  
+**API:** `/api/market-data/:symbol/funding-rate/all`
 
 ---
 
-## 🤖 Machine Learning & Predictions
+## 🤖 Machine Learning
 
-**Статус:** ✅ Production Ready
+**LSTM + Hybrid + Ensemble predictions** с +5-15% улучшением  
+**Anomaly Detection:** Pump & Dump, Flash Crash  
+**Backtesting:** Simple, Walk-forward, Model comparison  
+**HPO:** Grid Search, Random Search
 
-### Price Prediction Models
-
-**LSTM (Long Short-Term Memory):**
-
-- Multi-step ahead forecasting
-- Uncertainty quantification (confidence intervals)
-- Feature importance (technical indicators)
-- Model persistence & caching (24h TTL)
-
-**Hybrid Model:**
-
-- Linear regression + exponential smoothing
-- Fast training & inference
-- Good for short-term predictions
-
-**Ensemble Prediction:**
-
-- Combines LSTM + Hybrid
-- 3 strategies: weighted average, voting, stacking
-- +5-15% accuracy improvement
-- Regime-adaptive (LSTM for trends, Hybrid for sideways)
-
-**API:**
-
-```bash
-GET /api/ml/predict/lstm?symbol=BTCUSDT&horizon=24h
-GET /api/ml/predict/hybrid?symbol=BTCUSDT&horizon=24h
-GET /api/ml/predict/ensemble?symbol=BTCUSDT&horizon=24h&strategy=stacking
-```
-
-### Anomaly Detection
-
-**Pump & Dump Detection:**
-
-- Volume spike analysis (>100-500%)
-- Price momentum scoring
-- Rapidity & sustainability metrics
-- Confidence scoring (0-100)
-
-**Flash Crash Prediction:**
-
-- Liquidation risk calculation
-- Order book imbalance detection
-- Market depth analysis
-- Cascade risk scoring
-
-**API:**
-
-```bash
-GET /api/ml/anomalies/detect?symbol=BTCUSDT
-GET /api/ml/anomalies/pump-dump?symbol=BTCUSDT&window=24h
-GET /api/ml/anomalies/flash-crash?symbol=BTCUSDT
-```
-
-### Backtesting Framework
-
-**Features:**
-
-- Simple backtest (single training)
-- Walk-forward testing (periodic retraining)
-- Model comparison (LSTM vs Hybrid)
-- 8 evaluation metrics (MAE, RMSE, MAPE, R², Direction Accuracy, etc.)
-
-**API:**
-
-```bash
-POST /api/ml/backtest/simple
-POST /api/ml/backtest/walk-forward
-POST /api/ml/backtest/compare
-```
-
-### Hyperparameter Optimization (HPO)
-
-**Methods:**
-
-- Grid Search (exhaustive)
-- Random Search (efficient)
-
-**Features:**
-
-- 5 optimization metrics (MAE, RMSE, MAPE, R², Direction)
-- Automatic trial management
-- Best parameters selection
-- Export as JSON/CSV/TXT
-
-**API:**
-
-```bash
-POST /api/ml/hpo/optimize
-GET /api/ml/hpo/results/:jobId
-```
+📖 **[Подробный ML Guide →](./ML_GUIDE.md)**
 
 ---
 
@@ -274,167 +126,32 @@ DELETE /api/trading/executor/algorithmic/:id
 
 ## ⚠️ Risk Management
 
-**Статус:** ✅ Production Ready
+**VaR/CVaR:** Оценка потенциальных убытков (95%, 99% confidence)  
+**Stress Testing:** 5 сценариев (Crypto Winter, Flash Crash, Exchange Hack, etc.)  
+**Portfolio Optimization:** Markowitz Mean-Variance, Efficient Frontier  
+**Rebalancing:** Threshold, Time, Volatility-based strategies
 
-### Value at Risk (VaR)
-
-Оценка потенциальных убытков с заданной вероятностью.
-
-**Confidence Levels:**
-
-- 95% - стандартный уровень
-- 99% - консервативный
-
-**Methods:**
-
-- Historical simulation
-- Variance-Covariance
-- Monte Carlo (планируется)
-
-### Conditional VaR (CVaR)
-
-Средний убыток в худших 5% случаев (более точная оценка tail risk).
-
-### Stress Testing
-
-Моделирование экстремальных рыночных сценариев:
-
-- Crypto Winter 2022 (BTC -70%, ETH -75%)
-- Flash Crash (BTC -30%)
-- Exchange Hack (delisting)
-- Regulatory Crackdown (volume -80%)
-- Black Swan (BTC -50%, liquidity -90%)
-
-### Portfolio Optimization
-
-**Markowitz Mean-Variance:**
-
-- Эффективная граница (Efficient Frontier)
-- Optimal portfolio weights
-- Risk-return trade-off
-
-**Black-Litterman (планируется):**
-
-- Комбинирует рыночные данные с investor views
-- Более стабильные веса
-
-### Rebalancing Engine
-
-**Strategies:**
-
-- Threshold-based (allocation drift > 5%)
-- Time-based (daily/weekly/monthly)
-- Volatility-based (при изменении условий)
-
-**API:**
-
-```bash
-GET /api/portfolio/:id/risk/var?confidenceLevel=95
-POST /api/portfolio/:id/risk/stress-test
-POST /api/portfolio/:id/risk/optimize
-POST /api/portfolio/:id/risk/rebalance
-```
+**API:** `/api/portfolio/:id/risk/var`, `/api/portfolio/:id/risk/optimize`
 
 ---
 
 ## 📱 Social Media Integration
 
-**Статус:** ✅ Production Ready  
-**Port:** 3018 (Scraper Service)
+**Источники:** Twitter/X (15 KOL), Reddit (8 subreddits), Telegram  
+**NLP Analysis:** Weighted lexicon, Intensifiers, Negators  
+**Storage:** ClickHouse (90-day TTL)
 
-### Источники
-
-**Twitter/X:**
-
-- Puppeteer scraping
-- 15 KOL monitoring
-- Engagement metrics
-- Sentiment scoring
-
-**Reddit:**
-
-- 8 monitored subreddits (r/cryptocurrency, r/bitcoin, etc.)
-- Weighted importance
-- Upvotes, comments tracking
-- Sentiment analysis
-
-**Telegram:**
-
-- Channel monitoring
-- Bullish/bearish signals
-- Russian + English parsing
-
-### Advanced NLP Analysis
-
-**Features:**
-
-- Weighted lexicon (crypto-specific keywords)
-- Intensifiers & Negators support
-- Multi-source weighted averaging
-- Confidence calculation based on data volume
-
-**Bullish keywords:** moon (2.0), pump (1.5), rally (1.4), gains (1.0)  
-**Bearish keywords:** crash (-2.0), dump (-1.5), fall (-0.9)  
-**Intensifiers:** very, extremely, super (1.5-2.0x multiplier)  
-**Negators:** not, no, never (sentiment flip)
-
-**Storage:**
-
-- ClickHouse tables: `reddit_posts`, `twitter_tweets`
-- 90-day TTL
-- Real-time sentiment tracking
-
-**API:**
-
-```bash
-GET /api/scraper/sentiment/:symbol
-GET /api/scraper/sentiment/:symbol/history
-POST /api/scraper/sentiment/analyze-batch
-```
+**API:** `/api/scraper/sentiment/:symbol`
 
 ---
 
 ## 🚀 Redis Caching
 
-**Статус:** ✅ Integrated (Analytics, Market Data)
+**Ускорение:** 7-24x для критических операций  
+**Экономия:** ~$1,000/месяц  
+**TTL:** 1s (prices) → 1h (static data)
 
-Ускорение критических сервисов на **7-24x**.
-
-### Cache Strategies
-
-```typescript
-{
-  AGGREGATED_PRICES: 1,      // 1 second
-  INDICATORS: 60,            // 60 seconds
-  POSITIONS: 5,              // 5 seconds
-  MARKET_OVERVIEW: 30,       // 30 seconds
-  ONCHAIN_METRICS: 300,      // 5 minutes
-  EXCHANGE_SYMBOLS: 3600     // 1 hour
-}
-```
-
-### Performance Impact
-
-| Operation        | Before | After | Speedup |
-| ---------------- | ------ | ----- | ------- |
-| Indicators       | 850ms  | 35ms  | **24x** |
-| Market Overview  | 1200ms | 75ms  | **16x** |
-| Aggregated Price | 250ms  | 25ms  | **10x** |
-
-### Cost Reduction
-
-- ClickHouse queries: -70% = **$500/month** 💰
-- PostgreSQL reads: -60% = **$300/month** 💰
-- Network bandwidth: -50% = **$200/month** 💰
-
-**Total:** ~**$1,000/month savings** 💰
-
-**API:**
-
-```bash
-GET /api/analytics/cache/stats
-POST /api/analytics/cache/flush
-```
+**API:** `/api/analytics/cache/stats`
 
 ---
 
@@ -654,13 +371,8 @@ POST /api/portfolio/:id/snapshot
 
 ---
 
-## 📚 Документация
-
-- **[API Reference](./API_REFERENCE.md)** - Полный API справочник
-- **[Getting Started](./GETTING_STARTED.md)** - Быстрый старт
-- **[Architecture](./ARCHITECTURE.md)** - Архитектура и безопасность
-- **[Roadmap](./ROADMAP.md)** - План развития
-
 ---
 
-**Все фичи протестированы и готовы к production использованию.** ✅
+**Все функции протестированы и готовы к production использованию.** ✅
+
+📖 **Документация:** [API Reference](./API_REFERENCE.md) | [Getting Started](./GETTING_STARTED.md) | [ML Guide](./ML_GUIDE.md)

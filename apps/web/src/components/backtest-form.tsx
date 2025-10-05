@@ -24,7 +24,7 @@ type BacktestFormProps = {
 
 export function BacktestForm({ onSubmit, isLoading }: BacktestFormProps) {
   const [symbol, setSymbol] = useState("BTCUSDT");
-  const [strategy, setStrategy] = useState<BacktestStrategy>("SMA_CROSS");
+  const [strategy, setStrategy] = useState<BacktestStrategy>("SMA_CROSSOVER");
   const [from, setFrom] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 3); // 3 months ago
@@ -33,6 +33,7 @@ export function BacktestForm({ onSubmit, isLoading }: BacktestFormProps) {
   const [to, setTo] = useState(() => new Date().toISOString().split("T")[0]);
   const [initialBalance, setInitialBalance] = useState(10_000);
   const [parameters, setParameters] = useState<Record<string, number>>({});
+  const [timeframe, setTimeframe] = useState<BacktestParams["timeframe"]>("1h");
 
   const strategyParams = getStrategyParameters(strategy);
 
@@ -46,6 +47,7 @@ export function BacktestForm({ onSubmit, isLoading }: BacktestFormProps) {
       to: new Date(to).toISOString(),
       initialBalance,
       parameters,
+      timeframe,
     });
   };
 
@@ -96,16 +98,43 @@ export function BacktestForm({ onSubmit, isLoading }: BacktestFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="SMA_CROSS">SMA Crossover</SelectItem>
-                <SelectItem value="RSI_OVERSOLD">RSI Oversold</SelectItem>
-                <SelectItem value="MACD_CROSS">MACD Crossover</SelectItem>
-                <SelectItem value="BB_BOUNCE">
+                <SelectItem value="SMA_CROSSOVER">SMA Crossover</SelectItem>
+                <SelectItem value="RSI">RSI Oversold/Overbought</SelectItem>
+                <SelectItem value="MACD">MACD Crossover</SelectItem>
+                <SelectItem value="BOLLINGER_BANDS">
                   Bollinger Bands Bounce
                 </SelectItem>
+                <SelectItem value="CUSTOM">Custom Strategy</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
               {getStrategyDescription(strategy)}
+            </p>
+          </div>
+
+          {/* Timeframe */}
+          <div className="space-y-2">
+            <Label htmlFor="timeframe">Timeframe</Label>
+            <Select
+              onValueChange={(value) =>
+                setTimeframe(value as BacktestParams["timeframe"])
+              }
+              value={timeframe}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1m">1 Minute</SelectItem>
+                <SelectItem value="5m">5 Minutes</SelectItem>
+                <SelectItem value="15m">15 Minutes</SelectItem>
+                <SelectItem value="1h">1 Hour</SelectItem>
+                <SelectItem value="4h">4 Hours</SelectItem>
+                <SelectItem value="1d">1 Day</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              Smaller timeframes provide more detail but take longer to process
             </p>
           </div>
 
@@ -180,4 +209,3 @@ export function BacktestForm({ onSubmit, isLoading }: BacktestFormProps) {
     </Card>
   );
 }
-

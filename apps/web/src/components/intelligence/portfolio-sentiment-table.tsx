@@ -64,11 +64,11 @@ export function PortfolioSentimentTable({
   const { data: positions, isLoading: isLoadingPositions } =
     usePortfolioPositions(portfolioId);
 
-  // Extract symbols from positions and add USDT suffix
+  // Extract symbols from positions (already have USDT suffix)
   const symbols = useMemo(() => {
     if (!positions) return [];
-    const symbolsWithSuffix = positions.map((p) => `${p.symbol}USDT`);
-    return symbolsWithSuffix.filter((s) => s !== "USDTUSDT"); // Filter out stablecoins
+    // Symbols already have USDT suffix from the API
+    return positions.map((p) => p.symbol).filter((s) => s !== "USDTUSDT"); // Filter out stablecoins
   }, [positions]);
 
   const { data: sentiments, isLoading: isLoadingSentiments } =
@@ -88,9 +88,7 @@ export function PortfolioSentimentTable({
     let totalWeight = 0;
 
     for (const sentiment of sentiments) {
-      const position = positions.find(
-        (p) => `${p.symbol}USDT` === sentiment.symbol
-      );
+      const position = positions.find((p) => p.symbol === sentiment.symbol);
       const positionValue = position?.value ?? 0;
       if (positionValue > 0) {
         weightedScore += sentiment.compositeScore * positionValue;
@@ -204,7 +202,7 @@ export function PortfolioSentimentTable({
             <TableBody>
               {sentiments.map((sentiment) => {
                 const position = positions.find(
-                  (p) => `${p.symbol}USDT` === sentiment.symbol
+                  (p) => p.symbol === sentiment.symbol
                 );
                 if (!position) return null;
 

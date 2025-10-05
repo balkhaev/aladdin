@@ -1,6 +1,6 @@
-import { BaseService } from "@aladdin/service";
-import { NotFoundError } from "@aladdin/http/errors";
 import type { Candle } from "@aladdin/core";
+import { NotFoundError } from "@aladdin/http/errors";
+import { BaseService } from "@aladdin/service";
 
 /**
  * Format date to ClickHouse DateTime format (YYYY-MM-DD HH:MM:SS)
@@ -55,6 +55,7 @@ export type BacktestResult = {
   symbol: string;
   from: string;
   to: string;
+  timeframe: string;
   initialBalance: number;
   finalBalance: number;
   totalReturn: number;
@@ -194,27 +195,53 @@ export class AnalyticsService extends BaseService {
 
   /**
    * Calculate MACD (Moving Average Convergence Divergence)
+   * Optimized incremental calculation for better performance
    */
   private calculateMACD(candles: Candle[]): TechnicalIndicators["MACD"] {
     const closes = candles.map((c) => c.close);
+    const multiplier12 = 2 / (12 + 1);
+    const multiplier26 = 2 / (26 + 1);
+    const multiplier9 = 2 / (9 + 1);
 
-    // Calculate EMA12 and EMA26 for all periods
-    const ema12Values: number[] = [];
-    const ema26Values: number[] = [];
-
-    for (let i = 0; i < closes.length; i++) {
-      ema12Values.push(this.calculateEMAValue(closes.slice(0, i + 1), 12));
-      ema26Values.push(this.calculateEMAValue(closes.slice(0, i + 1), 26));
+    // Need at least 26 candles for EMA26
+    if (closes.length < 26) {
+      return { macd: 0, signal: 0, histogram: 0 };
     }
 
-    // MACD line = EMA12 - EMA26
-    const macdValues = ema12Values.map((ema12, i) => ema12 - ema26Values[i]);
+    // Initialize with SMA for first values
+    let ema12 = closes.slice(0, 12).reduce((a, b) => a + b, 0) / 12;
+    let ema26 = closes.slice(0, 26).reduce((a, b) => a + b, 0) / 26;
 
-    // Signal line - 9-period EMA of MACD values
-    const signal = this.calculateEMAValue(macdValues, 9);
+    // Calculate incremental EMA values
+    const macdValues: number[] = [];
+
+    // Start from index 26 (after EMA26 initialization)
+    for (let i = 12; i < closes.length; i++) {
+      // Update EMA12
+      ema12 = (closes[i] - ema12) * multiplier12 + ema12;
+
+      // Update EMA26 (only after index 26)
+      if (i >= 26) {
+        ema26 = (closes[i] - ema26) * multiplier26 + ema26;
+      }
+
+      // Calculate MACD line
+      if (i >= 26) {
+        macdValues.push(ema12 - ema26);
+      }
+    }
+
+    // Calculate signal line (9-period EMA of MACD)
+    if (macdValues.length < 9) {
+      return { macd: 0, signal: 0, histogram: 0 };
+    }
+
+    let signal = macdValues.slice(0, 9).reduce((a, b) => a + b, 0) / 9;
+    for (let i = 9; i < macdValues.length; i++) {
+      signal = (macdValues[i] - signal) * multiplier9 + signal;
+    }
+
     const macd = macdValues.at(-1) ?? 0;
-
-    // Histogram = MACD - Signal
     const histogram = macd - signal;
 
     return { macd, signal, histogram };
@@ -480,12 +507,27 @@ export class AnalyticsService extends BaseService {
     from: Date,
     to: Date,
     initialBalance: number,
-    parameters?: Record<string, string | number>
+    parameters?: Record<string, string | number>,
+    timeframe?: string
   ): Promise<BacktestResult> {
-    this.logger.info("Running backtest", { symbol, strategy, from, to });
+    // Auto-select optimal timeframe based on backtest period if not specified
+    const optimalTimeframe = timeframe ?? this.selectOptimalTimeframe(from, to);
 
-    // Get historical candles
-    const candles = await this.getHistoricalCandles(symbol, from, to);
+    this.logger.info("Running backtest", {
+      symbol,
+      strategy,
+      from,
+      to,
+      timeframe: optimalTimeframe,
+    });
+
+    // Get historical candles with specified timeframe
+    const candles = await this.getHistoricalCandles(
+      symbol,
+      from,
+      to,
+      optimalTimeframe
+    );
 
     if (candles.length === 0) {
       throw new NotFoundError(`Historical data for ${symbol}`);
@@ -498,9 +540,14 @@ export class AnalyticsService extends BaseService {
     const trades: BacktestResult["trades"] = [];
 
     // Run strategy on historical data
+    // Use a sliding window of last 200 candles for indicator calculation (more than enough for MACD, RSI, etc.)
+    const INDICATOR_WINDOW = 200;
+
     for (let i = 50; i < candles.length; i++) {
-      const currentCandles = candles.slice(0, i + 1);
-      const currentPrice = currentCandles[i].close;
+      // Only use last N candles for indicator calculation to improve performance
+      const startIdx = Math.max(0, i - INDICATOR_WINDOW + 1);
+      const currentCandles = candles.slice(startIdx, i + 1);
+      const currentPrice = candles[i].close;
 
       // Generate trading signal based on strategy
       const signal = this.generateStrategySignal(
@@ -518,7 +565,7 @@ export class AnalyticsService extends BaseService {
         balance = 0;
 
         trades.push({
-          timestamp: currentCandles[i].timestamp,
+          timestamp: candles[i].timestamp,
           type: "BUY",
           price: currentPrice,
           quantity,
@@ -532,7 +579,7 @@ export class AnalyticsService extends BaseService {
         position = 0;
 
         trades.push({
-          timestamp: currentCandles[i].timestamp,
+          timestamp: candles[i].timestamp,
           type: "SELL",
           price: currentPrice,
           quantity: saleQuantity, // Use saved quantity
@@ -612,6 +659,7 @@ export class AnalyticsService extends BaseService {
       symbol,
       from: from.toISOString(),
       to: to.toISOString(),
+      timeframe: optimalTimeframe,
       initialBalance,
       finalBalance,
       totalReturn,
@@ -634,21 +682,34 @@ export class AnalyticsService extends BaseService {
     candles: Candle[],
     _parameters?: Record<string, string | number>
   ): "BUY" | "SELL" | "HOLD" {
-    if (strategy === "SMA_CROSS") {
-      // SMA crossover strategy
-      const sma = this.calculateSMA(candles);
-      const lastCandle = candles.at(-1);
-      if (!lastCandle) return "HOLD"; // Return valid value instead of null
+    if (strategy === "SMA_CROSSOVER") {
+      // SMA crossover strategy: detect when fast SMA crosses slow SMA
+      // Buy when SMA20 crosses above SMA50 (bullish crossover)
+      // Sell when SMA20 crosses below SMA50 (bearish crossover)
 
-      const currentPrice = lastCandle.close;
+      if (candles.length < 2) return "HOLD";
 
-      if (currentPrice > sma.sma50) {
+      // Calculate current SMAs
+      const currentSMA = this.calculateSMA(candles);
+
+      // Calculate previous SMAs (excluding last candle)
+      const previousCandles = candles.slice(0, -1);
+      const previousSMA = this.calculateSMA(previousCandles);
+
+      // Detect crossovers
+      const previousDiff = previousSMA.sma20 - previousSMA.sma50;
+      const currentDiff = currentSMA.sma20 - currentSMA.sma50;
+
+      // Bullish crossover: SMA20 crosses above SMA50
+      if (previousDiff <= 0 && currentDiff > 0) {
         return "BUY";
       }
-      if (currentPrice < sma.sma50) {
+
+      // Bearish crossover: SMA20 crosses below SMA50
+      if (previousDiff >= 0 && currentDiff < 0) {
         return "SELL";
       }
-    } else if (strategy === "RSI_OVERSOLD") {
+    } else if (strategy === "RSI") {
       // RSI oversold strategy
       const rsi = this.calculateRSI(candles);
 
@@ -658,7 +719,7 @@ export class AnalyticsService extends BaseService {
       if (rsi.signal === "OVERBOUGHT") {
         return "SELL";
       }
-    } else if (strategy === "MACD_CROSS") {
+    } else if (strategy === "MACD") {
       // MACD crossover strategy
       const macd = this.calculateMACD(candles);
 
@@ -668,7 +729,7 @@ export class AnalyticsService extends BaseService {
       if (macd.histogram < 0) {
         return "SELL";
       }
-    } else if (strategy === "BB_BOUNCE") {
+    } else if (strategy === "BOLLINGER_BANDS") {
       // Bollinger Bands bounce strategy
       const bb = this.calculateBollingerBands(candles);
       const lastCandle = candles.at(-1);
@@ -688,27 +749,52 @@ export class AnalyticsService extends BaseService {
   }
 
   /**
+   * Select optimal timeframe based on backtest period
+   */
+  private selectOptimalTimeframe(from: Date, to: Date): string {
+    const durationMs = to.getTime() - from.getTime();
+    const durationDays = durationMs / (1000 * 60 * 60 * 24);
+
+    // Select timeframe based on period duration
+    // More granular data for shorter periods
+    if (durationDays <= 2) {
+      return "5m"; // Up to 2 days: use 5-minute candles
+    }
+    if (durationDays <= 7) {
+      return "15m"; // Up to 1 week: use 15-minute candles
+    }
+    if (durationDays <= 180) {
+      return "1h"; // Up to 6 months: use 1-hour candles
+    }
+    return "1d"; // Longer periods (>6 months): use daily candles
+  }
+
+  /**
    * Get historical candles from ClickHouse
+   * Aggregates data from multiple exchanges to get single candle per timestamp
    */
   private async getHistoricalCandles(
     symbol: string,
     from: Date,
-    to: Date
+    to: Date,
+    timeframe: string
   ): Promise<Candle[]> {
     const query = `
       SELECT 
         timestamp,
         symbol,
         timeframe,
-        open,
-        high,
-        low,
-        close,
-        volume
+        AVG(open) as open,
+        MAX(high) as high,
+        MIN(low) as low,
+        AVG(close) as close,
+        SUM(volume) as volume
       FROM aladdin.candles
       WHERE symbol = {symbol:String}
+        AND timeframe = {timeframe:String}
         AND timestamp >= {from:DateTime}
         AND timestamp <= {to:DateTime}
+      GROUP BY timestamp, symbol, timeframe
       ORDER BY timestamp ASC
     `;
 
@@ -723,6 +809,7 @@ export class AnalyticsService extends BaseService {
       volume: string;
     }>(query, {
       symbol,
+      timeframe,
       from: formatDateForClickHouse(from),
       to: formatDateForClickHouse(to),
     });

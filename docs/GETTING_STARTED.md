@@ -176,65 +176,13 @@ curl -X POST http://localhost:3012/api/portfolio/<id>/risk/stress-test \
 
 ## 🤖 Автоматическая торговля (Paper Trading)
 
-### Быстрый старт
+> ⚠️ Начинайте с Paper Trading! Тестируйте минимум 2 недели.
 
-> ⚠️ **Важно:** Начинайте только с Paper Trading! Тестируйте минимум 2 недели.
+**Запуск:** `bun dev`  
+**Проверка:** `curl http://localhost:3017/api/screener/scan`  
+**Мониторинг:** `nats sub "screener.signal.>" --server nats://nats.balkhaev.com:4222`
 
-**1. Запустить основные сервисы:**
-
-```bash
-# В отдельных терминалах или через turbo
-bun dev:market-data
-bun dev:trading
-bun dev:portfolio
-bun dev:analytics
-bun dev:screener
-bun dev:scraper
-```
-
-**2. Проверить скринер:**
-
-```bash
-curl http://localhost:3017/api/screener/scan
-```
-
-**3. Мониторинг сигналов:**
-
-```bash
-# Через NATS (требуется nats-cli)
-nats sub "screener.signal.>" --server nats://nats.balkhaev.com:4222
-```
-
-**4. Проверить статистику:**
-
-```bash
-# Paper trades
-curl http://localhost:3011/api/trading/history?mode=PAPER
-```
-
-### Конфигурация Paper Trading
-
-По умолчанию все настроено консервативно:
-
-- **Max risk per trade:** 2% от баланса
-- **Stop-loss:** 5% (обязателен)
-- **Take-profit:** 10%
-- **Max positions:** 5 одновременно
-- **Min confidence:** 60%
-
-### Ожидаемая производительность
-
-**Conservative (Paper):**
-
-- Win Rate: 50-55%
-- Trades/Day: 3-5
-- Monthly Return: 10-15%
-
-**With Sentiment:**
-
-- Win Rate: 60-65%
-- Trades/Day: 5-10
-- Monthly Return: 20-30%
+**Дефолтные настройки:** Max risk 2%, Stop-loss 5%, Take-profit 10%, Max positions 5
 
 ---
 

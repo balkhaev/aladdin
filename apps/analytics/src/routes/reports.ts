@@ -2,10 +2,7 @@
  * Reports and Backtesting Routes
  */
 
-import {
-  validateBody,
-  validateQuery,
-} from "@aladdin/validation/middleware";
+import { validateBody, validateQuery } from "@aladdin/validation/middleware";
 import {
   type BacktestStrategy,
   backtestStrategySchema,
@@ -83,7 +80,8 @@ export function setupReportsRoutes(app: Hono, service: AnalyticsService): void {
         body.from,
         body.to,
         body.initialBalance,
-        body.parameters
+        body.parameters,
+        body.timeframe
       );
 
       return c.json({

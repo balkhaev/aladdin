@@ -5,10 +5,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export type BacktestStrategy =
-  | "SMA_CROSS"
-  | "RSI_OVERSOLD"
-  | "MACD_CROSS"
-  | "BB_BOUNCE";
+  | "SMA_CROSSOVER"
+  | "RSI"
+  | "MACD"
+  | "BOLLINGER_BANDS"
+  | "CUSTOM";
 
 export type BacktestParams = {
   symbol: string;
@@ -17,6 +18,7 @@ export type BacktestParams = {
   to: string; // ISO date string
   initialBalance?: number;
   parameters?: Record<string, string | number>;
+  timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d"; // Optional: auto-selected if not specified
 };
 
 export type BacktestTrade = {
@@ -43,6 +45,7 @@ export type BacktestResult = {
   maxDrawdown: number | null;
   sharpeRatio: number | null;
   trades: BacktestTrade[];
+  timeframe?: string; // Timeframe used for the backtest
 };
 
 export type BacktestResponse = {
@@ -87,14 +90,16 @@ export async function runBacktest(
  */
 export function getStrategyDescription(strategy: BacktestStrategy): string {
   switch (strategy) {
-    case "SMA_CROSS":
+    case "SMA_CROSSOVER":
       return "SMA Crossover: Buy when fast SMA crosses above slow SMA, sell when it crosses below";
-    case "RSI_OVERSOLD":
+    case "RSI":
       return "RSI Oversold: Buy when RSI < 30 (oversold), sell when RSI > 70 (overbought)";
-    case "MACD_CROSS":
+    case "MACD":
       return "MACD Crossover: Buy when MACD crosses above signal line, sell when it crosses below";
-    case "BB_BOUNCE":
+    case "BOLLINGER_BANDS":
       return "Bollinger Bands Bounce: Buy at lower band, sell at upper band";
+    case "CUSTOM":
+      return "Custom strategy with user-defined parameters";
     default:
       return "Unknown strategy";
   }
@@ -111,7 +116,7 @@ export function getStrategyParameters(strategy: BacktestStrategy): Array<{
   max: number;
 }> {
   switch (strategy) {
-    case "SMA_CROSS":
+    case "SMA_CROSSOVER":
       return [
         {
           name: "fastPeriod",
@@ -128,7 +133,7 @@ export function getStrategyParameters(strategy: BacktestStrategy): Array<{
           max: 200,
         },
       ];
-    case "RSI_OVERSOLD":
+    case "RSI":
       return [
         {
           name: "period",
@@ -152,7 +157,7 @@ export function getStrategyParameters(strategy: BacktestStrategy): Array<{
           max: 90,
         },
       ];
-    case "MACD_CROSS":
+    case "MACD":
       return [
         {
           name: "fastPeriod",
@@ -176,7 +181,7 @@ export function getStrategyParameters(strategy: BacktestStrategy): Array<{
           max: 30,
         },
       ];
-    case "BB_BOUNCE":
+    case "BOLLINGER_BANDS":
       return [
         {
           name: "period",
@@ -193,6 +198,8 @@ export function getStrategyParameters(strategy: BacktestStrategy): Array<{
           max: 3,
         },
       ];
+    case "CUSTOM":
+      return [];
     default:
       return [];
   }

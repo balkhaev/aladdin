@@ -3,7 +3,7 @@ import type { Context } from "hono";
 
 const logger = createLogger({ service: "gateway-proxy" });
 
-const REQUEST_TIMEOUT_MS = 30_000; // 30 секунд
+const REQUEST_TIMEOUT_MS = 120_000; // 2 минуты для длительных операций (ML оптимизация, бэктестинг)
 const SERVICE_UNAVAILABLE_CODE = 503;
 
 type ProxyOptions = {

@@ -249,6 +249,14 @@ export class HyperparameterOptimizationService {
         endDate: config.endDate,
         walkForward: true,
         retrainInterval: hyperparameters.retrainInterval || 30,
+        // LSTM hyperparameters
+        hiddenSize: hyperparameters.hiddenSize,
+        sequenceLength: hyperparameters.sequenceLength,
+        learningRate: hyperparameters.learningRate,
+        epochs: hyperparameters.epochs,
+        // Hybrid hyperparameters
+        lookbackWindow: hyperparameters.lookbackWindow,
+        smoothingFactor: hyperparameters.smoothingFactor,
       });
 
       // Extract optimization metric

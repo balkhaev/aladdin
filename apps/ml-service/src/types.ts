@@ -201,6 +201,14 @@ export const BacktestConfigSchema = z.object({
   walkForward: z.boolean().optional().default(false),
   retrainInterval: z.number().min(1).optional().default(30), // days
   includeSentiment: z.boolean().optional().default(true),
+  // LSTM hyperparameters
+  hiddenSize: z.number().min(1).optional(),
+  sequenceLength: z.number().min(1).optional(),
+  learningRate: z.number().min(0).optional(),
+  epochs: z.number().min(1).optional(),
+  // Hybrid hyperparameters
+  lookbackWindow: z.number().min(1).optional(),
+  smoothingFactor: z.number().min(0).max(1).optional(),
 });
 
 export type BacktestConfig = z.infer<typeof BacktestConfigSchema>;

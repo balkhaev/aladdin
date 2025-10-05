@@ -18,38 +18,48 @@ await initializeService<SocialIntegrationsService>({
       prisma: deps.prisma,
     }),
 
-  setupRoutes: (app) => {
+  setupRoutes: (app, service) => {
     /**
      * GET /api/social/sentiment/:symbol - Get social sentiment (Telegram + Twitter)
      * This endpoint provides backward compatibility for old sentiment UI
      */
-    app.get("/api/social/sentiment/:symbol", (c) => {
+    app.get("/api/social/sentiment/:symbol", async (c) => {
       const symbol = c.req.param("symbol");
 
-      // Mock data for now - full implementation requires telega/twity integration
-      return c.json(
-        createSuccessResponse({
+      try {
+        // Get Twitter sentiment from ClickHouse
+        const sentiment = await service.analyzeSocialSentiment(symbol);
+
+        return c.json(createSuccessResponse(sentiment));
+      } catch (error) {
+        service.logger.error("Failed to analyze social sentiment", {
           symbol,
-          overall: 0,
-          telegram: {
-            score: 0,
-            bullish: 0,
-            bearish: 0,
-            signals: 0,
-          },
-          twitter: {
-            score: 0,
-            positive: 0,
-            negative: 0,
-            neutral: 0,
-            tweets: 0,
-          },
-          confidence: 0,
-          timestamp: new Date().toISOString(),
-          _note:
-            "Social integrations (Telegram + Twitter) are not yet fully migrated. Use /api/analytics/sentiment/:symbol for composite sentiment.",
-        })
-      );
+          error,
+        });
+
+        // Return neutral sentiment on error
+        return c.json(
+          createSuccessResponse({
+            symbol,
+            overall: 0,
+            telegram: {
+              score: 0,
+              bullish: 0,
+              bearish: 0,
+              signals: 0,
+            },
+            twitter: {
+              score: 0,
+              positive: 0,
+              negative: 0,
+              neutral: 0,
+              tweets: 0,
+            },
+            confidence: 0,
+            timestamp: new Date().toISOString(),
+          })
+        );
+      }
     });
 
     /**

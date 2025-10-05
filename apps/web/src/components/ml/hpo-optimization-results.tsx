@@ -8,6 +8,7 @@ import type { OptimizationResult } from "../../lib/api/ml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { HPOBestParamsCard } from "./hpo-best-params-card";
+import { HPOExportMenu } from "./hpo-export-menu";
 import { HPOImprovementChart } from "./hpo-improvement-chart";
 import { HPOTrialsTable } from "./hpo-trials-table";
 
@@ -29,9 +30,12 @@ export function HPOOptimizationResults({
             <span>
               Optimization Results: {config.symbol} ({config.modelType})
             </span>
-            <div className="flex items-center gap-2 font-normal text-slate-400 text-sm">
-              <Clock className="h-4 w-4" />
-              {(totalExecutionTime / 1000 / 60).toFixed(1)} min
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 font-normal text-slate-400 text-sm">
+                <Clock className="h-4 w-4" />
+                {(totalExecutionTime / 1000 / 60).toFixed(1)} min
+              </div>
+              <HPOExportMenu result={result} />
             </div>
           </CardTitle>
         </CardHeader>

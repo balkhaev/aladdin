@@ -409,19 +409,20 @@ function MachineLearningPage() {
             </Card>
           )}
 
-          {runOptimizationMutation.isSuccess && runOptimizationMutation.data && (
-            <>
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => runOptimizationMutation.reset()}
-                  variant="outline"
-                >
-                  Run New Optimization
-                </Button>
-              </div>
-              <HPOOptimizationResults result={runOptimizationMutation.data} />
-            </>
-          )}
+          {runOptimizationMutation.isSuccess &&
+            runOptimizationMutation.data && (
+              <>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => runOptimizationMutation.reset()}
+                    variant="outline"
+                  >
+                    Run New Optimization
+                  </Button>
+                </div>
+                <HPOOptimizationResults result={runOptimizationMutation.data} />
+              </>
+            )}
 
           {!(
             runOptimizationMutation.isPending ||

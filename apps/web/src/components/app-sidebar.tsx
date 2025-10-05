@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
   BarChart3,
+  Brain,
   Briefcase,
   Bug,
   LineChart,
@@ -88,6 +89,12 @@ const navigation = [
         to: "/on-chain",
         icon: Activity,
         description: "Блокчейн метрики и whale tracking",
+      },
+      {
+        title: "ML & HPO",
+        to: "/ml",
+        icon: Brain,
+        description: "Машинное обучение и оптимизация",
       },
       {
         title: "Бэктестинг",

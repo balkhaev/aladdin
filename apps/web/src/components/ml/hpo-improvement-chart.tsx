@@ -5,8 +5,10 @@
 
 import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import { createChart, LineSeries } from "lightweight-charts";
+import { Download } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { OptimizationResult } from "../../lib/api/ml";
+import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type HPOImprovementChartProps = {
@@ -137,10 +139,37 @@ export function HPOImprovementChart({
     chartRef.current.timeScale().fitContent();
   }, [trials, config.optimizationMetric]);
 
+  // Export chart as PNG
+  const handleExportChart = () => {
+    if (!chartRef.current) return;
+
+    const canvas = chartContainerRef.current?.querySelector("canvas");
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().split("T")[0];
+      link.download = `hpo_chart_${result.config.symbol}_${result.config.modelType}_${timestamp}.png`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Optimization Progress</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>Optimization Progress</span>
+          <Button onClick={handleExportChart} size="sm" variant="ghost">
+            <Download className="h-4 w-4" />
+          </Button>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="w-full" ref={chartContainerRef} />

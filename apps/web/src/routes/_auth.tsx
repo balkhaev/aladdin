@@ -36,6 +36,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/backtest": "Бэктестинг",
   "/on-chain": "On-Chain данные",
   "/market": "Обзор рынка",
+  "/ml": "ML & HPO",
   "/debug": "Отладка",
   "/settings": "Настройки",
 };

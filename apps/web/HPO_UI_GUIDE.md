@@ -13,6 +13,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Configure and submit hyperparameter optimization jobs.
 
 **Features:**
+
 - Symbol selection (e.g., BTCUSDT)
 - Model type (LSTM / Hybrid)
 - Prediction horizon (1h / 4h / 1d / 7d)
@@ -25,11 +26,12 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 - Recommendations info card
 
 **Example Usage:**
+
 ```tsx
 <HPOConfigForm
   isLoading={isRunning}
   onSubmit={(config) => {
-    runOptimization(config);
+    runOptimization(config)
   }}
 />
 ```
@@ -43,6 +45,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Display all optimization trials with their hyperparameters and metrics.
 
 **Features:**
+
 - Sortable by score
 - Best trial highlighting (blue background)
 - Top 3 trials highlighting (gray background)
@@ -55,6 +58,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 - Best trial indicator (checkmark icon)
 
 **Example Usage:**
+
 ```tsx
 <HPOTrialsTable result={optimizationResult} />
 ```
@@ -68,6 +72,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Display the best hyperparameters and their performance.
 
 **Features:**
+
 - Improvement percentage (vs baseline)
 - Best hyperparameters grid
 - Performance metrics (MAE, RMSE, MAPE, R², Direction)
@@ -75,11 +80,13 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 - Recommendation based on improvement
 
 **Color Coding:**
+
 - **Green:** Good performance (>10% improvement)
 - **Yellow:** Medium performance (5-10% improvement)
 - **Gray:** Low improvement (<5%)
 
 **Example Usage:**
+
 ```tsx
 <HPOBestParamsCard result={optimizationResult} />
 ```
@@ -93,6 +100,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Visualize optimization progress over trials.
 
 **Features:**
+
 - Line chart (lightweight-charts)
 - Two series:
   - **Trial Score** (blue line) - score of each trial
@@ -101,6 +109,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 - Dark theme
 
 **Example Usage:**
+
 ```tsx
 <HPOImprovementChart result={optimizationResult} height={300} />
 ```
@@ -114,6 +123,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Main component that combines all HPO result components.
 
 **Features:**
+
 - Optimization summary card (method, trials, period, metric)
 - Best parameters card
 - Tabs:
@@ -121,6 +131,7 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
   - **All Trials** - detailed table
 
 **Example Usage:**
+
 ```tsx
 <HPOOptimizationResults result={optimizationResult} />
 ```
@@ -136,8 +147,9 @@ The HPO (Hyperparameter Optimization) UI provides a comprehensive interface for 
 **Purpose:** Mutation for running hyperparameter optimization.
 
 **Example:**
+
 ```tsx
-const runOptimizationMutation = useRunOptimization();
+const runOptimizationMutation = useRunOptimization()
 
 // Run optimization
 runOptimizationMutation.mutate({
@@ -155,11 +167,11 @@ runOptimizationMutation.mutate({
     learningRate: [0.0001, 0.001, 0.01],
     epochs: [50, 100, 200],
   },
-});
+})
 
 // Access result
 if (runOptimizationMutation.isSuccess) {
-  const result = runOptimizationMutation.data;
+  const result = runOptimizationMutation.data
 }
 ```
 
@@ -172,12 +184,13 @@ if (runOptimizationMutation.isSuccess) {
 **Purpose:** Query for fetching hyperparameter recommendations.
 
 **Example:**
+
 ```tsx
-const { data: recommendations } = useHPORecommendations("BTCUSDT", "LSTM");
+const { data: recommendations } = useHPORecommendations("BTCUSDT", "LSTM")
 
 if (recommendations) {
-  console.log(recommendations.recommendedSpace);
-  console.log(recommendations.reasoning);
+  console.log(recommendations.recommendedSpace)
+  console.log(recommendations.reasoning)
 }
 ```
 
@@ -190,11 +203,13 @@ if (recommendations) {
 **Location:** `apps/web/src/routes/_auth.ml.tsx`
 
 The HPO UI is integrated as a third tab in the ML page:
+
 1. **Backtest Results** - single model backtesting
 2. **Model Comparison** - compare multiple models
 3. **HPO** - hyperparameter optimization
 
 **States:**
+
 - **Idle** - show configuration form
 - **Running** - show loading spinner (20-40 minutes)
 - **Success** - show results
@@ -234,10 +249,10 @@ The HPO UI is integrated as a third tab in the ML page:
 
 ### Method Comparison
 
-| Method | Speed | Coverage | Use Case |
-|--------|-------|----------|----------|
-| **Grid Search** | Slow | Complete | Small parameter space (<100 combos) |
-| **Random Search** | Fast | Partial | Large parameter space (>100 combos) |
+| Method            | Speed | Coverage | Use Case                            |
+| ----------------- | ----- | -------- | ----------------------------------- |
+| **Grid Search**   | Slow  | Complete | Small parameter space (<100 combos) |
+| **Random Search** | Fast  | Partial  | Large parameter space (>100 combos) |
 
 ### Best Practices
 
@@ -254,21 +269,25 @@ The HPO UI is integrated as a third tab in the ML page:
 ### Common Issues
 
 #### 1. Optimization takes too long
+
 - **Solution:** Reduce number of trials or use shorter historical period
 
 #### 2. No improvement found
-- **Solution:** 
+
+- **Solution:**
   - Expand parameter space
   - Try different optimization metric
   - Check data quality
 
 #### 3. Chart not rendering
-- **Solution:** 
+
+- **Solution:**
   - Check browser console for errors
   - Ensure lightweight-charts is installed
   - Verify container has width
 
 #### 4. Recommendations not loading
+
 - **Solution:**
   - Check ML Service is running
   - Verify API endpoint `/api/ml/optimize/recommendations`
@@ -292,6 +311,7 @@ The HPO UI is integrated as a third tab in the ML page:
 ### POST /api/ml/optimize
 
 **Request:**
+
 ```json
 {
   "symbol": "BTCUSDT",
@@ -313,6 +333,7 @@ The HPO UI is integrated as a third tab in the ML page:
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -351,10 +372,12 @@ The HPO UI is integrated as a third tab in the ML page:
 ### GET /api/ml/optimize/recommendations
 
 **Query Params:**
+
 - `symbol` - Trading symbol (e.g., BTCUSDT)
 - `modelType` - LSTM or HYBRID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -377,11 +400,11 @@ The HPO UI is integrated as a third tab in the ML page:
 ### Example 1: Basic LSTM Optimization
 
 ```tsx
-import { HPOConfigForm, HPOOptimizationResults } from "../components/ml";
-import { useRunOptimization } from "../hooks/use-hpo";
+import { HPOConfigForm, HPOOptimizationResults } from "../components/ml"
+import { useRunOptimization } from "../hooks/use-hpo"
 
 function MyOptimizationPage() {
-  const runOptimizationMutation = useRunOptimization();
+  const runOptimizationMutation = useRunOptimization()
 
   return (
     <div>
@@ -389,14 +412,14 @@ function MyOptimizationPage() {
         <HPOConfigForm
           isLoading={runOptimizationMutation.isPending}
           onSubmit={(config) => {
-            const endDate = Date.now();
-            const startDate = endDate - config.days * 24 * 60 * 60 * 1000;
+            const endDate = Date.now()
+            const startDate = endDate - config.days * 24 * 60 * 60 * 1000
 
             runOptimizationMutation.mutate({
               ...config,
               startDate,
               endDate,
-            });
+            })
           }}
         />
       )}
@@ -405,7 +428,7 @@ function MyOptimizationPage() {
         <HPOOptimizationResults result={runOptimizationMutation.data} />
       )}
     </div>
-  );
+  )
 }
 ```
 
@@ -414,10 +437,10 @@ function MyOptimizationPage() {
 ## Credits
 
 Built with:
+
 - **React** - UI framework
 - **TypeScript** - Type safety
 - **React Query** - Data fetching
 - **lightweight-charts** - Charting
 - **Tailwind CSS** - Styling
 - **Biome** - Linting and formatting
-

@@ -12,6 +12,7 @@ import { CorrelationsTable } from "../components/portfolio/correlations-table";
 import { PortfolioAllocationChart } from "../components/portfolio/portfolio-allocation-chart";
 import { PortfolioMetricsGrid } from "../components/portfolio/portfolio-metrics-grid";
 import { PortfolioPerformanceChart } from "../components/portfolio/portfolio-performance-chart";
+import { PortfolioSummaryCard } from "../components/portfolio/portfolio-summary-card";
 import { PositionsTableEnhanced } from "../components/portfolio/positions-table-enhanced";
 import { TransactionsTable } from "../components/portfolio/transactions-table";
 import { RiskCVaRCard } from "../components/risk-cvar-card";
@@ -119,13 +120,19 @@ function PortfolioPage() {
             </div>
 
             {selectedPortfolioId && (
-              <Tabs className="space-y-4" defaultValue="overview">
+              <Tabs className="space-y-4" defaultValue="summary">
                 <TabsList>
+                  <TabsTrigger value="summary">Summary</TabsTrigger>
                   <TabsTrigger value="overview">Обзор</TabsTrigger>
                   <TabsTrigger value="positions">Позиции</TabsTrigger>
                   <TabsTrigger value="transactions">Транзакции</TabsTrigger>
                   <TabsTrigger value="risks">Риски</TabsTrigger>
                 </TabsList>
+
+                {/* Summary Tab - Single API Request */}
+                <TabsContent value="summary">
+                  <PortfolioSummaryCard portfolioId={selectedPortfolioId} />
+                </TabsContent>
 
                 {/* Overview Tab */}
                 <TabsContent className="space-y-4" value="overview">

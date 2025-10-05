@@ -42,6 +42,29 @@ type OrderEvent = {
   data: Order;
 };
 
+type ExecutionEvent = {
+  type:
+    | "trading.execution.created"
+    | "trading.execution.progress"
+    | "trading.execution.completed"
+    | "trading.execution.cancelled";
+  data: {
+    executionId: string;
+    symbol?: string;
+    strategy?: string;
+    totalQuantity?: number;
+    slices?: number;
+    startTime?: number;
+    endTime?: number;
+    status?: string;
+    filled?: number;
+    remaining?: number;
+    completion?: number;
+    failedSlices?: number;
+  };
+  timestamp: string;
+};
+
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 1000; // 1 second
 const MAX_MESSAGES_PER_WINDOW = 10; // 10 messages per second
@@ -86,6 +109,11 @@ export class TradingWebSocketHandler {
       // Подписываемся на все события ордеров
       await this.natsClient.subscribe<string>("trading.order.*", (msg) => {
         this.handleOrderEvent(msg);
+      });
+
+      // Подписываемся на события алгоритмического исполнения
+      await this.natsClient.subscribe<string>("trading.execution.*", (msg) => {
+        this.handleExecutionEvent(msg);
       });
 
       this.logger.info("Trading WebSocket handler initialized");
@@ -447,6 +475,21 @@ export class TradingWebSocketHandler {
           clientId,
           userId,
         });
+      } else if (channel === "executions") {
+        ws.data.subscriptions.add("executions");
+
+        ws.send(
+          JSON.stringify({
+            type: "subscribed",
+            channel: "executions",
+            timestamp: Date.now(),
+          })
+        );
+
+        this.logger.info("Client subscribed to executions", {
+          clientId,
+          userId,
+        });
       } else {
         ws.send(
           JSON.stringify({
@@ -482,6 +525,20 @@ export class TradingWebSocketHandler {
         );
 
         this.logger.info("Client unsubscribed from orders", {
+          clientId,
+        });
+      } else if (channel === "executions") {
+        ws.data.subscriptions.delete("executions");
+
+        ws.send(
+          JSON.stringify({
+            type: "unsubscribed",
+            channel: "executions",
+            timestamp: Date.now(),
+          })
+        );
+
+        this.logger.info("Client unsubscribed from executions", {
           clientId,
         });
       }
@@ -573,6 +630,55 @@ export class TradingWebSocketHandler {
       }
     } catch (error) {
       this.logger.error("Failed to handle order event", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Обработка события execution из NATS
+   */
+  private handleExecutionEvent(rawMsg: string): void {
+    try {
+      const event: ExecutionEvent = JSON.parse(rawMsg);
+      const eventId = `${event.type}:${event.data.executionId}:${event.timestamp}`;
+
+      this.logger.debug("Received execution event from NATS", {
+        type: event.type,
+        executionId: event.data.executionId,
+        symbol: event.data.symbol,
+      });
+
+      // Транслируем событие всем подписанным клиентам
+      // Execution events не привязаны к конкретному user, поэтому отправляем всем подписанным
+      let sentCount = 0;
+      for (const ws of this.clients.values()) {
+        if (
+          ws.data.authenticated &&
+          ws.data.subscriptions.has("executions") &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+          ws.send(
+            JSON.stringify({
+              type: "execution",
+              event: event.type,
+              data: event.data,
+              timestamp: event.timestamp,
+            })
+          );
+          sentCount++;
+        }
+      }
+
+      if (sentCount > 0) {
+        this.logger.debug("Execution event sent to clients", {
+          eventId,
+          executionId: event.data.executionId,
+          clientCount: sentCount,
+        });
+      }
+    } catch (error) {
+      this.logger.error("Failed to handle execution event", {
         error: error instanceof Error ? error.message : String(error),
       });
     }

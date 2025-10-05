@@ -2,6 +2,13 @@ import {
   BaseService,
   type BaseServiceConfig,
 } from "@aladdin/shared/base-service";
+import {
+  AlgorithmicExecutor,
+  type ExecutionParams,
+  type ExecutionSchedule,
+  type ExecutionState,
+  type VolumeProfile,
+} from "./algorithmic-executor";
 import { OrderManager, type OrderResult } from "./order-manager";
 import {
   type ProcessedSignal,
@@ -13,8 +20,10 @@ const DEFAULT_MAX_OPEN_POSITIONS = 5;
 const SIGNAL_PROCESSING_INTERVAL_MS = 10_000; // 10 seconds
 const MIN_STRONG_SENTIMENT = 0.6;
 const MIN_CONFIDENCE_FOR_SIGNAL = 0.7;
+const DEFAULT_CONFIDENCE = 0.7;
 const SENTIMENT_SHIFT_THRESHOLD = 0.5;
 const HIGH_CONFIDENCE_SHIFT = 0.7;
+const MILLISECONDS_TO_SECONDS = 1000;
 
 export type ExecutorConfig = {
   mode: "PAPER" | "LIVE";
@@ -23,6 +32,7 @@ export type ExecutorConfig = {
   defaultPortfolioId: string;
   defaultExchange: string;
   autoExecute: boolean;
+  enableAlgorithmicExecution?: boolean;
 };
 
 export type ExecutorStats = {
@@ -34,18 +44,22 @@ export type ExecutorStats = {
   mode: "PAPER" | "LIVE";
   autoExecute: boolean;
   currentOpenPositions: number;
+  activeAlgorithmicExecutions: number;
 };
 
 /**
  * Strategy Executor - main execution engine
  * Subscribes to trading signals and automatically executes orders
+ * Supports algorithmic execution strategies (VWAP, TWAP, Iceberg)
  */
 export class StrategyExecutor extends BaseService {
   private signalProcessor: SignalProcessor;
   private orderManager: OrderManager;
+  private algorithmicExecutor: AlgorithmicExecutor;
   private config: ExecutorConfig;
   private stats: ExecutorStats;
   private pendingSignals: ProcessedSignal[] = [];
+  private activeExecutions: Map<string, ExecutionState> = new Map();
 
   constructor(deps: BaseServiceConfig, config?: Partial<ExecutorConfig>) {
     super(deps);
@@ -57,10 +71,12 @@ export class StrategyExecutor extends BaseService {
       defaultPortfolioId: config?.defaultPortfolioId || "",
       defaultExchange: config?.defaultExchange || "binance",
       autoExecute: config?.autoExecute ?? true,
+      enableAlgorithmicExecution: config?.enableAlgorithmicExecution ?? true,
     };
 
     this.signalProcessor = new SignalProcessor(this.logger);
     this.orderManager = new OrderManager(this.logger, this.config.mode);
+    this.algorithmicExecutor = new AlgorithmicExecutor(this.logger);
 
     this.stats = {
       totalSignalsReceived: 0,
@@ -71,6 +87,7 @@ export class StrategyExecutor extends BaseService {
       mode: this.config.mode,
       autoExecute: this.config.autoExecute,
       currentOpenPositions: 0,
+      activeAlgorithmicExecutions: 0,
     };
   }
 
@@ -123,13 +140,13 @@ export class StrategyExecutor extends BaseService {
   /**
    * Handle screener signal from NATS
    */
-  private async handleScreenerSignal(data: string): Promise<void> {
+  private handleScreenerSignal(data: string): void {
     try {
       const event = JSON.parse(data);
       const signal: TradingSignal = {
         symbol: event.data.symbol,
         recommendation: event.data.recommendation,
-        confidence: event.data.confidence || 0.7,
+        confidence: event.data.confidence || DEFAULT_CONFIDENCE,
         indicators: event.data.indicators,
         source: "screener",
         timestamp: new Date(event.timestamp || Date.now()),
@@ -162,7 +179,7 @@ export class StrategyExecutor extends BaseService {
   /**
    * Handle sentiment analysis from NATS
    */
-  private async handleSentimentAnalysis(data: string): Promise<void> {
+  private handleSentimentAnalysis(data: string): void {
     try {
       const event = JSON.parse(data);
       const analysis = event.data;
@@ -199,7 +216,7 @@ export class StrategyExecutor extends BaseService {
   /**
    * Handle sentiment shift from NATS
    */
-  private async handleSentimentShift(data: string): Promise<void> {
+  private handleSentimentShift(data: string): void {
     try {
       const event = JSON.parse(data);
       const shift = event.data;
@@ -251,7 +268,7 @@ export class StrategyExecutor extends BaseService {
     }, SIGNAL_PROCESSING_INTERVAL_MS);
 
     this.logger.info("Started periodic signal processing", {
-      intervalSeconds: SIGNAL_PROCESSING_INTERVAL_MS / 1000,
+      intervalSeconds: SIGNAL_PROCESSING_INTERVAL_MS / MILLISECONDS_TO_SECONDS,
     });
   }
 
@@ -389,5 +406,180 @@ export class StrategyExecutor extends BaseService {
     }
 
     return result;
+  }
+
+  /**
+   * Execute order using algorithmic strategy (VWAP, TWAP, or Iceberg)
+   */
+  async executeAlgorithmic(
+    params: ExecutionParams,
+    volumeProfile?: VolumeProfile
+  ): Promise<{
+    executionId: string;
+    schedule: ExecutionSchedule;
+  }> {
+    if (!this.config.enableAlgorithmicExecution) {
+      throw new Error("Algorithmic execution is disabled");
+    }
+
+    this.logger.info("Creating algorithmic execution", {
+      symbol: params.symbol,
+      strategy: params.strategy,
+      quantity: params.totalQuantity,
+    });
+
+    // Calculate schedule based on strategy
+    let schedule: ExecutionSchedule;
+
+    switch (params.strategy) {
+      case "VWAP": {
+        schedule = this.algorithmicExecutor.calculateVWAPSchedule(
+          params,
+          volumeProfile || []
+        );
+        break;
+      }
+      case "TWAP": {
+        schedule = this.algorithmicExecutor.calculateTWAPSchedule(params);
+        break;
+      }
+      case "ICEBERG": {
+        schedule = this.algorithmicExecutor.calculateIcebergSchedule(params);
+        break;
+      }
+      default: {
+        throw new Error(`Unknown strategy: ${params.strategy}`);
+      }
+    }
+
+    // Create execution state
+    const execution = this.algorithmicExecutor.createExecution(schedule);
+    const executionId = `${params.symbol}-${Date.now()}`;
+
+    this.activeExecutions.set(executionId, execution);
+    this.stats.activeAlgorithmicExecutions = this.activeExecutions.size;
+
+    // Publish execution created event
+    await this.natsClient?.publish(
+      "trading.execution.created",
+      JSON.stringify({
+        type: "trading.execution.created",
+        data: {
+          executionId,
+          symbol: params.symbol,
+          strategy: params.strategy,
+          totalQuantity: params.totalQuantity,
+          slices: schedule.slices.length,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+        },
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    this.logger.info("Algorithmic execution created", {
+      executionId,
+      slices: schedule.slices.length,
+    });
+
+    return { executionId, schedule };
+  }
+
+  /**
+   * Update execution progress (called as slices are filled)
+   */
+  async updateExecutionProgress(
+    executionId: string,
+    update: {
+      sliceIndex: number;
+      filled: number;
+      price?: number;
+    }
+  ): Promise<void> {
+    const execution = this.activeExecutions.get(executionId);
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    this.algorithmicExecutor.updateExecutionProgress(execution, update);
+
+    // Publish progress event
+    await this.natsClient?.publish(
+      "trading.execution.progress",
+      JSON.stringify({
+        type: "trading.execution.progress",
+        data: {
+          executionId,
+          status: execution.status,
+          filled: execution.filled,
+          remaining: execution.remaining,
+          completion: execution.filled / execution.schedule.totalQuantity,
+        },
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    // If completed, clean up
+    if (execution.status === "COMPLETED" || execution.status === "FAILED") {
+      this.activeExecutions.delete(executionId);
+      this.stats.activeAlgorithmicExecutions = this.activeExecutions.size;
+
+      await this.natsClient?.publish(
+        "trading.execution.completed",
+        JSON.stringify({
+          type: "trading.execution.completed",
+          data: {
+            executionId,
+            status: execution.status,
+            filled: execution.filled,
+            failedSlices: execution.failedSlices.length,
+          },
+          timestamp: new Date().toISOString(),
+        })
+      );
+    }
+  }
+
+  /**
+   * Get execution state
+   */
+  getExecution(executionId: string): ExecutionState | undefined {
+    return this.activeExecutions.get(executionId);
+  }
+
+  /**
+   * Get all active executions
+   */
+  getActiveExecutions(): Map<string, ExecutionState> {
+    return new Map(this.activeExecutions);
+  }
+
+  /**
+   * Cancel execution
+   */
+  async cancelExecution(executionId: string): Promise<void> {
+    const execution = this.activeExecutions.get(executionId);
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    execution.status = "FAILED";
+    this.activeExecutions.delete(executionId);
+    this.stats.activeAlgorithmicExecutions = this.activeExecutions.size;
+
+    await this.natsClient?.publish(
+      "trading.execution.cancelled",
+      JSON.stringify({
+        type: "trading.execution.cancelled",
+        data: {
+          executionId,
+          filled: execution.filled,
+          remaining: execution.remaining,
+        },
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    this.logger.info("Execution cancelled", { executionId });
   }
 }

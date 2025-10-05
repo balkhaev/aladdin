@@ -14,6 +14,7 @@ import { FearGreedHistory } from "@/components/macro/fear-greed-history";
 import { GlobalMarketStats } from "@/components/macro/global-market-stats";
 import { MarketHeatmap } from "@/components/macro/market-heatmap";
 import { TrendingCoins } from "@/components/macro/trending-coins";
+import { MarketOverview } from "@/components/market-overview";
 import { MarketTickerWS } from "@/components/market-ticker-ws";
 import { OnChainSentiment } from "@/components/on-chain-sentiment";
 import { SocialSentimentCompact } from "@/components/social-sentiment-compact";
@@ -74,6 +75,9 @@ function MarketOverviewPage() {
 
         {/* Overview Tab */}
         <TabsContent className="space-y-6" value="overview">
+          {/* Market Overview - Top Movers */}
+          <MarketOverview />
+
           {/* Market Sentiment */}
           <div className="space-y-3">
             <h2 className="font-semibold text-xl">Sentiment Analysis</h2>
@@ -89,11 +93,12 @@ function MarketOverviewPage() {
             />
           </div>
 
-          {/* Social Sentiment */}
+          {/* Combined Sentiment */}
           <div className="space-y-3">
-            <h2 className="font-semibold text-xl">Social Sentiment</h2>
+            <h2 className="font-semibold text-xl">Combined Sentiment</h2>
             <p className="text-muted-foreground text-sm">
-              Real-time sentiment from Telegram channels & Twitter influencers
+              Multi-source sentiment analysis from Technical, Futures, and Order
+              Book data
             </p>
             <SocialSentimentCompact />
           </div>

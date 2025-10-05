@@ -1,25 +1,42 @@
 /**
- * Compact Social Sentiment Component
- * Displays sentiment in a compact format for dashboard/market overview
+ * Compact Combined Sentiment Component
+ * Displays combined sentiment in a compact format for dashboard/market overview
  */
 
-import { MessageSquare, TrendingDown, TrendingUp, Twitter } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Layers,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  formatScore,
-  getSentimentColorFromScore,
-  getSentimentSignal,
-  type SocialSentimentAnalysis,
-  useBatchSocialSentiment,
-} from "@/hooks/use-social-sentiment";
+  type CombinedSentiment,
+  useBatchCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
-interface SocialSentimentCompactProps {
+type SocialSentimentCompactProps = {
   symbols?: string[];
-}
+};
 
 const DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
+
+// Constants
+const SENTIMENT_THRESHOLD = 0.3;
+const SCORE_DECIMAL_PLACES = 2;
+
+// Helper functions
+const formatScore = (score: number): string =>
+  score.toFixed(SCORE_DECIMAL_PLACES);
+
+const getSentimentColorFromScore = (score: number): string => {
+  if (score > SENTIMENT_THRESHOLD) return "text-green-500";
+  if (score < -SENTIMENT_THRESHOLD) return "text-red-500";
+  return "text-gray-500";
+};
 
 export function SocialSentimentCompact({
   symbols = DEFAULT_SYMBOLS,
@@ -28,13 +45,13 @@ export function SocialSentimentCompact({
     data: sentiments,
     isLoading,
     error,
-  } = useBatchSocialSentiment(symbols);
+  } = useBatchCombinedSentiment(symbols);
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Social Sentiment</CardTitle>
+          <CardTitle className="text-sm">Combined Sentiment</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -51,7 +68,7 @@ export function SocialSentimentCompact({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Social Sentiment</CardTitle>
+          <CardTitle className="text-sm">Combined Sentiment</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground text-xs">
@@ -65,7 +82,7 @@ export function SocialSentimentCompact({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Social Sentiment</CardTitle>
+        <CardTitle className="text-sm">Combined Sentiment</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -78,8 +95,8 @@ export function SocialSentimentCompact({
   );
 }
 
-function SentimentRow({ sentiment }: { sentiment: SocialSentimentAnalysis }) {
-  const signal = getSentimentSignal(sentiment.overall);
+function SentimentRow({ sentiment }: { sentiment: CombinedSentiment }) {
+  const signal = sentiment.combinedSignal;
 
   const getSignalIcon = (sig: string) => {
     switch (sig) {
@@ -105,38 +122,42 @@ function SentimentRow({ sentiment }: { sentiment: SocialSentimentAnalysis }) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Telegram */}
+        {/* Analytics */}
         <div className="flex items-center gap-1 text-xs">
-          <MessageSquare className="h-3 w-3 text-blue-500" />
+          <BarChart3 className="h-3 w-3 text-blue-500" />
           <span
-            className={`font-semibold ${getSentimentColorFromScore(sentiment.telegram.score)}`}
+            className={`font-semibold ${getSentimentColorFromScore(sentiment.components.analytics.score)}`}
           >
-            {formatScore(sentiment.telegram.score)}
-          </span>
-          <span className="text-muted-foreground">
-            ({sentiment.telegram.signals})
+            {formatScore(sentiment.components.analytics.score)}
           </span>
         </div>
 
-        {/* Twitter */}
+        {/* Futures */}
         <div className="flex items-center gap-1 text-xs">
-          <Twitter className="h-3 w-3 text-sky-500" />
+          <Layers className="h-3 w-3 text-purple-500" />
           <span
-            className={`font-semibold ${getSentimentColorFromScore(sentiment.twitter.score)}`}
+            className={`font-semibold ${getSentimentColorFromScore(sentiment.components.futures.score)}`}
           >
-            {formatScore(sentiment.twitter.score)}
-          </span>
-          <span className="text-muted-foreground">
-            ({sentiment.twitter.tweets})
+            {formatScore(sentiment.components.futures.score)}
           </span>
         </div>
 
-        {/* Overall */}
+        {/* Order Book */}
+        <div className="flex items-center gap-1 text-xs">
+          <BookOpen className="h-3 w-3 text-green-500" />
+          <span
+            className={`font-semibold ${getSentimentColorFromScore(sentiment.components.orderBook.score)}`}
+          >
+            {formatScore(sentiment.components.orderBook.score)}
+          </span>
+        </div>
+
+        {/* Combined Score */}
         <div className="flex items-center gap-1">
           <span
-            className={`font-bold text-sm ${getSentimentColorFromScore(sentiment.overall)}`}
+            className={`font-bold text-sm ${getSentimentColorFromScore(sentiment.combinedScore)}`}
           >
-            {formatScore(sentiment.overall)}
+            {formatScore(sentiment.combinedScore)}
           </span>
         </div>
       </div>

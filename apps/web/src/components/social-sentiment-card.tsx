@@ -1,41 +1,69 @@
 /**
- * Social Sentiment Card Component
- * Displays sentiment from Telegram and Twitter sources
+ * Combined Sentiment Card Component
+ * Displays combined sentiment from Analytics, Futures, and Order Book data
  */
 
 import {
   Activity,
-  MessageSquare,
+  BarChart3,
+  BookOpen,
+  Layers,
   TrendingDown,
   TrendingUp,
-  Twitter,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  formatConfidence,
-  formatScore,
-  getSentimentBgColorFromScore,
-  getSentimentColorFromScore,
-  getSentimentSignal,
-  getStrengthFromScore,
-  useSocialSentiment,
-} from "@/hooks/use-social-sentiment";
+import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
 
-interface SocialSentimentCardProps {
+type SocialSentimentCardProps = {
   symbol: string;
-}
+};
+
+// Constants
+const SENTIMENT_THRESHOLD = 0.3;
+const SCORE_DECIMAL_PLACES = 2;
+const PERCENTAGE_MULTIPLIER = 100;
+const PROGRESS_NORMALIZER = 2; // Normalize -1 to 1 range to 0 to 100
+
+// Helper functions
+const formatScore = (score: number): string =>
+  score.toFixed(SCORE_DECIMAL_PLACES);
+
+const getSentimentColorFromScore = (score: number): string => {
+  if (score > SENTIMENT_THRESHOLD) return "text-green-500";
+  if (score < -SENTIMENT_THRESHOLD) return "text-red-500";
+  return "text-gray-500";
+};
+
+const getSentimentBgColorFromScore = (score: number): string => {
+  if (score > SENTIMENT_THRESHOLD) return "bg-green-500/10 border-green-500/20";
+  if (score < -SENTIMENT_THRESHOLD) return "bg-red-500/10 border-red-500/20";
+  return "bg-gray-500/10 border-gray-500/20";
+};
+
+const getStrengthColor = (strength: string) => {
+  switch (strength) {
+    case "STRONG":
+      return "bg-orange-500";
+    case "MODERATE":
+      return "bg-yellow-500";
+    case "WEAK":
+      return "bg-gray-500";
+    default:
+      return "bg-gray-500";
+  }
+};
 
 export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
-  const { data: sentiment, isLoading, error } = useSocialSentiment(symbol);
+  const { data: sentiment, isLoading, error } = useCombinedSentiment(symbol);
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Social Sentiment</CardTitle>
+          <CardTitle>Combined Sentiment</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Skeleton className="h-20 w-full" />
@@ -50,7 +78,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Social Sentiment</CardTitle>
+          <CardTitle>Combined Sentiment</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground text-sm">
@@ -61,21 +89,8 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     );
   }
 
-  const signal = getSentimentSignal(sentiment.overall);
-  const strength = getStrengthFromScore(sentiment.overall);
-
-  const getStrengthColor = (s: string) => {
-    switch (s) {
-      case "STRONG":
-        return "bg-orange-500";
-      case "MODERATE":
-        return "bg-yellow-500";
-      case "WEAK":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
+  const signal = sentiment.combinedSignal;
+  const strength = sentiment.strength;
 
   const getSignalIcon = (sig: string) => {
     switch (sig) {
@@ -88,13 +103,21 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     }
   };
 
+  const getRecommendationColor = (action: string) => {
+    if (action.includes("BUY"))
+      return "bg-green-500/20 text-green-600 border-green-500/30";
+    if (action.includes("SELL"))
+      return "bg-red-500/20 text-red-600 border-red-500/30";
+    return "bg-gray-500/20 text-gray-600 border-gray-500/30";
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Social Sentiment</CardTitle>
+          <CardTitle className="text-lg">Combined Sentiment</CardTitle>
           <Badge
-            className={getSentimentBgColorFromScore(sentiment.overall)}
+            className={getSentimentBgColorFromScore(sentiment.combinedScore)}
             variant="outline"
           >
             <div className="flex items-center gap-1">
@@ -110,17 +133,20 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Overall Score</span>
+              <span className="font-medium text-sm">Combined Score</span>
             </div>
             <span
-              className={`font-bold text-2xl ${getSentimentColorFromScore(sentiment.overall)}`}
+              className={`font-bold text-2xl ${getSentimentColorFromScore(sentiment.combinedScore)}`}
             >
-              {formatScore(sentiment.overall)}
+              {formatScore(sentiment.combinedScore)}
             </span>
           </div>
           <Progress
             className="h-2"
-            value={((sentiment.overall + 1) / 2) * 100}
+            value={
+              ((sentiment.combinedScore + 1) / PROGRESS_NORMALIZER) *
+              PERCENTAGE_MULTIPLIER
+            }
           />
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>Bearish (-1)</span>
@@ -129,106 +155,187 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
           </div>
         </div>
 
-        {/* Confidence & Strength */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-sm">Confidence</div>
-            <div className="font-bold text-2xl">
-              {formatConfidence(sentiment.confidence)}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-sm">Strength</div>
-            <Badge className={getStrengthColor(strength)}>{strength}</Badge>
-          </div>
-        </div>
-
-        {/* Source Breakdown */}
+        {/* Recommendation & Strength */}
         <div className="space-y-3">
-          <div className="font-medium text-sm">Sources</div>
-
-          {/* Telegram */}
-          <div className="space-y-2 rounded-lg border bg-card p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-blue-500" />
-                <span className="font-medium text-sm">Telegram</span>
-              </div>
-              <span
-                className={`font-semibold ${getSentimentColorFromScore(sentiment.telegram.score)}`}
+          <div className="rounded-lg border bg-card p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-medium text-sm">Recommendation</span>
+              <Badge
+                className={getRecommendationColor(
+                  sentiment.recommendation.action
+                )}
+                variant="outline"
               >
-                {formatScore(sentiment.telegram.score)}
-              </span>
+                {sentiment.recommendation.action.replace("_", " ")}
+              </Badge>
             </div>
-            <Progress
-              className="h-1.5"
-              value={((sentiment.telegram.score + 1) / 2) * 100}
-            />
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div>
-                <div className="text-muted-foreground">Bullish</div>
-                <div className="font-semibold text-green-500">
-                  {sentiment.telegram.bullish}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Bearish</div>
-                <div className="font-semibold text-red-500">
-                  {sentiment.telegram.bearish}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Total</div>
-                <div className="font-semibold">
-                  {sentiment.telegram.signals}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Twitter */}
-          <div className="space-y-2 rounded-lg border bg-card p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Twitter className="h-4 w-4 text-sky-500" />
-                <span className="font-medium text-sm">Twitter</span>
-              </div>
-              <span
-                className={`font-semibold ${getSentimentColorFromScore(sentiment.twitter.score)}`}
-              >
-                {formatScore(sentiment.twitter.score)}
-              </span>
-            </div>
-            <Progress
-              className="h-1.5"
-              value={((sentiment.twitter.score + 1) / 2) * 100}
-            />
-            <div className="grid grid-cols-4 gap-2 text-center text-xs">
-              <div>
-                <div className="text-muted-foreground">Positive</div>
-                <div className="font-semibold text-green-500">
-                  {sentiment.twitter.positive}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Negative</div>
-                <div className="font-semibold text-red-500">
-                  {sentiment.twitter.negative}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Neutral</div>
-                <div className="font-semibold text-gray-500">
-                  {sentiment.twitter.neutral}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Total</div>
-                <div className="font-semibold">{sentiment.twitter.tweets}</div>
-              </div>
+            <p className="text-muted-foreground text-xs">
+              {sentiment.recommendation.reasoning}
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs">Risk: </span>
+              <Badge className="text-xs" variant="outline">
+                {sentiment.recommendation.riskLevel}
+              </Badge>
+              <span className="ml-auto text-xs">Strength: </span>
+              <Badge className={getStrengthColor(strength)} variant="outline">
+                {strength}
+              </Badge>
             </div>
           </div>
         </div>
+
+        {/* Component Breakdown */}
+        <div className="space-y-3">
+          <div className="font-medium text-sm">Components</div>
+
+          {/* Analytics */}
+          <div className="space-y-2 rounded-lg border bg-card p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-blue-500" />
+                <span className="font-medium text-sm">Technical Analytics</span>
+              </div>
+              <span
+                className={`font-semibold ${getSentimentColorFromScore(sentiment.components.analytics.score)}`}
+              >
+                {formatScore(sentiment.components.analytics.score)}
+              </span>
+            </div>
+            <Progress
+              className="h-1.5"
+              value={
+                ((sentiment.components.analytics.score + 1) /
+                  PROGRESS_NORMALIZER) *
+                PERCENTAGE_MULTIPLIER
+              }
+            />
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">
+                Signal: {sentiment.components.analytics.signal}
+              </span>
+              <span className="text-muted-foreground">
+                Weight:{" "}
+                {(
+                  sentiment.components.analytics.weight * PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+              <span className="text-muted-foreground">
+                Confidence:{" "}
+                {(
+                  sentiment.components.analytics.confidence *
+                  PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+            </div>
+          </div>
+
+          {/* Futures */}
+          <div className="space-y-2 rounded-lg border bg-card p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-purple-500" />
+                <span className="font-medium text-sm">Futures Market</span>
+              </div>
+              <span
+                className={`font-semibold ${getSentimentColorFromScore(sentiment.components.futures.score)}`}
+              >
+                {formatScore(sentiment.components.futures.score)}
+              </span>
+            </div>
+            <Progress
+              className="h-1.5"
+              value={
+                ((sentiment.components.futures.score + 1) /
+                  PROGRESS_NORMALIZER) *
+                PERCENTAGE_MULTIPLIER
+              }
+            />
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">
+                Signal: {sentiment.components.futures.signal}
+              </span>
+              <span className="text-muted-foreground">
+                Weight:{" "}
+                {(
+                  sentiment.components.futures.weight * PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+              <span className="text-muted-foreground">
+                Confidence:{" "}
+                {(
+                  sentiment.components.futures.confidence *
+                  PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+            </div>
+          </div>
+
+          {/* Order Book */}
+          <div className="space-y-2 rounded-lg border bg-card p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-green-500" />
+                <span className="font-medium text-sm">Order Book</span>
+              </div>
+              <span
+                className={`font-semibold ${getSentimentColorFromScore(sentiment.components.orderBook.score)}`}
+              >
+                {formatScore(sentiment.components.orderBook.score)}
+              </span>
+            </div>
+            <Progress
+              className="h-1.5"
+              value={
+                ((sentiment.components.orderBook.score + 1) /
+                  PROGRESS_NORMALIZER) *
+                PERCENTAGE_MULTIPLIER
+              }
+            />
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">
+                Signal: {sentiment.components.orderBook.signal}
+              </span>
+              <span className="text-muted-foreground">
+                Weight:{" "}
+                {(
+                  sentiment.components.orderBook.weight * PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+              <span className="text-muted-foreground">
+                Confidence:{" "}
+                {(
+                  sentiment.components.orderBook.confidence *
+                  PERCENTAGE_MULTIPLIER
+                ).toFixed(0)}
+                %
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Insights */}
+        {sentiment.insights.length > 0 && (
+          <div className="space-y-2">
+            <div className="font-medium text-sm">Key Insights</div>
+            <ul className="space-y-1">
+              {sentiment.insights.map((insight, idx) => (
+                <li
+                  className="flex items-start gap-2 text-muted-foreground text-xs"
+                  key={idx}
+                >
+                  <span className="mt-0.5 text-primary">•</span>
+                  <span>{insight}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Timestamp */}
         <div className="text-right text-muted-foreground text-xs">

@@ -482,17 +482,29 @@ async analyzeSentiment(symbol: string): Promise<{
   - ✅ Comprehensive documentation (`apps/web/HPO_ADVANCED_FEATURES.md`)
 - Приоритет: Medium → ✅ DONE
 
-##### Pump & Dump Detection
+##### ✅ Anomaly Detection (COMPLETED - 2025-10-05)
 
-- Abnormal volume spikes
-- Coordinated buying patterns
-- Приоритет: Medium
+**Pump & Dump Detection:**
+- ✅ Volume spike analysis (>100-500%)
+- ✅ Price momentum scoring
+- ✅ Rapidity & sustainability metrics
+- ✅ Confidence scoring (0-100)
+- ✅ Severity levels (LOW/MEDIUM/HIGH/CRITICAL)
 
-##### Flash Crash Prediction
+**Flash Crash Prediction:**
+- ✅ Liquidation risk calculation
+- ✅ Order book imbalance detection
+- ✅ Market depth analysis
+- ✅ Cascade risk scoring
 
-- Liquidation cascade risk
-- Order book imbalance
-- Приоритет: Medium
+**Implementation:**
+- ✅ AnomalyDetectionService (500+ LOC)
+- ✅ API endpoint `/api/ml/anomalies/detect`
+- ✅ Frontend components (alerts panel + cards)
+- ✅ React Query hooks with auto-refresh
+- ✅ Actionable recommendations
+- ✅ Comprehensive documentation
+- Приоритет: Medium → ✅ DONE
 
 #### 3.4 Reinforcement Learning для Trading
 

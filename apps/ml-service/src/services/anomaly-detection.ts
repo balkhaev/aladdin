@@ -133,9 +133,10 @@ export class AnomalyDetectionService {
         low,
         close,
         volume,
-        quote_volume
-      FROM crypto.candles_1m
+        quoteVolume as quote_volume
+      FROM candles
       WHERE symbol = {symbol: String}
+        AND timeframe = '1m'
         AND timestamp >= {startTime: DateTime64(3)}
         AND timestamp <= {endTime: DateTime64(3)}
       ORDER BY timestamp ASC
@@ -279,8 +280,9 @@ export class AnomalyDetectionService {
         close,
         high,
         low
-      FROM crypto.candles_1m
+      FROM candles
       WHERE symbol = {symbol: String}
+        AND timeframe = '1m'
         AND timestamp >= {startTime: DateTime64(3)}
         AND timestamp <= {endTime: DateTime64(3)}
       ORDER BY timestamp DESC

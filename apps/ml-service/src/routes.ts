@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import type { AnomalyDetectionService } from "./services/anomaly-detection";
 import type { BacktestingService } from "./services/backtesting";
 import type { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
 import type { LSTMPredictionService } from "./services/lstm-prediction";
@@ -6,6 +7,7 @@ import type { MarketRegimeService } from "./services/market-regime";
 import type { ModelPersistenceService } from "./services/model-persistence";
 import type { PricePredictionService } from "./services/price-prediction";
 import {
+  AnomalyDetectionRequestSchema,
   BacktestConfigSchema,
   CompareModelsRequestSchema,
   MarketRegimeRequestSchema,
@@ -26,7 +28,8 @@ export function setupMLRoutes(
   lstmService: LSTMPredictionService,
   persistenceService: ModelPersistenceService,
   backtestingService: BacktestingService,
-  hpoService: HyperparameterOptimizationService
+  hpoService: HyperparameterOptimizationService,
+  anomalyService: AnomalyDetectionService
 ) {
   /**
    * POST /api/ml/predict - Предсказать цену
@@ -536,6 +539,58 @@ export function setupMLRoutes(
           success: false,
           error: {
             code: "RECOMMENDATIONS_FAILED",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_ERROR
+      );
+    }
+  });
+
+  /**
+   * POST /api/ml/anomalies/detect - Detect market anomalies
+   */
+  app.post("/api/ml/anomalies/detect", async (c) => {
+    try {
+      const body = await c.req.json();
+
+      // Validate request
+      const validation = AnomalyDetectionRequestSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: validation.error.message,
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const anomalies = await anomalyService.detectAnomalies(
+        validation.data.symbol,
+        validation.data.lookbackMinutes
+      );
+
+      return c.json({
+        success: true,
+        data: {
+          symbol: validation.data.symbol,
+          anomalies,
+          detectedAt: Date.now(),
+        },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "DETECTION_FAILED",
             message: error instanceof Error ? error.message : String(error),
           },
           timestamp: Date.now(),

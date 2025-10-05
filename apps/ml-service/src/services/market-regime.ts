@@ -96,8 +96,9 @@ export class MarketRegimeService {
         volume,
         high,
         low
-      FROM candles_1h
+      FROM candles
       WHERE symbol = {symbol:String}
+        AND timeframe = '1h'
         AND timestamp >= now() - INTERVAL {lookback:UInt32} DAY
       ORDER BY timestamp ASC
     `;

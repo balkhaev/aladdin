@@ -27,13 +27,25 @@ export class ClickHouseService {
     const clickhouseUrl = options.url || process.env.CLICKHOUSE_URL;
 
     if (clickhouseUrl) {
-      // Используем URL напрямую
+      // Используем URL напрямую (с учетом credentials)
+      const database =
+        options.database || process.env.CLICKHOUSE_DATABASE || "aladdin";
+      const username =
+        options.username || process.env.CLICKHOUSE_USER || "default";
+      const password =
+        options.password || process.env.CLICKHOUSE_PASSWORD || "";
+
       this.client = createClient({
         url: clickhouseUrl,
+        database,
+        username,
+        password,
       });
 
       this.options.logger?.info("ClickHouse client initialized", {
         url: clickhouseUrl,
+        database,
+        username,
       });
     } else {
       // Используем отдельные параметры (legacy режим)

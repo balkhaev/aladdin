@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { setupMLRoutes } from "./routes";
+import { AnomalyDetectionService } from "./services/anomaly-detection";
 import { BacktestingService } from "./services/backtesting";
 import { FeatureEngineeringService } from "./services/feature-engineering";
 import { HyperparameterOptimizationService } from "./services/hyperparameter-optimization";
@@ -14,6 +15,9 @@ import { PricePredictionService } from "./services/price-prediction";
 
 const PORT = Number.parseInt(process.env.PORT || "3019", 10);
 const CLICKHOUSE_URL = process.env.CLICKHOUSE_URL || "http://localhost:8123";
+const CLICKHOUSE_DATABASE = process.env.CLICKHOUSE_DATABASE || "crypto";
+const CLICKHOUSE_USER = process.env.CLICKHOUSE_USER || "default";
+const CLICKHOUSE_PASSWORD = process.env.CLICKHOUSE_PASSWORD || "";
 
 const app = new Hono();
 const logger = createLogger({
@@ -34,7 +38,10 @@ function initializeServices() {
     // ClickHouse client
     const clickhouse = createClickHouseClient({
       url: CLICKHOUSE_URL,
-      database: "crypto",
+      database: CLICKHOUSE_DATABASE,
+      username: CLICKHOUSE_USER,
+      password: CLICKHOUSE_PASSWORD,
+      logger,
     });
 
     // Create service instances
@@ -64,6 +71,7 @@ function initializeServices() {
       backtestingService,
       logger
     );
+    const anomalyService = new AnomalyDetectionService(clickhouse, logger);
 
     // Setup routes
     setupMLRoutes(
@@ -73,7 +81,8 @@ function initializeServices() {
       lstmService,
       persistenceService,
       backtestingService,
-      hpoService
+      hpoService,
+      anomalyService
     );
 
     logger.info("ML Service initialized successfully");
@@ -109,13 +118,14 @@ function start() {
     logger.info("  POST /api/ml/regime - Market regime detection");
     logger.info("  POST /api/ml/backtest - Run backtest");
     logger.info("  POST /api/ml/backtest/compare - Compare models");
-    logger.info("  POST /api/ml/optimize - Hyperparameter optimization");
-    logger.info("  GET /api/ml/optimize/recommendations - HPO recommendations");
-    logger.info("  GET /api/ml/models - List saved models");
-    logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
-    logger.info("  DELETE /api/ml/models/:symbol - Delete model");
-    logger.info("  POST /api/ml/models/cleanup - Cleanup old models");
-    logger.info("  GET /api/ml/health - Health check");
+      logger.info("  POST /api/ml/optimize - Hyperparameter optimization");
+      logger.info("  GET /api/ml/optimize/recommendations - HPO recommendations");
+      logger.info("  POST /api/ml/anomalies/detect - Detect anomalies");
+      logger.info("  GET /api/ml/models - List saved models");
+      logger.info("  GET /api/ml/models/:symbol/stats - Model statistics");
+      logger.info("  DELETE /api/ml/models/:symbol - Delete model");
+      logger.info("  POST /api/ml/models/cleanup - Cleanup old models");
+      logger.info("  GET /api/ml/health - Health check");
   } catch (error) {
     logger.error("Failed to start ML Service", error);
     process.exit(1);

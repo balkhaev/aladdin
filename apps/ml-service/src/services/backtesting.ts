@@ -399,8 +399,9 @@ export class BacktestingService {
       SELECT
         toUnixTimestamp(timestamp) * 1000 as timestamp,
         close
-      FROM candles_1h
+      FROM candles
       WHERE symbol = {symbol:String}
+        AND timeframe = '1h'
         AND timestamp >= fromUnixTimestamp({startDate:UInt64})
         AND timestamp <= fromUnixTimestamp({endDate:UInt64})
       ORDER BY timestamp ASC

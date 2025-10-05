@@ -80,8 +80,9 @@ export class FeatureEngineeringService {
         low,
         close,
         volume
-      FROM candles_1m
+      FROM candles
       WHERE symbol = {symbol:String}
+        AND timeframe = '1m'
         AND timestamp >= now() - INTERVAL {lookback:UInt32} DAY
       ORDER BY timestamp ASC
     `;

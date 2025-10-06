@@ -24,7 +24,7 @@ RUN bun run build
 FROM nginx:alpine
 
 # Environment variables for nginx config
-ENV PORT=80 \
+ENV PORT=3001 \
     API_PROXY_TARGET="http://gateway:3000" \
     WS_PROXY_TARGET="http://gateway:3000" \
     NGINX_RESOLVER="127.0.0.11"
@@ -43,6 +43,6 @@ COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
-EXPOSE 80
+EXPOSE 3001
 
 CMD ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]

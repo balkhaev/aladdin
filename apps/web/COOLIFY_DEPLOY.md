@@ -74,21 +74,79 @@ docker push ghcr.io/your-username/coffee-web:latest
 
 ## Troubleshooting
 
+### Встроенная диагностика
+В образ встроен скрипт диагностики. Запустите его в контейнере:
+```bash
+docker exec <container_name> sh /diagnose.sh
+```
+
+Это покажет:
+- Список файлов в `/usr/share/nginx/html`
+- Конфигурацию nginx
+- Environment variables
+- Проверку health endpoints
+
+### Debug endpoints
+- `/health` - проверка работоспособности (должен возвращать `ok`)
+- `/debug` - информация о nginx конфигурации
+
 ### Контейнер не стартует
 Проверьте логи:
 ```bash
 docker logs <container_id>
 ```
 
-### 502 Bad Gateway
-- Проверьте, что `gateway` сервис доступен
-- Проверьте DNS резолвинг внутри контейнера
-- Убедитесь, что сервисы в одной Docker network
+Проверьте, что контейнер запущен:
+```bash
+docker ps | grep coffee-web
+```
 
-### Assets не загружаются
-- Проверьте, что build прошёл успешно: `docker exec <container> ls /usr/share/nginx/html`
-- Проверьте nginx логи: `docker logs <container>`
+### Белый экран / Assets не загружаются
+
+1. Проверьте, что build прошёл успешно:
+```bash
+docker exec <container> ls -la /usr/share/nginx/html
+docker exec <container> ls -la /usr/share/nginx/html/assets
+```
+
+2. Проверьте nginx конфигурацию:
+```bash
+docker exec <container> nginx -t
+docker exec <container> cat /etc/nginx/conf.d/default.conf
+```
+
+3. Проверьте X-Debug headers в браузере (DevTools → Network)
+
+4. Проверьте nginx access логи:
+```bash
+docker exec <container> tail -f /var/log/nginx/access.log
+```
+
+### 502 Bad Gateway на /api или /ws
+- Проверьте, что `gateway` сервис доступен из контейнера:
+  ```bash
+  docker exec <container> wget -O- http://gateway:3000/health
+  ```
+- Проверьте, что сервисы в одной Docker network в Coolify
+- Проверьте environment variables:
+  ```bash
+  docker exec <container> env | grep PROXY
+  ```
 
 ### WebSocket не работает
 - Убедитесь, что Traefik правильно настроен для WebSocket
-- Проверьте headers в браузере (должны быть Upgrade: websocket)
+- Проверьте headers в браузере DevTools:
+  - Request: `Upgrade: websocket`, `Connection: Upgrade`
+  - Response: должен быть 101 Switching Protocols
+- Проверьте nginx логи на ошибки upstream
+
+### Проблемы с Coolify Traefik
+Если используете кастомный домен, убедитесь что:
+1. SSL сертификат валиден
+2. В настройках Coolify правильно указан порт (80)
+3. Traefik labels настроены корректно
+
+Проверьте Traefik логи:
+```bash
+docker logs <traefik_container>
+```

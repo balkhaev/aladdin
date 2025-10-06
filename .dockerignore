@@ -1,0 +1,24 @@
+# Ignore dependencies and build artifacts
+node_modules
+.bun
+apps/*/dist
+packages/*/dist
+logs
+
+# Ignore local environment and tooling
+.env
+.env.*
+*.log
+.DS_Store
+
+# VCS
+.git
+.gitignore
+
+# IDE/editor
+.vscode
+.idea
+
+# Misc
+coverage
+tmp

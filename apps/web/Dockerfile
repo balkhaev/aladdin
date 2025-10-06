@@ -39,10 +39,6 @@ RUN chmod +x /diagnose.sh
 # Copy built static files
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
-
 EXPOSE 80
 
 CMD ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]

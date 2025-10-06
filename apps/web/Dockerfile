@@ -23,15 +23,26 @@ RUN bun run build
 
 FROM nginx:alpine
 
-# Coolify expects apps to listen on port 80 by default (or PORT env var)
+# Environment variables for nginx config
 ENV PORT=80 \
     API_PROXY_TARGET="http://gateway:3000" \
     WS_PROXY_TARGET="http://gateway:3000" \
     NGINX_RESOLVER="127.0.0.11"
-EXPOSE 80
 
+# Copy nginx config template
 COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 
+# Copy diagnostic script
+COPY apps/web/diagnose.sh /diagnose.sh
+RUN chmod +x /diagnose.sh
+
+# Copy built static files
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+
+EXPOSE 80
 
 CMD ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]

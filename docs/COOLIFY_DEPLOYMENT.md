@@ -11,7 +11,7 @@
 | Сервис | Каталог | Порт по умолчанию | Основная команда | Примечания |
 | --- | --- | --- | --- | --- |
 | Gateway | `apps/gateway` | 3000 | `bun run start` | Выполняется сборка (`bun run build`) перед стартом.
-| Web | `apps/web` | 3001 | Nginx (см. Dockerfile) | Multi-stage: Bun build → Nginx служит статический бандл.
+| Web | `apps/web` | 3001 | Nginx (см. Dockerfile) | Multi-stage: Bun build → Nginx служит статический бандл и проксирует `/api`/`/ws` на Gateway.
 | Market Data | `apps/market-data` | 3010 | `bun run start` | Нужны рабочие ссылки на ClickHouse и NATS.
 | Trading | `apps/trading` | 3011 | `bun run start` | Использует Redis/NATS.
 | Portfolio | `apps/portfolio` | 3012 | `bun run start` | Требует БД и Redis.
@@ -54,4 +54,4 @@
 - Сборочный этап включает установку зависимостей монорепозитория и необходимые предварительные шаги (`bun run build`, генерация Prisma-клиента, установка системных библиотек).
 - В Coolify можно выбрать режим **Dockerfile** и указать путь до нужного `Dockerfile`, если требуется явное управление контейнером.
 - Скрипты postinstall отключены во время сборки (`bun install --ignore-scripts`), поэтому если вы добавите новый postinstall-хук, продублируйте соответствующее действие (например, отдельную команду `bunx ...`) в Dockerfile.
-- Для фронтенда используется multi-stage: сборка на Bun и финальный runtime на `nginx:alpine` с кастомным конфигом (`apps/web/nginx.conf`), который уже подключает `/health` и кэширует `/assets/*`.
+- Для фронтенда используется multi-stage: сборка на Bun и финальный runtime на `nginx:alpine` с шаблоном (`apps/web/nginx.conf`), который подключает `/health`, кэширует `/assets/*` и проксирует `/api` и `/ws` на Gateway. Настройте переменные окружения `API_PROXY_TARGET` и `WS_PROXY_TARGET` в Coolify, чтобы указать реальный адрес Gateway (по умолчанию `http://gateway:3000`).

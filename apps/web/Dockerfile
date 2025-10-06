@@ -23,10 +23,12 @@ RUN bun run build
 
 FROM nginx:alpine
 
-ENV PORT=3001
+ENV PORT=3001 \
+    API_PROXY_TARGET="http://gateway:3000" \
+    WS_PROXY_TARGET="http://gateway:3000"
 EXPOSE 3001
 
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 

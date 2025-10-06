@@ -19,7 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { WhaleTransactionsList } from "./whale-transactions-list";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { API_BASE_URL } from "../lib/runtime-env";
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 const MILLION = 1_000_000;
 const THOUSAND = 1000;

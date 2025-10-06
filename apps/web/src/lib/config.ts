@@ -4,12 +4,14 @@
  * Прямое обращение к микросервисам НЕ используется
  */
 
+import { API_BASE_URL, WS_BASE_URL } from "./runtime-env";
+
 export const API_CONFIG = {
   // Базовый URL API Gateway
-  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  BASE_URL: API_BASE_URL,
 
   // WebSocket URL для real-time данных
-  WS_URL: import.meta.env.VITE_WS_URL || "ws://localhost:3000/ws",
+  WS_URL: WS_BASE_URL,
 
   // Таймауты
   REQUEST_TIMEOUT: 30_000, // 30 секунд

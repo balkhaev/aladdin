@@ -6,6 +6,7 @@ import {
   formatRelativeTime,
   formatTxHash,
 } from "@/lib/formatters";
+import { API_BASE_URL } from "../lib/runtime-env";
 import {
   Card,
   CardContent,
@@ -30,8 +31,6 @@ type WhaleTransactionsListProps = {
   blockchain: "BTC" | "ETH";
   limit?: number;
 };
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const REFRESH_INTERVAL = 60_000; // 1 minute
 
 const EXPLORER_URLS: Record<string, string> = {

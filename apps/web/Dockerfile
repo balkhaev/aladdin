@@ -25,7 +25,8 @@ FROM nginx:alpine
 
 ENV PORT=3001 \
     API_PROXY_TARGET="http://gateway:3000" \
-    WS_PROXY_TARGET="http://gateway:3000"
+    WS_PROXY_TARGET="http://gateway:3000" \
+    NGINX_RESOLVER="127.0.0.11"
 EXPOSE 3001
 
 COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template

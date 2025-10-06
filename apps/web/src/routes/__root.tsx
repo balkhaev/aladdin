@@ -1,17 +1,20 @@
 import {
+  Scripts,
   createRootRouteWithContext,
   HeadContent,
   Outlet,
   useRouterState,
 } from "@tanstack/react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 // import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import Loader from "@/components/loader";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { queryClient } from "@/lib/query-client";
 import { ExchangeProvider } from "@/lib/exchange-context";
+import type { RouterAppContext } from "../router";
 import "../index.css";
-
-export type RouterAppContext = Record<string, never>;
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   component: RootComponent,
@@ -42,17 +45,21 @@ function RootComponent() {
   return (
     <>
       <HeadContent />
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        disableTransitionOnChange
-        storageKey="vite-ui-theme"
-      >
-        <ExchangeProvider>
-          {isFetching ? <Loader /> : <Outlet />}
-          <Toaster richColors />
-        </ExchangeProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          disableTransitionOnChange
+          storageKey="vite-ui-theme"
+        >
+          <ExchangeProvider>
+            {isFetching ? <Loader /> : <Outlet />}
+            <Toaster richColors />
+          </ExchangeProvider>
+        </ThemeProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+      <Scripts />
       {/* <TanStackRouterDevtools position="bottom-left" /> */}
     </>
   );

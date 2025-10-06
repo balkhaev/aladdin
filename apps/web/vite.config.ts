@@ -78,6 +78,11 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    port: 3001,
+    host: "0.0.0.0",
+    allowedHosts: ["aladdin.balkhaev.com"],
+  },
   // Предварительная оптимизация зависимостей
   optimizeDeps: {
     include: [

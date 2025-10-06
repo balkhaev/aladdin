@@ -23,11 +23,12 @@ RUN bun run build
 
 FROM nginx:alpine
 
-ENV PORT=3001 \
+# Coolify expects apps to listen on port 80 by default (or PORT env var)
+ENV PORT=80 \
     API_PROXY_TARGET="http://gateway:3000" \
     WS_PROXY_TARGET="http://gateway:3000" \
     NGINX_RESOLVER="127.0.0.11"
-EXPOSE 3001
+EXPOSE 80
 
 COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 

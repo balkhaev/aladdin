@@ -13,6 +13,8 @@ import {
   TrendingDown,
   TrendingUp,
   Twitter,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSocialFeedWebSocket } from "@/hooks/use-social-feed-ws";
 
 type AnalyzedContent = {
   id: string;
@@ -244,43 +247,61 @@ function FeedSkeleton() {
 }
 
 export function AIAnalyzedFeed() {
+  // WebSocket real-time updates
+  const { isConnected: wsConnected } = useSocialFeedWebSocket(undefined, true);
+
+  // Initial data fetch (WebSocket keeps it fresh)
   const { data: allItems, isLoading: isLoadingAll } = useQuery({
-    queryKey: ["analyzed-feed", "all"],
+    queryKey: ["social-feed", {}],
     queryFn: () => fetchAnalyzedFeed({ limit: 50 }),
-    refetchInterval: 30_000, // Refresh every 30s
+    // WebSocket keeps cache fresh - no polling needed
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const { data: tweetsItems } = useQuery({
-    queryKey: ["analyzed-feed", "tweet"],
+    queryKey: ["social-feed", { contentType: "tweet" }],
     queryFn: () => fetchAnalyzedFeed({ limit: 50, contentType: "tweet" }),
-    refetchInterval: 30_000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const { data: redditItems } = useQuery({
-    queryKey: ["analyzed-feed", "reddit_post"],
+    queryKey: ["social-feed", { contentType: "reddit_post" }],
     queryFn: () => fetchAnalyzedFeed({ limit: 50, contentType: "reddit_post" }),
-    refetchInterval: 30_000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const { data: telegramItems } = useQuery({
-    queryKey: ["analyzed-feed", "telegram_message"],
+    queryKey: ["social-feed", { contentType: "telegram_message" }],
     queryFn: () =>
       fetchAnalyzedFeed({ limit: 50, contentType: "telegram_message" }),
-    refetchInterval: 30_000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const { data: newsItems } = useQuery({
-    queryKey: ["analyzed-feed", "news"],
+    queryKey: ["social-feed", { contentType: "news" }],
     queryFn: () => fetchAnalyzedFeed({ limit: 50, contentType: "news" }),
-    refetchInterval: 30_000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h2 className="font-bold text-2xl tracking-tight">
-          AI Analyzed Content Feed
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-bold text-2xl tracking-tight">
+            AI Analyzed Content Feed
+          </h2>
+          {wsConnected ? (
+            <div className="flex items-center gap-1 text-green-500 text-xs">
+              <Wifi className="h-3 w-3" />
+              <span>Live</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+              <WifiOff className="h-3 w-3" />
+              <span>Offline</span>
+            </div>
+          )}
+        </div>
         <p className="text-muted-foreground text-sm">
           Real-time feed of all content analyzed by GPT-4
         </p>

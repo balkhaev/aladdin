@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, Wifi, WifiOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { formatCurrency, formatPrice } from "@/lib/formatters";
 import { useFuturesPositions } from "../hooks/use-futures-positions";
-import { usePositionsWebSocket } from "../hooks/use-positions-ws";
+import { useFuturesPositionsWebSocket } from "../hooks/use-futures-positions-ws";
 import Loader from "./loader";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -31,10 +31,10 @@ export function FuturesPositionsTable({
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
-  // WebSocket real-time updates for portfolio positions
-  const { isConnected: wsConnected } = usePositionsWebSocket(
+  // WebSocket real-time updates for futures positions
+  const { isConnected: wsConnected } = useFuturesPositionsWebSocket(
     userId,
-    undefined,
+    exchange,
     true
   );
 

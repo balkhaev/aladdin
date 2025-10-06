@@ -1,12 +1,13 @@
 /**
  * Global Ticker Bar
- * Displays key market indices with real-time updates
+ * Displays key market indices with real-time WebSocket updates
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { TrendingDown, TrendingUp } from "lucide-react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useMultiSymbolWS } from "@/hooks/use-multi-symbol-ws";
 import { marketDataApi } from "@/lib/api/market-data";
 import { cn } from "@/lib/utils";
 
@@ -58,11 +59,24 @@ const TickerItem = memo(
 
 TickerItem.displayName = "TickerItem";
 
-export function GlobalTickerBar() {
-  // Fetch key market symbols
-  const symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT"];
+// Константа вынесена за пределы компонента, чтобы избежать пересоздания при каждом рендере
+const GLOBAL_TICKER_SYMBOLS = [
+  "BTCUSDT",
+  "ETHUSDT",
+  "BNBUSDT",
+  "SOLUSDT",
+  "XRPUSDT",
+];
 
-  const { data: tickers } = useQuery({
+export function GlobalTickerBar() {
+  // Key market symbols
+  const symbols = GLOBAL_TICKER_SYMBOLS;
+
+  // WebSocket real-time updates
+  const { tickers: wsTickers, isConnected } = useMultiSymbolWS(symbols);
+
+  // Fallback REST API data (initial load only)
+  const { data: restTickers } = useQuery({
     queryKey: ["global-ticker-bar"],
     queryFn: async () => {
       const results = await Promise.all(
@@ -75,15 +89,29 @@ export function GlobalTickerBar() {
           }
         })
       );
-      // Filter out failed requests
       return results.filter(
         (result): result is NonNullable<typeof result> => result !== null
       );
     },
-    refetchInterval: 2000,
+    // Only fetch once on mount, WebSocket handles updates
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: !isConnected,
   });
 
-  if (!tickers || tickers.length === 0) {
+  // Use WebSocket data if available, otherwise fallback to REST
+  const displayTickers = useMemo(() => {
+    if (wsTickers.length > 0) {
+      return wsTickers.map((ticker) => ({
+        symbol: ticker.symbol,
+        lastPrice: ticker.price,
+        priceChange: ticker.priceChange,
+        priceChangePercent: ticker.priceChangePercent,
+      }));
+    }
+    return restTickers || [];
+  }, [wsTickers, restTickers]);
+
+  if (displayTickers.length === 0) {
     return null;
   }
 
@@ -91,8 +119,7 @@ export function GlobalTickerBar() {
     <div className="border-border/50 border-b bg-card/20 backdrop-blur-sm">
       <ScrollArea className="w-full">
         <div className="flex h-9 items-center">
-          {tickers.map((ticker) => {
-            // Additional safety check
+          {displayTickers.map((ticker) => {
             if (!ticker?.symbol) {
               return null;
             }

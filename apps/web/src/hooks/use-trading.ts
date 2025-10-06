@@ -1,6 +1,6 @@
 /**
  * Trading React Hooks
- * Custom hooks for trading operations using TanStack Query
+ * Custom hooks for trading operations using TanStack Query with WebSocket real-time updates
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ import {
 
 /**
  * Hook to fetch all orders with filters
- * Uses polling since WebSocket updates are not yet fully implemented
+ * Real-time updates handled by useOrdersWebSocket - cache is kept fresh via WebSocket
  */
 export function useOrders(params?: {
   status?: OrderStatus;
@@ -30,21 +30,21 @@ export function useOrders(params?: {
   return useQuery({
     queryKey: ["orders", params],
     queryFn: () => getOrders(params),
-    refetchInterval: 3000, // Poll every 3 seconds until WebSocket is fully implemented
-    staleTime: 2000,
+    // WebSocket keeps cache fresh - no polling needed
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
 /**
  * Hook to fetch active orders
- * Uses polling since WebSocket updates are not yet fully implemented
+ * Real-time updates handled by useOrdersWebSocket - cache is kept fresh via WebSocket
  */
 export function useActiveOrders(symbol?: string) {
   return useQuery({
     queryKey: ["orders", "active", symbol],
     queryFn: () => getActiveOrders(symbol),
-    refetchInterval: 3000, // Poll every 3 seconds until WebSocket is fully implemented
-    staleTime: 2000,
+    // WebSocket keeps cache fresh - no polling needed
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -60,22 +60,21 @@ export function useOrderHistory(params?: {
   return useQuery({
     queryKey: ["orders", "history", params],
     queryFn: () => getOrderHistory(params),
-    // Убрали refetchInterval - обновления приходят через WebSocket
     staleTime: 60_000, // История обновляется реже, кешируем на 1 минуту
   });
 }
 
 /**
  * Hook to fetch a single order by ID
- * Uses polling since WebSocket updates are not yet fully implemented
+ * Real-time updates handled by useOrdersWebSocket - cache is kept fresh via WebSocket
  */
 export function useOrder(orderId: string) {
   return useQuery({
     queryKey: ["orders", orderId],
     queryFn: () => getOrderById(orderId),
     enabled: Boolean(orderId),
-    refetchInterval: 3000, // Poll every 3 seconds until WebSocket is fully implemented
-    staleTime: 2000,
+    // WebSocket keeps cache fresh - no polling needed
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 

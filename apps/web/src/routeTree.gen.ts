@@ -24,6 +24,7 @@ import { Route as AuthDebugRouteImport } from './routes/_auth.debug'
 import { Route as AuthBybitOpportunitiesRouteImport } from './routes/_auth.bybit-opportunities'
 import { Route as AuthAutomationRouteImport } from './routes/_auth.automation'
 import { Route as AuthArbitrageRouteImport } from './routes/_auth.arbitrage'
+import { Route as AuthAdminUsersRouteImport } from './routes/_auth.admin.users'
 
 const TradingRoute = TradingRouteImport.update({
   id: '/trading',
@@ -98,6 +99,11 @@ const AuthArbitrageRoute = AuthArbitrageRouteImport.update({
   path: '/arbitrage',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/sentiment': typeof AuthSentimentRoute
   '/settings': typeof AuthSettingsRoute
   '/login': typeof PublicLoginRoute
+  '/admin/users': typeof AuthAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/sentiment': typeof AuthSentimentRoute
   '/settings': typeof AuthSettingsRoute
   '/login': typeof PublicLoginRoute
+  '/admin/users': typeof AuthAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_auth/sentiment': typeof AuthSentimentRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/_public/login': typeof PublicLoginRoute
+  '/_auth/admin/users': typeof AuthAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/sentiment'
     | '/settings'
     | '/login'
+    | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/sentiment'
     | '/settings'
     | '/login'
+    | '/admin/users'
   id:
     | '__root__'
     | '/'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_auth/sentiment'
     | '/_auth/settings'
     | '/_public/login'
+    | '/_auth/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthArbitrageRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/admin/users': {
+      id: '/_auth/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthAdminUsersRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
@@ -325,6 +344,7 @@ interface AuthRouteChildren {
   AuthScreenerRoute: typeof AuthScreenerRoute
   AuthSentimentRoute: typeof AuthSentimentRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthAdminUsersRoute: typeof AuthAdminUsersRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -338,6 +358,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthScreenerRoute: AuthScreenerRoute,
   AuthSentimentRoute: AuthSentimentRoute,
   AuthSettingsRoute: AuthSettingsRoute,
+  AuthAdminUsersRoute: AuthAdminUsersRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

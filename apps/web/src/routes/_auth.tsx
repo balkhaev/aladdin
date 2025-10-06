@@ -37,6 +37,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/portfolio": "Портфель",
   "/settings": "Настройки",
   "/debug": "Отладка",
+  "/admin/users": "Пользователи",
 };
 
 function AuthLayout() {

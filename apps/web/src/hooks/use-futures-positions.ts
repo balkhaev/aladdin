@@ -39,7 +39,7 @@ export async function getFuturesPositions(params?: {
 
 /**
  * Hook to fetch futures positions
- * Uses polling since WebSocket updates are not yet implemented for exchange positions
+ * Real-time updates handled by useFuturesPositionsWebSocket - cache is kept fresh via WebSocket
  */
 export function useFuturesPositions(params?: {
   exchange?: string;
@@ -48,7 +48,7 @@ export function useFuturesPositions(params?: {
   return useQuery({
     queryKey: ["futures-positions", params],
     queryFn: () => getFuturesPositions(params),
-    refetchInterval: 5000, // Poll every 5 seconds until WebSocket is implemented
-    staleTime: 4000,
+    // WebSocket keeps cache fresh - no polling needed
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }

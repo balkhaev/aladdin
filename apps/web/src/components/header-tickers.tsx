@@ -1,11 +1,12 @@
 /**
  * Compact Tickers for Header
- * Displays key market symbols in a compact format for the header
+ * Displays key market symbols in a compact format with real-time WebSocket updates
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { Activity } from "lucide-react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { useMultiSymbolWS } from "@/hooks/use-multi-symbol-ws";
 import { marketDataApi } from "@/lib/api/market-data";
 
 type CompactTickerProps = {
@@ -29,10 +30,17 @@ const CompactTicker = memo(({ symbol, price }: CompactTickerProps) => {
 
 CompactTicker.displayName = "CompactTicker";
 
-export function HeaderTickers() {
-  const symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"];
+// Константа вынесена за пределы компонента, чтобы избежать пересоздания при каждом рендере
+const HEADER_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"];
 
-  const { data: tickers } = useQuery({
+export function HeaderTickers() {
+  const symbols = HEADER_SYMBOLS;
+
+  // WebSocket real-time updates
+  const { tickers: wsTickers, isConnected } = useMultiSymbolWS(symbols);
+
+  // Fallback REST API data (initial load only)
+  const { data: restTickers } = useQuery({
     queryKey: ["header-tickers"],
     queryFn: async () => {
       const results = await Promise.all(
@@ -49,16 +57,29 @@ export function HeaderTickers() {
         (result): result is NonNullable<typeof result> => result !== null
       );
     },
-    refetchInterval: 2000,
+    // Only fetch once on mount, WebSocket handles updates
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: !isConnected,
   });
 
-  if (!tickers || tickers.length === 0) {
+  // Use WebSocket data if available, otherwise fallback to REST
+  const displayTickers = useMemo(() => {
+    if (wsTickers.length > 0) {
+      return wsTickers.map((ticker) => ({
+        symbol: ticker.symbol,
+        price: ticker.price,
+      }));
+    }
+    return restTickers || [];
+  }, [wsTickers, restTickers]);
+
+  if (displayTickers.length === 0) {
     return null;
   }
 
   return (
     <div className="flex items-center gap-3">
-      {tickers.map((ticker) => {
+      {displayTickers.map((ticker) => {
         if (!ticker?.symbol) {
           return null;
         }

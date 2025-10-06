@@ -14,8 +14,10 @@ import type { Context } from "hono";
 import { logger as honoLogger } from "hono/logger";
 import db from "./db";
 import { auth } from "./lib/auth";
+import { adminMiddleware } from "./middleware/admin";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
+import { createAdminUsersRouter } from "./routers/admin-users";
 import { createExchangeCredentialsRouter } from "./routers/exchange-credentials";
 import { websocketHandlers } from "./websocket/proxy";
 
@@ -37,11 +39,12 @@ const SERVICES = {
   portfolio: process.env.PORTFOLIO_URL || "http://localhost:3012",
   analytics: process.env.ANALYTICS_URL || "http://localhost:3014",
   screener: process.env.SCREENER_URL || "http://localhost:3017",
-  scraper:
+  // Register scraper as "social" to automatically create /api/social/* proxy route
+  social:
     process.env.SOCIAL_URL ||
     process.env.SCRAPER_URL ||
     "http://localhost:3018",
-  "ml-service": process.env.ML_SERVICE_URL || "http://localhost:8000",
+  ml: process.env.ML_SERVICE_URL || "http://localhost:8000",
 };
 
 // Path rewrites for backward compatibility
@@ -58,10 +61,8 @@ const PATH_REWRITES = {
     target: "analytics",
     rewrite: "/api/analytics/sentiment/*",
   },
-  "/api/social/*": {
-    target: "scraper",
-    rewrite: "/api/scraper/*",
-  },
+  // Note: /api/social/* is handled by direct proxy to scraper service
+  // No rewrite needed since scraper already has /api/social/* routes
 };
 
 // Initialize Gateway service
@@ -84,6 +85,15 @@ const service = await initializeService<BaseGatewayService, WebSocketData>({
       enableCache: false,
       enableServiceClient: false,
     }),
+
+  // Wait for services to be ready after initialization
+  afterInit: async (gateway) => {
+    // In dev mode, wait for services to become ready
+    // This handles the case where services start in random order
+    if (process.env.NODE_ENV !== "production") {
+      await gateway.waitForServicesReady(15_000, 2000); // 45 seconds timeout, check every 2 seconds
+    }
+  },
 
   // Setup routes
   setupRoutes: (app, gateway) => {
@@ -227,6 +237,16 @@ const service = await initializeService<BaseGatewayService, WebSocketData>({
       logger: new Logger(winstonLogger),
     });
     app.route("/api/exchange-credentials", exchangeRouter);
+
+    // Admin users router (Gateway-specific, admin only)
+    const adminLogger = createLogger({ service: "gateway-admin" });
+    const adminUsersRouter = createAdminUsersRouter({
+      prisma: db,
+      logger: new Logger(adminLogger),
+    });
+    // Apply admin middleware to admin routes
+    app.use("/api/admin/*", adminMiddleware);
+    app.route("/api/admin/users", adminUsersRouter);
 
     // ====== Proxy Routes ======
 

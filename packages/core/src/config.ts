@@ -240,7 +240,7 @@ export const ServiceConstants = {
   CIRCUIT_BREAKER: {
     FAILURE_THRESHOLD: 5,
     SUCCESS_THRESHOLD: 2,
-    TIMEOUT: 10_000,
+    TIMEOUT: 30_000, // Increased from 10s to 30s for analytics batch operations
     RESET_TIMEOUT: 60_000,
   },
 } as const;

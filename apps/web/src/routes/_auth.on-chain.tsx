@@ -16,6 +16,7 @@ import { PatternDetectionPanel } from "@/components/on-chain/pattern-detection-p
 import { SimilarPeriodsCard } from "@/components/on-chain/similar-periods-card";
 import { OnChainSentiment } from "@/components/on-chain-sentiment";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useOnChainMetricsWS } from "@/hooks/use-onchain-metrics-ws";
 
 export const Route = createFileRoute("/_auth/on-chain")({
   component: OnChainPage,
@@ -35,17 +36,40 @@ async function fetchOnChainMetrics(
 }
 
 function OnChainPage() {
-  const { data: btcMetrics } = useQuery({
+  // WebSocket real-time updates for BTC
+  const { metrics: btcMetricsWS, isConnected: btcWsConnected } =
+    useOnChainMetricsWS({
+      blockchain: "BTC",
+      enabled: true,
+    });
+
+  // WebSocket real-time updates for ETH
+  const { metrics: ethMetricsWS, isConnected: ethWsConnected } =
+    useOnChainMetricsWS({
+      blockchain: "ETH",
+      enabled: true,
+    });
+
+  // Fallback REST API data (initial load only)
+  const { data: btcMetricsRest } = useQuery({
     queryKey: ["onchain-metrics", "BTC"],
     queryFn: () => fetchOnChainMetrics("BTC"),
-    refetchInterval: 5 * 60 * 1000, // 5 minutes
+    // Only fetch once on mount if WebSocket not connected
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: !btcWsConnected,
   });
 
-  const { data: ethMetrics } = useQuery({
+  const { data: ethMetricsRest } = useQuery({
     queryKey: ["onchain-metrics", "ETH"],
     queryFn: () => fetchOnChainMetrics("ETH"),
-    refetchInterval: 5 * 60 * 1000,
+    // Only fetch once on mount if WebSocket not connected
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: !ethWsConnected,
   });
+
+  // Use WebSocket data if available, otherwise fallback to REST
+  const btcMetrics = btcMetricsWS || btcMetricsRest;
+  const ethMetrics = ethMetricsWS || ethMetricsRest;
 
   // Period for correlations (last 30 days)
   const [period] = useState({

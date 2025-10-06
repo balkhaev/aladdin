@@ -51,6 +51,10 @@ export class BaseGatewayService extends BaseService {
    * Setup proxy routes for registered services
    */
   setupProxyRoutes(app: Hono): void {
+    // In dev mode, skip health checks to allow requests even if services haven't passed health checks yet
+    // This helps during startup when services may start in random order
+    const skipHealthCheck = process.env.NODE_ENV !== "production";
+
     // Setup path rewrites first (more specific routes)
     if (this.pathRewrites) {
       for (const [pattern, rule] of Object.entries(this.pathRewrites)) {
@@ -63,6 +67,7 @@ export class BaseGatewayService extends BaseService {
             enableCircuitBreaker: true,
             getUserId: this.getUserId,
             pathRewrite: rule.rewrite,
+            skipHealthCheck,
           })
         );
 
@@ -88,6 +93,7 @@ export class BaseGatewayService extends BaseService {
           enableRetry: true,
           enableCircuitBreaker: true,
           getUserId: this.getUserId,
+          skipHealthCheck,
         })
       );
 
@@ -135,6 +141,63 @@ export class BaseGatewayService extends BaseService {
    */
   getServiceName(): string {
     return "gateway";
+  }
+
+  /**
+   * Wait for all registered services to become healthy
+   * Useful during startup to ensure services are ready before accepting traffic
+   */
+  async waitForServicesReady(
+    timeout = 30_000,
+    checkInterval = 1000
+  ): Promise<{
+    ready: boolean;
+    healthyServices: string[];
+    unhealthyServices: string[];
+  }> {
+    const startTime = Date.now();
+
+    this.logger.info("Waiting for services to become ready...");
+
+    while (Date.now() - startTime < timeout) {
+      const allHealth = this.registry.getAllServicesHealth();
+      const unhealthy = allHealth.filter((h) => !h.healthy);
+
+      if (unhealthy.length === 0) {
+        this.logger.info("All services are ready!", {
+          services: allHealth.map((h) => h.name),
+        });
+        return {
+          ready: true,
+          healthyServices: allHealth.map((h) => h.name),
+          unhealthyServices: [],
+        };
+      }
+
+      this.logger.debug("Some services are not ready yet", {
+        unhealthyServices: unhealthy.map((h) => `${h.name} (${h.lastError})`),
+        elapsed: `${Date.now() - startTime}ms`,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
+    }
+
+    // Timeout reached
+    const allHealth = this.registry.getAllServicesHealth();
+    const healthy = allHealth.filter((h) => h.healthy);
+    const unhealthy = allHealth.filter((h) => !h.healthy);
+
+    this.logger.warn("Timeout waiting for services", {
+      timeout,
+      healthyServices: healthy.map((h) => h.name),
+      unhealthyServices: unhealthy.map((h) => `${h.name} (${h.lastError})`),
+    });
+
+    return {
+      ready: false,
+      healthyServices: healthy.map((h) => h.name),
+      unhealthyServices: unhealthy.map((h) => h.name),
+    };
   }
 
   /**

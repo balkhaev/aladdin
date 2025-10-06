@@ -63,6 +63,43 @@ await initializeService<SocialIntegrationsService>({
     });
 
     /**
+     * GET /api/social/sentiment/:symbol/history - Get social sentiment history
+     */
+    app.get("/api/social/sentiment/:symbol/history", (c) => {
+      const symbol = c.req.param("symbol");
+      const days = Number(c.req.query("days") || "7");
+
+      try {
+        // For now, return empty history since we don't have historical data yet
+        // TODO: Implement proper historical sentiment tracking
+        return c.json(
+          createSuccessResponse({
+            symbol,
+            history: [],
+            days,
+            message: "Historical sentiment tracking will be implemented soon",
+          })
+        );
+      } catch (error) {
+        service.logger.error("Failed to get sentiment history", {
+          symbol,
+          error,
+        });
+
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "HISTORY_ERROR",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+          },
+          500
+        );
+      }
+    });
+
+    /**
      * POST /api/social/sentiment/analyze-batch - Batch social sentiment
      */
     app.post("/api/social/sentiment/analyze-batch", async (c) => {

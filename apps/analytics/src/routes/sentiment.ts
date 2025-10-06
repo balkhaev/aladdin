@@ -29,6 +29,11 @@ export function setupSentimentRoutes(
 
     const symbols = symbolsParam.split(",").map((s) => s.trim().toUpperCase());
 
+    // Limit batch size to prevent overload
+    if (symbols.length > 10) {
+      throw new ValidationError("Maximum 10 symbols per batch request");
+    }
+
     // Check if sentiment service is initialized
     if (!sentimentService) {
       throw new InternalServerError(
@@ -36,7 +41,19 @@ export function setupSentimentRoutes(
       );
     }
 
-    // Calculate sentiment for all symbols in parallel
+    // Helper function to add timeout to promise
+    const withTimeout = <T>(
+      promise: Promise<T>,
+      timeoutMs: number
+    ): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
+        ),
+      ]);
+
+    // Calculate sentiment for all symbols in parallel with timeout
     const results = await Promise.allSettled(
       symbols.map(async (symbol) => {
         // Try cache first
@@ -48,7 +65,11 @@ export function setupSentimentRoutes(
           }
         }
 
-        const sentiment = await sentimentService.getCompositeSentiment(symbol);
+        // Add 5 second timeout for each symbol
+        const sentiment = await withTimeout(
+          sentimentService.getCompositeSentiment(symbol),
+          5000
+        );
 
         // Cache for configured TTL
         if (cache) {
@@ -67,7 +88,9 @@ export function setupSentimentRoutes(
 
     const errors = results
       .filter((r) => r.status === "rejected")
-      .map((r) => (r as PromiseRejectedResult).reason);
+      .map((r) => ({
+        reason: (r as PromiseRejectedResult).reason?.message || "Unknown error",
+      }));
 
     return c.json({
       success: true,

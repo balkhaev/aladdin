@@ -178,20 +178,24 @@ export class HistoricalContextService {
 
   /**
    * Find similar historical periods
+   * OPTIMIZED: Batch fetch outcomes instead of N individual queries
    */
   private async findSimilarPeriods(
     currentMetrics: OnChainMetrics,
     historicalData: OnChainMetrics[],
     blockchain: string
   ): Promise<SimilarPeriod[]> {
-    const similarPeriods: SimilarPeriod[] = [];
-
     const hasRequiredMetrics = currentMetrics.mvrvRatio && currentMetrics.nupl;
     if (!hasRequiredMetrics) {
-      return similarPeriods;
+      return [];
     }
 
-    // Calculate similarity for each historical point
+    // Step 1: Calculate similarity for all historical points and collect candidates
+    const candidates: Array<{
+      historical: OnChainMetrics;
+      similarity: number;
+    }> = [];
+
     for (const historical of historicalData) {
       const historicalHasMetrics = historical.mvrvRatio && historical.nupl;
       if (!historicalHasMetrics) continue;
@@ -199,32 +203,40 @@ export class HistoricalContextService {
       const similarity = this.calculateSimilarity(currentMetrics, historical);
 
       if (similarity >= SIMILARITY_THRESHOLD) {
-        // Get outcome (price change in next 30 days)
-        const outcome = await this.getPeriodOutcome(
-          historical.timestamp,
-          blockchain
-        );
-
-        similarPeriods.push({
-          startDate: historical.timestamp,
-          endDate: historical.timestamp + 30 * 24 * 60 * 60 * 1000, // +30 days
-          similarity,
-          outcome: outcome.direction,
-          priceChange: outcome.priceChange,
-          phase: this.detectCyclePhase(historical),
-          metrics: {
-            mvrv: historical.mvrvRatio,
-            nupl: historical.nupl,
-            reserveRisk: historical.reserveRisk,
-          },
-        });
+        candidates.push({ historical, similarity });
       }
     }
 
+    if (candidates.length === 0) {
+      return [];
+    }
+
     // Sort by similarity and take top N
-    return similarPeriods
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, MAX_SIMILAR_PERIODS);
+    candidates.sort((a, b) => b.similarity - a.similarity);
+    const topCandidates = candidates.slice(0, MAX_SIMILAR_PERIODS);
+
+    // Step 2: Batch fetch outcomes for all candidates in ONE query
+    const timestamps = topCandidates.map((c) => c.historical.timestamp);
+    const outcomes = await this.getBatchPeriodOutcomes(timestamps, blockchain);
+
+    // Step 3: Combine results
+    const similarPeriods: SimilarPeriod[] = topCandidates.map(
+      (candidate, index) => ({
+        startDate: candidate.historical.timestamp,
+        endDate: candidate.historical.timestamp + 30 * 24 * 60 * 60 * 1000, // +30 days
+        similarity: candidate.similarity,
+        outcome: outcomes[index]?.direction ?? "neutral",
+        priceChange: outcomes[index]?.priceChange ?? 0,
+        phase: this.detectCyclePhase(candidate.historical),
+        metrics: {
+          mvrv: candidate.historical.mvrvRatio,
+          nupl: candidate.historical.nupl,
+          reserveRisk: candidate.historical.reserveRisk,
+        },
+      })
+    );
+
+    return similarPeriods;
   }
 
   /**
@@ -335,55 +347,85 @@ export class HistoricalContextService {
   }
 
   /**
-   * Get outcome of a period (price change)
-   * This is a simplified version - in production would fetch actual price data
+   * Get outcomes for multiple periods in ONE batch query
+   * OPTIMIZED: Replaces N individual queries with 1 batch query
    */
-  private async getPeriodOutcome(
-    timestamp: number,
+  private async getBatchPeriodOutcomes(
+    timestamps: number[],
     blockchain: string
-  ): Promise<{
-    direction: "bullish" | "bearish" | "neutral";
-    priceChange: number;
-  }> {
-    // Simplified: infer from MVRV change
-    // In production, fetch actual price data from candles table
-    try {
-      const futureTimestamp = timestamp + 30 * 24 * 60 * 60 * 1000; // +30 days
+  ): Promise<
+    Array<{
+      direction: "bullish" | "bearish" | "neutral";
+      priceChange: number;
+    }>
+  > {
+    if (timestamps.length === 0) {
+      return [];
+    }
 
-      const data = await this.clickhouse.query<{
-        start_mvrv: number | null;
-        end_mvrv: number | null;
-      }>(
-        `
+    try {
+      this.logger.debug("Analyzing on-chain patterns", {
+        blockchain,
+        periodsCount: timestamps.length,
+      });
+
+      // Build UNION query for all timestamps at once
+      const unionQueries = timestamps.map(
+        (timestamp) => `
         SELECT 
+          ${timestamp} as query_timestamp,
           (SELECT mvrv_ratio FROM on_chain_metrics 
-           WHERE blockchain = {blockchain:String} 
-           AND timestamp >= {timestamp:DateTime64(3)}
+           WHERE blockchain = '${blockchain}' 
+           AND timestamp >= fromUnixTimestamp64Milli(${timestamp})
            ORDER BY timestamp ASC LIMIT 1) as start_mvrv,
           (SELECT mvrv_ratio FROM on_chain_metrics 
-           WHERE blockchain = {blockchain:String} 
-           AND timestamp >= {futureTimestamp:DateTime64(3)}
+           WHERE blockchain = '${blockchain}' 
+           AND timestamp >= fromUnixTimestamp64Milli(${timestamp + 30 * 24 * 60 * 60 * 1000})
            ORDER BY timestamp ASC LIMIT 1) as end_mvrv
-      `,
-        { blockchain, timestamp, futureTimestamp }
+      `
       );
 
-      if (data.length === 0 || !data[0]?.start_mvrv || !data[0]?.end_mvrv) {
-        return { direction: "neutral", priceChange: 0 };
+      const query = unionQueries.join(" UNION ALL ");
+
+      const data = await this.clickhouse.query<{
+        query_timestamp: number;
+        start_mvrv: number | null;
+        end_mvrv: number | null;
+      }>(query);
+
+      // Create a map for quick lookup
+      const resultsMap = new Map<
+        number,
+        { direction: "bullish" | "bearish" | "neutral"; priceChange: number }
+      >();
+
+      for (const row of data) {
+        const hasValidData = row.start_mvrv && row.end_mvrv;
+        if (!hasValidData) {
+          resultsMap.set(row.query_timestamp, {
+            direction: "neutral",
+            priceChange: 0,
+          });
+          continue;
+        }
+
+        const change = ((row.end_mvrv - row.start_mvrv) / row.start_mvrv) * 100;
+
+        let direction: "bullish" | "bearish" | "neutral" = "neutral";
+        if (change > 10) direction = "bullish";
+        else if (change < -10) direction = "bearish";
+
+        resultsMap.set(row.query_timestamp, { direction, priceChange: change });
       }
 
-      const startMvrv = data[0].start_mvrv;
-      const endMvrv = data[0].end_mvrv;
-      const change = ((endMvrv - startMvrv) / startMvrv) * 100;
-
-      let direction: "bullish" | "bearish" | "neutral" = "neutral";
-      if (change > 10) direction = "bullish";
-      else if (change < -10) direction = "bearish";
-
-      return { direction, priceChange: change };
+      // Return results in the same order as input timestamps
+      return timestamps.map(
+        (ts) => resultsMap.get(ts) ?? { direction: "neutral", priceChange: 0 }
+      );
     } catch (error) {
-      this.logger.error("Failed to get period outcome", error);
-      return { direction: "neutral", priceChange: 0 };
+      this.logger.error("Failed to get batch period outcomes", error);
+      // Return neutral outcomes for all timestamps
+      return timestamps.map(() => ({ direction: "neutral", priceChange: 0 }));
     }
   }
 

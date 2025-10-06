@@ -132,9 +132,10 @@ export class ServiceRegistry {
    * Start health check for a service
    */
   private startHealthCheck(serviceName: string): void {
-    // Perform initial health check immediately
-    this.performHealthCheck(serviceName).catch(() => {
-      // Ignore errors on initial check
+    // Perform initial health check with retry logic
+    this.performInitialHealthCheck(serviceName).catch(() => {
+      // Continue even if initial checks fail
+      // Service will be marked unhealthy and retried on interval
     });
 
     // Setup recurring health checks
@@ -145,6 +146,79 @@ export class ServiceRegistry {
     }, this.healthCheckInterval);
 
     this.healthCheckIntervals.set(serviceName, interval);
+  }
+
+  /**
+   * Perform initial health check with retry logic
+   * In dev mode, services may start in random order, so we retry with exponential backoff
+   */
+  private async performInitialHealthCheck(
+    serviceName: string,
+    maxAttempts = 5,
+    initialDelay = 1000
+  ): Promise<void> {
+    const config = this.services.get(serviceName);
+    if (!config) return;
+
+    let lastError: string | undefined;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await fetch(`${config.url}/health`, {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+        });
+
+        const healthy = response.ok;
+
+        this.healthStatus.set(serviceName, {
+          name: serviceName,
+          url: config.url,
+          healthy,
+          lastCheck: Date.now(),
+          lastError: healthy ? undefined : `HTTP ${response.status}`,
+        });
+
+        if (healthy) {
+          this.logger?.info("Service is ready", {
+            service: serviceName,
+            attempt,
+          });
+          return; // Success!
+        }
+
+        lastError = `HTTP ${response.status}`;
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+      }
+
+      // If not the last attempt, wait before retrying
+      if (attempt < maxAttempts) {
+        const delay = initialDelay * 2 ** (attempt - 1); // Exponential backoff
+        this.logger?.debug("Service not ready, retrying...", {
+          service: serviceName,
+          attempt,
+          nextAttemptIn: `${delay}ms`,
+          error: lastError,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    // All attempts failed
+    this.healthStatus.set(serviceName, {
+      name: serviceName,
+      url: config.url,
+      healthy: false,
+      lastCheck: Date.now(),
+      lastError,
+    });
+
+    this.logger?.warn("Service not ready after initial checks", {
+      service: serviceName,
+      attempts: maxAttempts,
+      lastError,
+    });
   }
 
   /**

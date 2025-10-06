@@ -9,6 +9,7 @@ import {
   Search,
   Settings,
   TrendingUp,
+  Users,
   Zap,
 } from "lucide-react";
 import {
@@ -24,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth-client";
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
 
@@ -88,6 +90,10 @@ const navigation = [
 export function AppSidebar() {
   const router = useRouterState();
   const currentPath = router.location.pathname;
+  const { data: session } = authClient.useSession();
+
+  // Проверяем, является ли пользователь администратором
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <Sidebar collapsible="icon">
@@ -135,6 +141,32 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {/* Раздел администрирования для админов */}
+        {isAdmin && (
+          <SidebarGroup className="py-1">
+            <SidebarGroupLabel className="px-2 text-[10px]">
+              Администрирование
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 text-xs"
+                    isActive={currentPath === "/admin/users"}
+                    tooltip="Пользователи"
+                  >
+                    <Link to="/admin/users">
+                      <Users className="size-3.5" />
+                      <span>Пользователи</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarSeparator />

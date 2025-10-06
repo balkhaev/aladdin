@@ -18,6 +18,7 @@ export type ProxyConfig = {
   timeout?: number;
   getUserId?: (c: Context) => string | undefined;
   pathRewrite?: string; // e.g., "/api/macro/*" -> "/api/market-data/macro/*"
+  skipHealthCheck?: boolean; // Skip health check and try to forward anyway (useful during dev startup)
 };
 
 export type PathRewriteRule = {
@@ -40,6 +41,7 @@ export function createProxyMiddleware(
     timeout = 10_000,
     getUserId,
     pathRewrite,
+    skipHealthCheck = false,
   } = config;
 
   // Create circuit breaker for this service
@@ -73,8 +75,13 @@ export function createProxyMiddleware(
       );
     }
 
-    // Check service health
-    if (!serviceRegistry.isServiceHealthy(serviceName)) {
+    // Check service health (unless skipHealthCheck is enabled)
+    // In dev mode with skipHealthCheck, we'll try to forward the request anyway
+    // This helps during startup when services may not have passed health checks yet
+    const shouldCheckHealth = !skipHealthCheck;
+    const isServiceHealthy = serviceRegistry.isServiceHealthy(serviceName);
+
+    if (shouldCheckHealth && !isServiceHealthy) {
       logger?.warn("Service is unhealthy", { service: serviceName });
       return c.json(
         {

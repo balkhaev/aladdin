@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.5
-FROM oven/bun:1
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
@@ -21,9 +21,15 @@ RUN bun install --frozen-lockfile --ignore-scripts \
 WORKDIR /app/apps/web
 RUN bun run build
 
-ENV NODE_ENV=production
-ENV HOST=0.0.0.0
+FROM nginx:alpine
+
 ENV PORT=3001
 EXPOSE 3001
 
-CMD ["bun", "run", "serve"]
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+
+RUN sed -i "s/listen 80/listen ${PORT}/" /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+CMD ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]

@@ -1,5 +1,5 @@
 {
-  "name": "@aladdin/ml-python",
+  "name": "@aladdin/ml-service",
   "version": "1.0.0",
   "description": "Production ML service for cryptocurrency price prediction using PyTorch",
   "private": true,

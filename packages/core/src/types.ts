@@ -349,6 +349,37 @@ export type OnChainMetrics = {
   // Exchange Reserve - Total balance on exchanges
   // Lower reserves = less selling pressure
   exchangeReserve?: number;
+
+  // Reserve Risk - Price risk relative to HODL confidence
+  // Lower = accumulation zone, Higher = distribution zone
+  // Formula: (Market Cap / Realized Cap) * (1 - accumulation_score)
+  reserveRisk?: number;
+
+  // Accumulation Trend Score - Multi-timeframe accumulation analysis
+  // Score: -100 (strong distribution) to +100 (strong accumulation)
+  accumulationTrend?: {
+    score: number; // -100 to +100
+    trend7d: number; // 7-day trend
+    trend30d: number; // 30-day trend
+    trend90d: number; // 90-day trend
+  };
+
+  // HODL Waves - Distribution of realized cap by UTXO age
+  // Percentages of total supply by age cohort
+  hodlWaves?: {
+    under1m: number; // <1 month
+    m1to3: number; // 1-3 months
+    m3to6: number; // 3-6 months
+    m6to12: number; // 6-12 months
+    y1to2: number; // 1-2 years
+    y2to3: number; // 2-3 years
+    y3to5: number; // 3-5 years
+    over5y: number; // 5+ years
+  };
+
+  // Binary CDD (Coin Days Destroyed)
+  // True if old coins are moving (capitulation or distribution signal)
+  binaryCDD?: boolean;
 };
 
 /**

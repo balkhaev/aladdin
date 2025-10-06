@@ -1,28 +1,18 @@
-import { createSuccessResponse, HTTP_STATUS } from "@aladdin/http/responses";
+import { createSuccessResponse } from "@aladdin/http/responses";
 import { initializeService } from "@aladdin/service/bootstrap";
+import { config, HTTP_STATUS, LIMITS, VALID_RECOMMENDATIONS } from "./config";
 import { ScreenerService } from "./services/screener";
 import "dotenv/config";
 
-// Server configuration
-const DEFAULT_PORT = 3017;
-const DEFAULT_RESULTS_LIMIT = 100;
-const DEFAULT_SIGNALS_LIMIT = 20;
-const PORT = process.env.PORT ? Number(process.env.PORT) : DEFAULT_PORT;
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-
-const VALID_RECOMMENDATIONS = [
-  "STRONG_BUY",
-  "BUY",
-  "SELL",
-  "STRONG_SELL",
-] as const;
-
 await initializeService<ScreenerService>({
   serviceName: "screener",
-  port: PORT,
+  port: config.PORT,
 
   createService: (deps) =>
-    new ScreenerService({ ...deps, redisUrl: REDIS_URL }),
+    new ScreenerService({
+      ...deps,
+      redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+    }),
 
   setupRoutes: (app, service) => {
     /**
@@ -42,7 +32,7 @@ await initializeService<ScreenerService>({
      */
     app.get("/api/screener/results", async (c) => {
       const limit = Number(
-        c.req.query("limit") ?? String(DEFAULT_RESULTS_LIMIT)
+        c.req.query("limit") ?? String(LIMITS.DEFAULT_RESULTS_LIMIT)
       );
       const results = await service.getResults(limit);
 
@@ -60,7 +50,7 @@ await initializeService<ScreenerService>({
     app.get("/api/screener/signals/:recommendation", async (c) => {
       const { recommendation } = c.req.param();
       const limit = Number(
-        c.req.query("limit") ?? String(DEFAULT_SIGNALS_LIMIT)
+        c.req.query("limit") ?? String(LIMITS.DEFAULT_SIGNALS_LIMIT)
       );
 
       if (

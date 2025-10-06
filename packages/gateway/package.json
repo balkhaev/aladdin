@@ -1,0 +1,24 @@
+{
+  "name": "@aladdin/gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@aladdin/cache": "workspace:*",
+    "@aladdin/core": "workspace:*",
+    "@aladdin/database": "workspace:*",
+    "@aladdin/http": "workspace:*",
+    "@aladdin/logger": "workspace:*",
+    "@aladdin/messaging": "workspace:*",
+    "@aladdin/resilience": "workspace:*",
+    "@aladdin/service": "workspace:*",
+    "@aladdin/telemetry": "workspace:*",
+    "@aladdin/websocket": "workspace:*",
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.23",
+    "typescript": "^5.7.3"
+  }
+}

@@ -63,7 +63,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Combined Sentiment</CardTitle>
+          <CardTitle>Социальный Сентимент</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Skeleton className="h-20 w-full" />
@@ -78,11 +78,11 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Combined Sentiment</CardTitle>
+          <CardTitle>Социальный Сентимент</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground text-sm">
-            Failed to load sentiment data
+            Не удалось загрузить данные о настроениях
           </div>
         </CardContent>
       </Card>
@@ -115,7 +115,12 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Combined Sentiment</CardTitle>
+          <div>
+            <CardTitle className="text-lg">Социальный Сентимент</CardTitle>
+            <p className="mt-1 text-muted-foreground text-xs">
+              Настроения в соцсетях и чатах
+            </p>
+          </div>
           <Badge
             className={getSentimentBgColorFromScore(sentiment.combinedScore)}
             variant="outline"
@@ -133,7 +138,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Combined Score</span>
+              <span className="font-medium text-sm">Общий Score</span>
             </div>
             <span
               className={`font-bold text-2xl ${getSentimentColorFromScore(sentiment.combinedScore)}`}
@@ -149,9 +154,9 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             }
           />
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>Bearish (-1)</span>
-            <span>Neutral (0)</span>
-            <span>Bullish (+1)</span>
+            <span>Медвежий (-1)</span>
+            <span>Нейтральный (0)</span>
+            <span>Бычий (+1)</span>
           </div>
         </div>
 
@@ -159,7 +164,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
         <div className="space-y-3">
           <div className="rounded-lg border bg-card p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="font-medium text-sm">Recommendation</span>
+              <span className="font-medium text-sm">Рекомендация</span>
               <Badge
                 className={getRecommendationColor(
                   sentiment.recommendation.action
@@ -173,11 +178,11 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
               {sentiment.recommendation.reasoning}
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs">Risk: </span>
+              <span className="text-xs">Риск: </span>
               <Badge className="text-xs" variant="outline">
                 {sentiment.recommendation.riskLevel}
               </Badge>
-              <span className="ml-auto text-xs">Strength: </span>
+              <span className="ml-auto text-xs">Сила: </span>
               <Badge className={getStrengthColor(strength)} variant="outline">
                 {strength}
               </Badge>
@@ -187,14 +192,16 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
 
         {/* Component Breakdown */}
         <div className="space-y-3">
-          <div className="font-medium text-sm">Components</div>
+          <div className="font-medium text-sm">Компоненты</div>
 
           {/* Analytics */}
           <div className="space-y-2 rounded-lg border bg-card p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-blue-500" />
-                <span className="font-medium text-sm">Technical Analytics</span>
+                <span className="font-medium text-sm">
+                  Техническая Аналитика
+                </span>
               </div>
               <span
                 className={`font-semibold ${getSentimentColorFromScore(sentiment.components.analytics.score)}`}
@@ -212,17 +219,17 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
-                Signal: {sentiment.components.analytics.signal}
+                Сигнал: {sentiment.components.analytics.signal}
               </span>
               <span className="text-muted-foreground">
-                Weight:{" "}
+                Вес:{" "}
                 {(
                   sentiment.components.analytics.weight * PERCENTAGE_MULTIPLIER
                 ).toFixed(0)}
                 %
               </span>
               <span className="text-muted-foreground">
-                Confidence:{" "}
+                Уверенность:{" "}
                 {(
                   sentiment.components.analytics.confidence *
                   PERCENTAGE_MULTIPLIER
@@ -237,7 +244,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="h-4 w-4 text-purple-500" />
-                <span className="font-medium text-sm">Futures Market</span>
+                <span className="font-medium text-sm">Фьючерсный Рынок</span>
               </div>
               <span
                 className={`font-semibold ${getSentimentColorFromScore(sentiment.components.futures.score)}`}
@@ -255,17 +262,17 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
-                Signal: {sentiment.components.futures.signal}
+                Сигнал: {sentiment.components.futures.signal}
               </span>
               <span className="text-muted-foreground">
-                Weight:{" "}
+                Вес:{" "}
                 {(
                   sentiment.components.futures.weight * PERCENTAGE_MULTIPLIER
                 ).toFixed(0)}
                 %
               </span>
               <span className="text-muted-foreground">
-                Confidence:{" "}
+                Уверенность:{" "}
                 {(
                   sentiment.components.futures.confidence *
                   PERCENTAGE_MULTIPLIER
@@ -280,7 +287,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-green-500" />
-                <span className="font-medium text-sm">Order Book</span>
+                <span className="font-medium text-sm">Книга Заявок</span>
               </div>
               <span
                 className={`font-semibold ${getSentimentColorFromScore(sentiment.components.orderBook.score)}`}
@@ -298,17 +305,17 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
             />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
-                Signal: {sentiment.components.orderBook.signal}
+                Сигнал: {sentiment.components.orderBook.signal}
               </span>
               <span className="text-muted-foreground">
-                Weight:{" "}
+                Вес:{" "}
                 {(
                   sentiment.components.orderBook.weight * PERCENTAGE_MULTIPLIER
                 ).toFixed(0)}
                 %
               </span>
               <span className="text-muted-foreground">
-                Confidence:{" "}
+                Уверенность:{" "}
                 {(
                   sentiment.components.orderBook.confidence *
                   PERCENTAGE_MULTIPLIER
@@ -322,7 +329,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
         {/* Insights */}
         {sentiment.insights.length > 0 && (
           <div className="space-y-2">
-            <div className="font-medium text-sm">Key Insights</div>
+            <div className="font-medium text-sm">Ключевые Инсайты</div>
             <ul className="space-y-1">
               {sentiment.insights.map((insight, idx) => (
                 <li
@@ -339,7 +346,7 @@ export function SocialSentimentCard({ symbol }: SocialSentimentCardProps) {
 
         {/* Timestamp */}
         <div className="text-right text-muted-foreground text-xs">
-          Updated: {new Date(sentiment.timestamp).toLocaleTimeString()}
+          Обновлено: {new Date(sentiment.timestamp).toLocaleTimeString()}
         </div>
       </CardContent>
     </Card>

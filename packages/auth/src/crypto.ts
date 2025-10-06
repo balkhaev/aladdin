@@ -8,7 +8,6 @@ import crypto from "node:crypto";
 const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16; // 128 bits
-const AUTH_TAG_LENGTH = 16; // 128 bits
 
 /**
  * Получить encryption key из переменной окружения
@@ -36,11 +35,11 @@ function getEncryptionKey(): Buffer {
 /**
  * Результат шифрования
  */
-export interface EncryptedData {
+export type EncryptedData = {
   encrypted: string; // Зашифрованные данные (hex)
   iv: string; // Initialization vector (hex)
   authTag: string; // Authentication tag (hex)
-}
+};
 
 /**
  * Зашифровать текст
@@ -147,7 +146,7 @@ export function generateKey(): string {
  * // Сохранить hash и salt в БД
  * ```
  */
-export async function hashPassword(
+export function hashPassword(
   password: string,
   salt?: string
 ): Promise<{ hash: string; salt: string }> {

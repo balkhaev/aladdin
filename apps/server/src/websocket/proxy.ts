@@ -272,7 +272,11 @@ export const websocketHandlers = {
   /**
    * Вызывается при закрытии WebSocket соединения
    */
-  async close(ws: ServerWebSocket<WebSocketData>) {
+  async close(
+    ws: ServerWebSocket<WebSocketData>,
+    _code?: number,
+    _reason?: string
+  ) {
     const { clientId, connections } = ws.data;
 
     logger.info("Client disconnected", { clientId });

@@ -21,12 +21,10 @@ import { TelemetryService, tracingMiddleware } from "@aladdin/telemetry";
 import type { ServerWebSocket } from "bun";
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import type { BaseService } from "./base-service";
 
-// Bun runtime global
-declare const Bun: typeof import("bun");
+const NATS_URL = process.env.NATS_URL ?? "nats://localhost:4222";
 
 /**
  * Service bootstrap configuration
@@ -141,12 +139,12 @@ export async function initializeService<
     if (dependencies.nats !== false) {
       try {
         deps.natsClient = await createNatsClient({
-          servers: process.env.NATS_URL ?? "nats://localhost:4222",
+          servers: NATS_URL,
           logger,
         });
         logger.info("Connected to NATS");
       } catch (error) {
-        logger.error("Failed to connect to NATS", error);
+        logger.error(`Failed to connect to NATS ${NATS_URL}`, error);
         if (dependencies.nats === true) {
           throw error;
         }
@@ -224,7 +222,7 @@ export async function initializeService<
     const app = new Hono();
 
     // Add global middleware
-    app.use("*", cors());
+    // NOTE: CORS is handled in setupRoutes for each service
     app.use("*", honoLogger());
 
     // Add telemetry middleware if enabled

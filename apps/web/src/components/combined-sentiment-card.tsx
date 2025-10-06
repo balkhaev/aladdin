@@ -111,14 +111,19 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
           </Badge>
         </CardTitle>
         <CardDescription>
-          Multi-factor market intelligence for {symbol}
+          Агрегированный анализ рыночных данных для {symbol}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Overall Score */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">Overall Score</span>
+            <div>
+              <span className="font-medium text-sm">Общий Score</span>
+              <p className="text-muted-foreground text-xs">
+                От -100 (продавать) до +100 (покупать)
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               {getSentimentIcon(sentiment.combinedSignal)}
               <span
@@ -130,16 +135,22 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
           </div>
           <Progress className="h-2" value={progressValue} />
           <div className="flex justify-between text-muted-foreground text-xs">
-            <span>Bearish (-100)</span>
-            <span>Neutral (0)</span>
-            <span>Bullish (+100)</span>
+            <span>Медвежий (-100)</span>
+            <span>Нейтральный (0)</span>
+            <span>Бычий (+100)</span>
           </div>
         </div>
 
         {/* Recommendation */}
         <div className="rounded-lg border p-4">
+          <div className="mb-2">
+            <p className="font-medium text-sm">Рекомендация</p>
+            <p className="text-muted-foreground text-xs">
+              На основе всех компонентов анализа
+            </p>
+          </div>
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 {getRecommendationIcon(sentiment.recommendation.action)}
                 <Badge
@@ -154,8 +165,8 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
                 {sentiment.recommendation.reasoning}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-muted-foreground text-xs">Risk</p>
+            <div className="ml-4 text-right">
+              <p className="text-muted-foreground text-xs">Риск</p>
               <p
                 className={`font-semibold text-sm ${getRiskColor(sentiment.recommendation.riskLevel)}`}
               >
@@ -167,17 +178,22 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
 
         {/* Component Breakdown */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-sm">Component Analysis</h4>
+          <div>
+            <h4 className="font-semibold text-sm">Анализ компонентов</h4>
+            <p className="text-muted-foreground text-xs">
+              Каждый источник данных анализируется отдельно
+            </p>
+          </div>
 
           {/* Analytics */}
           <div className="flex items-center justify-between rounded border p-3">
-            <div>
-              <p className="font-medium text-sm">Analytics</p>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Аналитика</p>
               <p className="text-muted-foreground text-xs">
-                Fear&Greed + OnChain + Technical
+                Индекс страха/жадности, ончейн-метрики, техническая аналитика
               </p>
             </div>
-            <div className="text-right">
+            <div className="ml-2 text-right">
               <Badge
                 className={getSentimentColor(
                   sentiment.components.analytics.signal
@@ -190,20 +206,20 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
                   sentiment.components.analytics.confidence *
                     PERCENTAGE_MULTIPLIER
                 )}
-                % confident
+                % уверенности
               </p>
             </div>
           </div>
 
           {/* Futures */}
           <div className="flex items-center justify-between rounded border p-3">
-            <div>
-              <p className="font-medium text-sm">Futures</p>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Фьючерсы</p>
               <p className="text-muted-foreground text-xs">
-                Funding Rates + Open Interest
+                Ставки финансирования и открытый интерес
               </p>
             </div>
-            <div className="text-right">
+            <div className="ml-2 text-right">
               <Badge
                 className={getSentimentColor(
                   sentiment.components.futures.signal
@@ -216,20 +232,20 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
                   sentiment.components.futures.confidence *
                     PERCENTAGE_MULTIPLIER
                 )}
-                % confident
+                % уверенности
               </p>
             </div>
           </div>
 
           {/* Order Book */}
           <div className="flex items-center justify-between rounded border p-3">
-            <div>
-              <p className="font-medium text-sm">Order Book</p>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Книга заявок</p>
               <p className="text-muted-foreground text-xs">
-                Bid/Ask Imbalance + Liquidity
+                Дисбаланс покупок/продаж и ликвидность
               </p>
             </div>
-            <div className="text-right">
+            <div className="ml-2 text-right">
               <Badge
                 className={getSentimentColor(
                   sentiment.components.orderBook.signal
@@ -242,20 +258,20 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
                   sentiment.components.orderBook.confidence *
                     PERCENTAGE_MULTIPLIER
                 )}
-                % confident
+                % уверенности
               </p>
             </div>
           </div>
 
           {/* Social Sentiment */}
           <div className="flex items-center justify-between rounded border p-3">
-            <div>
-              <p className="font-medium text-sm">Social</p>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Соцсети</p>
               <p className="text-muted-foreground text-xs">
-                Telegram + Twitter Sentiment
+                Настроение в Telegram и Twitter
               </p>
             </div>
-            <div className="text-right">
+            <div className="ml-2 text-right">
               <Badge
                 className={getSentimentColor(
                   sentiment.components.social.signal
@@ -267,7 +283,7 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
                 {Math.round(
                   sentiment.components.social.confidence * PERCENTAGE_MULTIPLIER
                 )}
-                % confident
+                % уверенности
               </p>
             </div>
           </div>
@@ -276,21 +292,27 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
         {/* Confidence & Strength */}
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded border p-3 text-center">
-            <p className="text-muted-foreground text-xs">Confidence</p>
+            <p className="text-muted-foreground text-xs">Уверенность</p>
             <p className="mt-1 font-bold text-2xl">
               {Math.round(sentiment.confidence * PERCENTAGE_MULTIPLIER)}%
             </p>
+            <p className="mt-1 text-muted-foreground text-xs">
+              Надежность сигнала
+            </p>
           </div>
           <div className="rounded border p-3 text-center">
-            <p className="text-muted-foreground text-xs">Strength</p>
+            <p className="text-muted-foreground text-xs">Сила</p>
             <p className="mt-1 font-bold text-2xl">{sentiment.strength}</p>
+            <p className="mt-1 text-muted-foreground text-xs">
+              Интенсивность тренда
+            </p>
           </div>
         </div>
 
         {/* Insights */}
         {sentiment.insights.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-semibold text-sm">Key Insights</h4>
+            <h4 className="font-semibold text-sm">Ключевые инсайты</h4>
             <ul className="space-y-1">
               {sentiment.insights.map((insight, index) => (
                 <li className="text-muted-foreground text-xs" key={index}>

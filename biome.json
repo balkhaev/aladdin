@@ -27,6 +27,9 @@
       "suspicious": {
         "noConsole": "off",
         "noArrayIndexKey": "off"
+      },
+      "performance": {
+        "noBarrelFile": "off"
       }
     }
   },

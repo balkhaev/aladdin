@@ -191,12 +191,55 @@ export async function compareModels(config: {
     body: JSON.stringify(config),
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error(`Model comparison failed: ${response.statusText}`);
+    const errorMessage = data?.error?.message || response.statusText;
+    throw new Error(`Model comparison failed: ${errorMessage}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  const hasSuccess = Boolean(data.success);
+  const hasData = Boolean(data.data);
+
+  if (!hasSuccess) {
+    const errorMessage = data?.error?.message || "Request failed";
+    throw new Error(`Model comparison failed: ${errorMessage}`);
+  }
+
+  if (!hasData) {
+    const errorMessage = data?.error?.message || "Invalid response format";
+    throw new Error(`Model comparison failed: ${errorMessage}`);
+  }
+
+  // Validate response structure
+  const hasResults = Boolean(data.data.results);
+  
+  if (!hasResults) {
+    console.error("Invalid comparison response (missing results):", data);
+    throw new Error(
+      "Model comparison returned incomplete results. Please check the date range and try again with more historical data."
+    );
+  }
+  
+  const hasLstm = Boolean(data.data.results.lstm);
+  const hasHybrid = Boolean(data.data.results.hybrid);
+  
+  if (!hasLstm) {
+    console.error("Invalid comparison response (missing LSTM):", data);
+    throw new Error(
+      "Model comparison returned incomplete results (missing LSTM data). Please check the date range and try again with more historical data."
+    );
+  }
+  
+  if (!hasHybrid) {
+    console.error("Invalid comparison response (missing Hybrid):", data);
+    throw new Error(
+      "Model comparison returned incomplete results (missing Hybrid data). Please check the date range and try again with more historical data."
+    );
+  }
+
+  // Return just the comparison results (unwrap from API response)
+  return data.data.results;
 }
 
 /**

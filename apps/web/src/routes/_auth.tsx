@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
+import { HeaderTickers } from "@/components/header-tickers";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,41 +27,46 @@ export const Route = createFileRoute("/_auth")({
 });
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "Дашборд",
-  "/trading": "Торговый терминал",
-  "/portfolio": "Портфель",
-  "/screener": "Скринер",
-  "/analytics": "Аналитика",
-  "/analytics-unified": "Аналитика",
-  "/sentiment": "Social Sentiment",
-  "/backtest": "Бэктестинг",
-  "/on-chain": "On-Chain данные",
   "/market": "Обзор рынка",
-  "/ml": "ML & HPO",
-  "/debug": "Отладка",
+  "/on-chain": "On-Chain",
+  "/sentiment": "Sentiment",
+  "/screener": "Скринер",
+  "/automation": "Автотрейдинг",
+  "/trading": "Торговый терминал",
+  "/arbitrage": "Арбитраж",
+  "/portfolio": "Портфель",
   "/settings": "Настройки",
+  "/debug": "Отладка",
 };
 
 function AuthLayout() {
+  const isMarketPage = window.location.pathname === "/market";
+
   return (
     <SidebarProvider defaultOpen>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex flex-1 items-center gap-2 px-3">
+        <header className="sticky top-0 z-10 flex h-11 shrink-0 items-center gap-2 border-border/50 border-b bg-card/20 backdrop-blur-sm">
+          <div className="flex flex-1 items-center gap-2 px-2">
             <SidebarTrigger />
-            <Separator className="mr-2 h-4" orientation="vertical" />
+            <Separator className="mr-1 h-4" orientation="vertical" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>
+                  <BreadcrumbPage className="text-xs">
                     {PAGE_TITLES[window.location.pathname] || "Aladdin"}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            {isMarketPage && (
+              <>
+                <Separator className="mx-2 h-4" orientation="vertical" />
+                <HeaderTickers />
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-2 px-3">
+          <div className="flex items-center gap-2 px-2">
             <WhaleAlertsPanel />
           </div>
         </header>

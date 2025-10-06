@@ -1,7 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
-  BarChart3,
   Brain,
   Briefcase,
   Bug,
@@ -30,13 +29,32 @@ import UserMenu from "./user-menu";
 
 const navigation = [
   {
-    title: "Главная",
+    title: "Аналитика",
     items: [
       {
         title: "Обзор рынка",
         to: "/market",
-        icon: LineChart,
-        description: "Real-time данные и метрики",
+        icon: TrendingUp,
+      },
+      {
+        title: "On-Chain",
+        to: "/on-chain",
+        icon: Activity,
+      },
+      {
+        title: "Sentiment",
+        to: "/sentiment",
+        icon: MessageSquare,
+      },
+      {
+        title: "Скринер",
+        to: "/screener",
+        icon: Search,
+      },
+      {
+        title: "Bybit Opportunities",
+        to: "/bybit-opportunities",
+        icon: Zap,
       },
     ],
   },
@@ -44,63 +62,24 @@ const navigation = [
     title: "Торговля",
     items: [
       {
+        title: "Автотрейдинг",
+        to: "/automation",
+        icon: Zap,
+      },
+      {
         title: "Терминал",
         to: "/trading",
-        icon: TrendingUp,
-        description: "Торговый терминал",
+        icon: LineChart,
+      },
+      {
+        title: "Арбитраж",
+        to: "/arbitrage",
+        icon: Brain,
       },
       {
         title: "Портфель",
         to: "/portfolio",
         icon: Briefcase,
-        description: "Управление позициями",
-      },
-      {
-        title: "Скринер",
-        to: "/screener",
-        icon: Search,
-        description: "Поиск возможностей",
-      },
-      {
-        title: "Автотрейдинг",
-        to: "/executor",
-        icon: Zap,
-        description: "Автоматическое исполнение",
-      },
-    ],
-  },
-  {
-    title: "Аналитика",
-    items: [
-      {
-        title: "Аналитика",
-        to: "/analytics-unified",
-        icon: BarChart3,
-        description: "Метрики и intelligence",
-      },
-      {
-        title: "Sentiment",
-        to: "/sentiment",
-        icon: MessageSquare,
-        description: "Telegram & Twitter sentiment",
-      },
-      {
-        title: "On-Chain",
-        to: "/on-chain",
-        icon: Activity,
-        description: "Блокчейн метрики и whale tracking",
-      },
-      {
-        title: "ML & HPO",
-        to: "/ml",
-        icon: Brain,
-        description: "Машинное обучение и оптимизация",
-      },
-      {
-        title: "Бэктестинг",
-        to: "/backtest",
-        icon: BarChart3,
-        description: "Тестирование стратегий",
       },
     ],
   },
@@ -112,14 +91,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-sidebar-border border-b">
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <TrendingUp className="size-4" />
+      <SidebarHeader className="border-sidebar-border border-b py-2">
+        <div className="flex items-center gap-2 px-2">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <TrendingUp className="size-3.5" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold text-sm">Aladdin</span>
-            <span className="text-muted-foreground text-xs">
+            <span className="font-semibold text-xs">Aladdin</span>
+            <span className="text-[10px] text-muted-foreground">
               Trading Platform
             </span>
           </div>
@@ -128,8 +107,10 @@ export function AppSidebar() {
 
       <SidebarContent>
         {navigation.map((section) => (
-          <SidebarGroup key={section.title}>
-            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+          <SidebarGroup className="py-1" key={section.title}>
+            <SidebarGroupLabel className="px-2 text-[10px]">
+              {section.title}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
@@ -138,11 +119,12 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.to}>
                       <SidebarMenuButton
                         asChild
+                        className="h-8 text-xs"
                         isActive={isActive}
                         tooltip={item.title}
                       >
                         <Link to={item.to}>
-                          <item.icon />
+                          <item.icon className="size-3.5" />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -157,26 +139,36 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarFooter>
+      <SidebarFooter className="py-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Отладка">
-              <Link to="/debug">
-                <Bug />
-                <span>Отладка</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Настройки">
+            <SidebarMenuButton
+              asChild
+              className="h-8 text-xs"
+              tooltip="Настройки"
+            >
               <Link to="/settings">
-                <Settings />
+                <Settings className="size-3.5" />
                 <span>Настройки</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {process.env.NODE_ENV === "development" && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className="h-8 text-xs"
+                tooltip="Отладка"
+              >
+                <Link to="/debug">
+                  <Bug className="size-3.5" />
+                  <span>Отладка</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
-        <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:justify-center">
+        <div className="flex items-center justify-between px-2 py-1 group-data-[collapsible=icon]:justify-center">
           <div className="group-data-[collapsible=icon]:hidden">
             <UserMenu />
           </div>

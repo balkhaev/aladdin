@@ -19,12 +19,11 @@ import { Route as AuthSentimentRouteImport } from './routes/_auth.sentiment'
 import { Route as AuthScreenerRouteImport } from './routes/_auth.screener'
 import { Route as AuthPortfolioRouteImport } from './routes/_auth.portfolio'
 import { Route as AuthOnChainRouteImport } from './routes/_auth.on-chain'
-import { Route as AuthMlRouteImport } from './routes/_auth.ml'
 import { Route as AuthMarketRouteImport } from './routes/_auth.market'
-import { Route as AuthExecutorRouteImport } from './routes/_auth.executor'
 import { Route as AuthDebugRouteImport } from './routes/_auth.debug'
-import { Route as AuthBacktestRouteImport } from './routes/_auth.backtest'
-import { Route as AuthAnalyticsUnifiedRouteImport } from './routes/_auth.analytics-unified'
+import { Route as AuthBybitOpportunitiesRouteImport } from './routes/_auth.bybit-opportunities'
+import { Route as AuthAutomationRouteImport } from './routes/_auth.automation'
+import { Route as AuthArbitrageRouteImport } from './routes/_auth.arbitrage'
 
 const TradingRoute = TradingRouteImport.update({
   id: '/trading',
@@ -74,19 +73,9 @@ const AuthOnChainRoute = AuthOnChainRouteImport.update({
   path: '/on-chain',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthMlRoute = AuthMlRouteImport.update({
-  id: '/ml',
-  path: '/ml',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthMarketRoute = AuthMarketRouteImport.update({
   id: '/market',
   path: '/market',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthExecutorRoute = AuthExecutorRouteImport.update({
-  id: '/executor',
-  path: '/executor',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthDebugRoute = AuthDebugRouteImport.update({
@@ -94,26 +83,30 @@ const AuthDebugRoute = AuthDebugRouteImport.update({
   path: '/debug',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthBacktestRoute = AuthBacktestRouteImport.update({
-  id: '/backtest',
-  path: '/backtest',
+const AuthBybitOpportunitiesRoute = AuthBybitOpportunitiesRouteImport.update({
+  id: '/bybit-opportunities',
+  path: '/bybit-opportunities',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthAnalyticsUnifiedRoute = AuthAnalyticsUnifiedRouteImport.update({
-  id: '/analytics-unified',
-  path: '/analytics-unified',
+const AuthAutomationRoute = AuthAutomationRouteImport.update({
+  id: '/automation',
+  path: '/automation',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthArbitrageRoute = AuthArbitrageRouteImport.update({
+  id: '/arbitrage',
+  path: '/arbitrage',
   getParentRoute: () => AuthRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/trading': typeof TradingRoute
-  '/analytics-unified': typeof AuthAnalyticsUnifiedRoute
-  '/backtest': typeof AuthBacktestRoute
+  '/arbitrage': typeof AuthArbitrageRoute
+  '/automation': typeof AuthAutomationRoute
+  '/bybit-opportunities': typeof AuthBybitOpportunitiesRoute
   '/debug': typeof AuthDebugRoute
-  '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
-  '/ml': typeof AuthMlRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
   '/screener': typeof AuthScreenerRoute
@@ -124,12 +117,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/trading': typeof TradingRoute
-  '/analytics-unified': typeof AuthAnalyticsUnifiedRoute
-  '/backtest': typeof AuthBacktestRoute
+  '/arbitrage': typeof AuthArbitrageRoute
+  '/automation': typeof AuthAutomationRoute
+  '/bybit-opportunities': typeof AuthBybitOpportunitiesRoute
   '/debug': typeof AuthDebugRoute
-  '/executor': typeof AuthExecutorRoute
   '/market': typeof AuthMarketRoute
-  '/ml': typeof AuthMlRoute
   '/on-chain': typeof AuthOnChainRoute
   '/portfolio': typeof AuthPortfolioRoute
   '/screener': typeof AuthScreenerRoute
@@ -143,12 +135,11 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/trading': typeof TradingRoute
-  '/_auth/analytics-unified': typeof AuthAnalyticsUnifiedRoute
-  '/_auth/backtest': typeof AuthBacktestRoute
+  '/_auth/arbitrage': typeof AuthArbitrageRoute
+  '/_auth/automation': typeof AuthAutomationRoute
+  '/_auth/bybit-opportunities': typeof AuthBybitOpportunitiesRoute
   '/_auth/debug': typeof AuthDebugRoute
-  '/_auth/executor': typeof AuthExecutorRoute
   '/_auth/market': typeof AuthMarketRoute
-  '/_auth/ml': typeof AuthMlRoute
   '/_auth/on-chain': typeof AuthOnChainRoute
   '/_auth/portfolio': typeof AuthPortfolioRoute
   '/_auth/screener': typeof AuthScreenerRoute
@@ -161,12 +152,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/trading'
-    | '/analytics-unified'
-    | '/backtest'
+    | '/arbitrage'
+    | '/automation'
+    | '/bybit-opportunities'
     | '/debug'
-    | '/executor'
     | '/market'
-    | '/ml'
     | '/on-chain'
     | '/portfolio'
     | '/screener'
@@ -177,12 +167,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/trading'
-    | '/analytics-unified'
-    | '/backtest'
+    | '/arbitrage'
+    | '/automation'
+    | '/bybit-opportunities'
     | '/debug'
-    | '/executor'
     | '/market'
-    | '/ml'
     | '/on-chain'
     | '/portfolio'
     | '/screener'
@@ -195,12 +184,11 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_public'
     | '/trading'
-    | '/_auth/analytics-unified'
-    | '/_auth/backtest'
+    | '/_auth/arbitrage'
+    | '/_auth/automation'
+    | '/_auth/bybit-opportunities'
     | '/_auth/debug'
-    | '/_auth/executor'
     | '/_auth/market'
-    | '/_auth/ml'
     | '/_auth/on-chain'
     | '/_auth/portfolio'
     | '/_auth/screener'
@@ -288,25 +276,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnChainRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/ml': {
-      id: '/_auth/ml'
-      path: '/ml'
-      fullPath: '/ml'
-      preLoaderRoute: typeof AuthMlRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/market': {
       id: '/_auth/market'
       path: '/market'
       fullPath: '/market'
       preLoaderRoute: typeof AuthMarketRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/executor': {
-      id: '/_auth/executor'
-      path: '/executor'
-      fullPath: '/executor'
-      preLoaderRoute: typeof AuthExecutorRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/debug': {
@@ -316,30 +290,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDebugRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/backtest': {
-      id: '/_auth/backtest'
-      path: '/backtest'
-      fullPath: '/backtest'
-      preLoaderRoute: typeof AuthBacktestRouteImport
+    '/_auth/bybit-opportunities': {
+      id: '/_auth/bybit-opportunities'
+      path: '/bybit-opportunities'
+      fullPath: '/bybit-opportunities'
+      preLoaderRoute: typeof AuthBybitOpportunitiesRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/analytics-unified': {
-      id: '/_auth/analytics-unified'
-      path: '/analytics-unified'
-      fullPath: '/analytics-unified'
-      preLoaderRoute: typeof AuthAnalyticsUnifiedRouteImport
+    '/_auth/automation': {
+      id: '/_auth/automation'
+      path: '/automation'
+      fullPath: '/automation'
+      preLoaderRoute: typeof AuthAutomationRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/arbitrage': {
+      id: '/_auth/arbitrage'
+      path: '/arbitrage'
+      fullPath: '/arbitrage'
+      preLoaderRoute: typeof AuthArbitrageRouteImport
       parentRoute: typeof AuthRoute
     }
   }
 }
 
 interface AuthRouteChildren {
-  AuthAnalyticsUnifiedRoute: typeof AuthAnalyticsUnifiedRoute
-  AuthBacktestRoute: typeof AuthBacktestRoute
+  AuthArbitrageRoute: typeof AuthArbitrageRoute
+  AuthAutomationRoute: typeof AuthAutomationRoute
+  AuthBybitOpportunitiesRoute: typeof AuthBybitOpportunitiesRoute
   AuthDebugRoute: typeof AuthDebugRoute
-  AuthExecutorRoute: typeof AuthExecutorRoute
   AuthMarketRoute: typeof AuthMarketRoute
-  AuthMlRoute: typeof AuthMlRoute
   AuthOnChainRoute: typeof AuthOnChainRoute
   AuthPortfolioRoute: typeof AuthPortfolioRoute
   AuthScreenerRoute: typeof AuthScreenerRoute
@@ -348,12 +328,11 @@ interface AuthRouteChildren {
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthAnalyticsUnifiedRoute: AuthAnalyticsUnifiedRoute,
-  AuthBacktestRoute: AuthBacktestRoute,
+  AuthArbitrageRoute: AuthArbitrageRoute,
+  AuthAutomationRoute: AuthAutomationRoute,
+  AuthBybitOpportunitiesRoute: AuthBybitOpportunitiesRoute,
   AuthDebugRoute: AuthDebugRoute,
-  AuthExecutorRoute: AuthExecutorRoute,
   AuthMarketRoute: AuthMarketRoute,
-  AuthMlRoute: AuthMlRoute,
   AuthOnChainRoute: AuthOnChainRoute,
   AuthPortfolioRoute: AuthPortfolioRoute,
   AuthScreenerRoute: AuthScreenerRoute,

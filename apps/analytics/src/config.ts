@@ -7,6 +7,7 @@ import {
   type AnalyticsConfig,
   ConfigSchemas,
   loadConfig,
+  ServiceConstants,
 } from "@aladdin/core/config";
 
 /**
@@ -17,19 +18,12 @@ export const config: AnalyticsConfig = loadConfig(ConfigSchemas.Analytics);
 /**
  * HTTP статусы (переэкспорт из shared для удобства)
  */
-export const HTTP_STATUS = {
-  OK: 200,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_ERROR: 500,
-} as const;
+export const HTTP_STATUS = ServiceConstants.HTTP;
 
 /**
  * Константы времени
  */
-export const TIME = {
-  MILLISECONDS_PER_DAY: 86_400_000,
-} as const;
+export const TIME = ServiceConstants.TIME;
 
 /**
  * Дефолтные значения

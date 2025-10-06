@@ -1,34 +1,69 @@
 # Machine Learning Guide
 
-**Статус:** ✅ Production Ready  
-**Последнее обновление:** 5 октября 2025
+> **Полное руководство по ML возможностям платформы Coffee Trading Platform**
 
-Полное руководство по ML возможностям платформы: предсказание цен, аномалии, оптимизация параметров, бэктестинг.
+**Статус:** ✅ Production Ready  
+**Последнее обновление:** 6 октября 2025
+
+## 📋 Содержание
+
+- [Обзор](#обзор)
+- [TypeScript ML Service](#typescript-ml-service)
+- [Python ML Service](#python-ml-service)
+- [Установка](#установка)
+- [Workflow](#workflow)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## 📊 Price Prediction
+## 🎯 Обзор
+
+Платформа предоставляет **два ML сервиса**:
+
+1. **TypeScript ML** (`apps/analytics`) — базовые модели, быстрые предсказания
+2. **Python ML** (`apps/ml-python`) — продвинутые модели с PyTorch
+
+### Возможности
+
+- 📈 **Price Prediction** — LSTM, GRU, Hybrid, Ensemble
+- 🚨 **Anomaly Detection** — Pump & Dump, Flash Crash
+- 📊 **Market Regime** — Bull/Bear/Sideways classification
+- 🔍 **Backtesting** — Walk-forward validation, model comparison
+- ⚙️ **HPO** — Grid Search, Random Search, Optuna
+- 🎯 **Ensemble** — Weighted Average, Voting, Stacking
+
+---
+
+## 🔷 TypeScript ML Service
 
 ### LSTM Model
 
 **Архитектура:**
 
-- Input: нормализованные цены (20 свечей)
+- Input: 20 нормализованных свечей
 - Hidden: 32 LSTM units
 - Output: предсказанная цена
 - Learning Rate: 0.001, Epochs: 100
-
-**Features:**
-
-- Multi-step ahead forecasting
-- Uncertainty quantification (confidence intervals)
-- Model persistence & caching (24h TTL)
-- Automatic feature engineering
 
 **API:**
 
 ```bash
 GET /api/ml/predict/lstm?symbol=BTCUSDT&horizon=24h
+```
+
+**Response:**
+
+```json
+{
+  "predictions": [
+    {
+      "timestamp": "2025-10-06T12:00:00Z",
+      "price": 52500,
+      "confidence": 0.85
+    }
+  ],
+  "model": "lstm"
+}
 ```
 
 ### Hybrid Model
@@ -37,9 +72,8 @@ GET /api/ml/predict/lstm?symbol=BTCUSDT&horizon=24h
 
 - Linear Regression (trend)
 - Exponential Smoothing (noise reduction)
-- Fast training & inference
 
-**Best for:** Short-term predictions (1-4 hours)
+**Best for:** Краткосрочные предсказания (1-4 часа)
 
 **API:**
 
@@ -51,9 +85,9 @@ GET /api/ml/predict/hybrid?symbol=BTCUSDT&horizon=24h
 
 **Стратегии:**
 
-1. **Weighted Average** - balanced 50/50, stable predictions
-2. **Voting** - direction-focused, +10% confidence when models agree
-3. **Stacking** - regime-adaptive, LSTM for trends, Hybrid for sideways
+1. **Weighted Average** — сбалансированный 50/50
+2. **Voting** — фокус на направление, +10% confidence при согласии
+3. **Stacking** — адаптивный, LSTM для трендов, Hybrid для sideways
 
 **Expected improvement:** +5-15% accuracy
 
@@ -63,419 +97,576 @@ GET /api/ml/predict/hybrid?symbol=BTCUSDT&horizon=24h
 GET /api/ml/predict/ensemble?symbol=BTCUSDT&horizon=24h&strategy=stacking
 ```
 
-**Response:**
+### Anomaly Detection
 
-```json
-{
-  "predictions": [
-    {
-      "timestamp": "2025-10-06T12:00:00Z",
-      "price": 52500,
-      "confidence": 0.85,
-      "lowerBound": 51000,
-      "upperBound": 54000
-    }
-  ],
-  "model": "ensemble",
-  "modelAgreement": 0.92
-}
-```
-
----
-
-## 🚨 Anomaly Detection
-
-### Pump & Dump Detection
+#### Pump & Dump Detection
 
 **Индикаторы:**
 
 - Volume spike (>100-500%)
-- Price momentum (>10% rapid increase)
-- Rapidity score (speed of movement)
-- Sustainability score (likelihood of reversal)
+- Price momentum (>10%)
+- Rapidity score
+- Sustainability score
 
 **Scoring:**
 
 - 0-30 pts: Volume analysis
 - 0-30 pts: Price magnitude
-- 0-20 pts: Speed
-- 0-20 pts: Reversal risk
+- 0-20 pts: Rapidity
+- 0-20 pts: Sustainability
 
-**Severity Levels:**
+**Severity:**
 
-- 80-100: CRITICAL - очень вероятный pump & dump
-- 70-79: HIGH - сильные индикаторы
-- 60-69: MEDIUM - есть предупреждающие знаки
-- 50-59: LOW - небольшие опасения
+- 0-25: LOW
+- 26-50: MEDIUM
+- 51-75: HIGH
+- 76-100: CRITICAL
 
-### Flash Crash Risk
+#### Flash Crash Prediction
 
 **Индикаторы:**
 
-- Liquidation risk calculation
-- Order book imbalance (bid/ask ratio < 0.7)
-- Market depth analysis
-- Cascade risk scoring
-
-**Risk Levels:**
-
-- 80-100: CRITICAL - очень высокий риск краха
-- 70-79: HIGH - значительный риск
-- 60-69: MEDIUM - умеренный риск
-- 50-59: LOW - небольшой риск
+- Liquidation risk
+- Order book imbalance
+- Market depth
+- Cascade risk
 
 **API:**
 
 ```bash
 GET /api/ml/anomalies/detect?symbol=BTCUSDT
-GET /api/ml/anomalies/pump-dump?symbol=BTCUSDT&window=24h
-GET /api/ml/anomalies/flash-crash?symbol=BTCUSDT
 ```
 
-**Response:**
+### Backtesting
 
-```json
-{
-  "symbol": "BTCUSDT",
-  "anomalies": [
-    {
-      "type": "PUMP_DUMP",
-      "severity": "HIGH",
-      "confidence": 0.85,
-      "indicators": {
-        "volumeSpike": 150,
-        "priceChange": 12.5,
-        "rapidityScore": 0.9
-      },
-      "recommendation": "CAUTION"
-    }
-  ]
-}
-```
+**Методы:**
 
----
+1. **Simple** — одна тренировка на всей истории
+2. **Walk-forward** — периодическая переобучение
+3. **Model Comparison** — LSTM vs Hybrid
 
-## 🧪 Backtesting Framework
+**Метрики:**
 
-### Evaluation Metrics
-
-| Метрика                | Описание                       | Формула                          | Хорошее значение           |
-| ---------------------- | ------------------------------ | -------------------------------- | -------------------------- |
-| **MAE**                | Mean Absolute Error            | Σ\|predicted - actual\| / n      | < 2% от цены               |
-| **RMSE**               | Root Mean Squared Error        | sqrt(Σ(predicted - actual)² / n) | ≈ MAE (равномерные ошибки) |
-| **MAPE**               | Mean Absolute Percentage Error | Σ\|error / actual\| × 100 / n    | < 5%                       |
-| **R²**                 | Coefficient of Determination   | 1 - (SS_res / SS_tot)            | > 0.7 (70%)                |
-| **Direction Accuracy** | Правильность направления       | correct_directions / total       | > 60%                      |
-
-### Backtesting Methods
-
-**1. Simple Backtest**
-
-- Single training period
-- Single test period
-- Fast, good for initial testing
-
-**2. Walk-Forward Testing**
-
-- Periodic retraining (каждые 7-30 дней)
-- Rolling window approach
-- More realistic, accounts for regime changes
-
-**3. Model Comparison**
-
-- LSTM vs Hybrid
-- Side-by-side metrics
-- Best model selection
+- MAE, RMSE, MAPE
+- R² Score
+- Directional Accuracy
+- Mean/Max/Min Error
 
 **API:**
 
 ```bash
-POST /api/ml/backtest/simple
-POST /api/ml/backtest/walk-forward
-POST /api/ml/backtest/compare
-```
-
-**Request Body:**
-
-```json
+POST /api/ml/backtest
 {
   "symbol": "BTCUSDT",
-  "model": "LSTM",
-  "trainStart": "2024-01-01",
-  "trainEnd": "2024-09-01",
-  "testStart": "2024-09-01",
-  "testEnd": "2024-10-01",
-  "features": ["rsi", "macd", "volume"]
+  "modelType": "lstm",
+  "method": "walk-forward",
+  "from": "2024-01-01",
+  "to": "2024-10-01"
 }
 ```
 
-**Response:**
+### Hyperparameter Optimization
 
-```json
-{
-  "metrics": {
-    "mae": 250.5,
-    "rmse": 380.2,
-    "mape": 0.5,
-    "r2": 0.85,
-    "directionalAccuracy": 0.72
-  },
-  "predictions": [...],
-  "backtestDuration": "30 days"
-}
-```
+**Методы:**
 
----
+- Grid Search (exhaustive)
+- Random Search (efficient)
 
-## 🎯 Hyperparameter Optimization
+**Оптимизируемые параметры:**
 
-### Optimization Methods
-
-**1. Grid Search**
-
-- Exhaustive search всех комбинаций
-- Гарантированно находит лучший результат в заданном пространстве
-- Медленнее, но надежнее
-
-**2. Random Search**
-
-- Random sampling из параметрального пространства
-- Быстрее на больших пространствах
-- Good coverage с меньшими вычислениями
-
-### Optimized Parameters
-
-**LSTM:**
-
-- `hiddenSize`: [16, 32, 64] - affects model capacity
-- `sequenceLength`: [10, 20, 30] - lookback window
-- `learningRate`: [0.0001, 0.001, 0.01] - training step size
-- `epochs`: [50, 100, 200] - training iterations
-
-**Hybrid:**
-
-- `lookbackWindow`: [20, 30, 50] - historical data window
-- `smoothingFactor`: [0.1, 0.2, 0.3] - exponential smoothing alpha
-
-**General:**
-
-- `retrainInterval`: [7, 14, 30] - days between retraining
-
-### Optimization Metrics
-
-Можно оптимизировать по:
-
-- **MAE** - минимизация средней ошибки
-- **RMSE** - минимизация квадратичной ошибки (штраф за выбросы)
-- **MAPE** - минимизация процентной ошибки
-- **R²** - максимизация explained variance
-- **Direction** - максимизация правильности направления
+- `hiddenSize`: 32, 64, 128
+- `sequenceLength`: 20, 40, 60
+- `epochs`: 50, 100, 150
 
 **API:**
 
 ```bash
-POST /api/ml/hpo/optimize
-GET /api/ml/hpo/results/:jobId
-GET /api/ml/hpo/list
-```
-
-**Request Body:**
-
-```json
+POST /api/ml/hpo
 {
   "symbol": "BTCUSDT",
-  "model": "LSTM",
-  "method": "grid",
-  "metric": "mae",
-  "parameterSpace": {
-    "hiddenSize": [16, 32, 64],
-    "sequenceLength": [10, 20, 30],
-    "learningRate": [0.001, 0.01]
-  },
-  "trainStart": "2024-01-01",
-  "trainEnd": "2024-09-01",
-  "testStart": "2024-09-01",
-  "testEnd": "2024-10-01"
-}
-```
-
-**Response:**
-
-```json
-{
-  "jobId": "hpo_abc123",
-  "status": "completed",
-  "trials": [
-    {
-      "parameters": {
-        "hiddenSize": 32,
-        "sequenceLength": 20,
-        "learningRate": 0.001
-      },
-      "metrics": {
-        "mae": 245.3,
-        "rmse": 356.8,
-        "mape": 0.48,
-        "r2": 0.87,
-        "directionalAccuracy": 0.75
-      }
-    }
-  ],
-  "bestParameters": {
-    "hiddenSize": 32,
-    "sequenceLength": 20,
-    "learningRate": 0.001
-  },
-  "improvement": 12.5
+  "method": "random",
+  "trials": 10,
+  "metric": "mae"
 }
 ```
 
 ---
 
-## 📈 Best Practices
+## 🐍 Python ML Service
 
-### Model Selection
+### Преимущества над TypeScript
 
-**Use LSTM when:**
+| Feature             | TypeScript | Python                      |
+| ------------------- | ---------- | --------------------------- |
+| **LSTM**            | Упрощенный | Настоящий PyTorch LSTM      |
+| **BPTT**            | ❌         | ✅                          |
+| **Normalization**   | Базовая    | Consistent с сохранением    |
+| **Features**        | OHLCV      | 40+ технических индикаторов |
+| **Validation**      | Нет        | Train/Val/Test split        |
+| **Hidden Size**     | 32         | 128+                        |
+| **Sequence Length** | 20         | 60+                         |
 
-- Long-term predictions (24h+)
-- Trending markets (bull/bear)
-- Complex patterns
-- You have computational resources
+### Архитектура
 
-**Use Hybrid when:**
+```
+src/
+├── api/              # FastAPI endpoints
+│   ├── health.py
+│   ├── training.py
+│   ├── prediction.py
+│   └── advanced.py
+├── models/           # PyTorch models
+│   └── lstm.py
+├── features/         # Feature engineering
+│   ├── engineering.py    # 40+ indicators
+│   └── normalization.py
+├── data/             # ClickHouse loader
+├── training/         # Training loop
+└── utils/            # Logging, device
+```
 
-- Short-term predictions (1-4h)
-- Sideways markets
-- Need fast inference
-- Resource-constrained
+### Features (40+)
 
-**Use Ensemble when:**
+**Price Features:**
 
-- Maximum accuracy needed
-- Uncertain market regime
-- Can afford latency (+20-50ms)
-- Production deployment
+- Returns, Log Returns
+- Price changes, Price momentum
 
-### Performance Guidelines
+**Technical Indicators:**
 
-**Training:**
+- RSI, MACD, Bollinger Bands
+- Stochastic, CCI, ADX
+- ATR, OBV
 
-- LSTM: 2-5 minutes (100 epochs)
-- Hybrid: 10-30 seconds
-- Ensemble: combines pre-trained models (fast)
+**Volatility:**
 
-**Inference:**
+- Historical volatility
+- Parkinson volatility
 
-- LSTM: 50-100ms
-- Hybrid: 10-20ms
-- Ensemble: 70-150ms
+**Volume:**
 
-**Cache Strategy:**
+- Volume SMA/EMA
+- Volume momentum
 
-- Cache predictions for 1h (hot data)
-- Retrain models daily or on significant market changes
-- Use stale predictions if inference fails
+### Models
 
-### Monitoring
+#### LSTM Model
 
-**Track metrics:**
+```python
+LSTMModel(
+    input_size=45,      # features
+    hidden_size=128,    # LSTM units
+    num_layers=2,       # stacked layers
+    dropout=0.2,        # regularization
+    batch_first=True
+)
+```
 
-- Prediction MAE/RMSE (should be < 5% of price)
-- Directional accuracy (should be > 60%)
-- Model agreement (ensemble models, should be > 70%)
-- Cache hit rate (should be > 80%)
+#### GRU Model
 
-**Alerts:**
+```python
+GRUModel(
+    input_size=45,
+    hidden_size=128,
+    num_layers=2,
+    dropout=0.2
+)
+```
 
-- MAE spike > 10%
-- Directional accuracy drop < 50%
-- Anomaly detected (CRITICAL severity)
-- Model training failure
+### Training
 
----
+**Process:**
 
-## 🔧 Configuration
+1. Load data from ClickHouse
+2. Feature engineering (40+ indicators)
+3. Normalization (Standard/MinMax/Robust)
+4. Create sequences (60 timesteps)
+5. Train/Val/Test split (70/15/15)
+6. Training loop with early stopping
+7. Save model + metadata + scaler
 
-### Environment Variables
+**Early Stopping:**
+
+- Patience: 10 epochs
+- Monitor: validation loss
+- Restore: best weights
+
+### Advanced Features
+
+#### Market Regime Detection
+
+**Классификация:**
+
+- BULL: uptrend, low volatility
+- BEAR: downtrend, high volatility
+- SIDEWAYS: no trend
+
+**Confidence:** 0-100%
+
+**API:**
 
 ```bash
-# ML Service
-ML_MODEL_CACHE_TTL=86400  # 24h
-ML_LSTM_HIDDEN_SIZE=32
-ML_LSTM_SEQUENCE_LENGTH=20
-ML_LSTM_LEARNING_RATE=0.001
-ML_LSTM_EPOCHS=100
-
-# Anomaly Detection
-ML_PUMP_VOLUME_THRESHOLD=100  # %
-ML_PUMP_PRICE_THRESHOLD=10    # %
-ML_CRASH_LIQUIDATION_THRESHOLD=30  # %
+GET /api/ml/advanced/regime?symbol=BTCUSDT
 ```
 
-### Model Files
+#### Anomaly Detection (Python)
 
-Модели сохраняются в:
+**Method:** Isolation Forest
+
+**Features:**
+
+- Price changes
+- Volume anomalies
+- Volatility spikes
+
+**API:**
+
+```bash
+GET /api/ml/advanced/anomalies?symbol=BTCUSDT&days=30
+```
+
+#### Ensemble (Python)
+
+**Methods:**
+
+- Average
+- Weighted Average
+- Voting
+- Stacking
+
+**API:**
+
+```bash
+POST /api/ml/advanced/ensemble
+{
+  "symbol": "BTCUSDT",
+  "horizon": "24h",
+  "models": ["lstm", "gru"],
+  "method": "weighted"
+}
+```
+
+---
+
+## 🔧 Установка
+
+### TypeScript ML
+
+Уже включен в `apps/analytics`:
+
+```bash
+bun dev:analytics  # Запускается автоматически
+```
+
+### Python ML
+
+#### 1. Требования
+
+- Python 3.11+
+- PyTorch 2.0+
+- FastAPI
+- ClickHouse client
+
+#### 2. Установка
+
+```bash
+cd apps/ml-python
+
+# Создать виртуальное окружение
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Установить зависимости
+pip install -r requirements.txt
+```
+
+#### 3. Конфигурация
+
+`.env`:
+
+```bash
+CLICKHOUSE_HOST=49.13.216.63
+CLICKHOUSE_PORT=8123
+CLICKHOUSE_USER=default
+CLICKHOUSE_PASSWORD=
+
+MODEL_SAVE_PATH=./models
+LOG_LEVEL=INFO
+```
+
+#### 4. Запуск
+
+```bash
+# Development
+uvicorn src.main:app --reload --port 8000
+
+# Production
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+#### 5. Проверка
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# List models
+curl http://localhost:8000/api/ml/models
+```
+
+---
+
+## 📈 Workflow
+
+### Страница `/ml`
+
+**Tabs:**
+
+1. **Train (HPO)** — обучение с оптимизацией
+2. **Evaluate** — тестирование и сохранение
+3. **Compare** — сравнение LSTM vs Hybrid
+4. **Models** — управление моделями
+
+### 1. Обучение модели (Train)
+
+**Процесс:**
+
+1. Выбрать символ, модель, горизонт
+2. Настроить диапазоны параметров
+3. Нажать "Start Optimization"
+4. **Модель автоматически сохраняется** с лучшими параметрами
+
+**Результат:**
+
+- Optimized model → disk
+- Ready for production на `/trading`
+
+### 2. Тестирование модели (Evaluate)
+
+**Когда использовать:**
+
+- Тестирование новых параметров
+- Переобучение с новыми данными
+- Проверка перед заменой модели
+
+**Процесс:**
+
+1. Настроить параметры бэктеста
+2. Нажать "Run Backtest"
+3. Изучить метрики
+4. **Нажать "Save Model"** (manual)
+
+### 3. Сравнение моделей (Compare)
+
+**Процесс:**
+
+1. Выбрать символ и период
+2. Запустить сравнение
+3. Обе модели тестируются параллельно
+4. **Автоматическое сохранение** обеих моделей
+
+### Visual Stepper
 
 ```
-apps/ml-service/models/
-  ├── lstm_BTCUSDT_v1.json
-  ├── lstm_ETHUSDT_v1.json
-  └── hybrid_BTCUSDT_v1.json
+Step 1: Train          → HPO (auto-save)
+  ↓
+Step 2: Evaluate       → Test & Save (manual)
+  ↓
+Step 3: Production     → Use on /trading
 ```
 
-**Формат:**
+### Использование на `/trading`
 
-- Weights & biases в JSON
-- Metadata (training date, accuracy metrics)
-- 24h TTL (автоматическое переобучение)
+После сохранения модели:
+
+**ML Tab (Sidebar):**
+
+- Predicted Price
+- Confidence Interval
+- Confidence %
+- Model Version
+- Last Trained Date
+- Market Regime
+
+**ML Overlay (Chart):**
+
+- Зеленая линия — prediction
+- Серая зона — confidence interval
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Model Not Training
+### Python ML Service
 
-**Проблема:** Model training fails или accuracy < 50%
+#### Проблема: ModuleNotFoundError
 
-**Решения:**
+**Решение:**
 
-1. Check data quality (минимум 1000 candles)
-2. Adjust learning rate (try 0.0001, 0.001, 0.01)
-3. Increase epochs (try 200+)
-4. Check for data gaps (fill missing data)
+```bash
+pip install -r requirements.txt
+```
 
-### Poor Predictions
+#### Проблема: CUDA not available
 
-**Проблема:** High MAE/RMSE, low R²
+**Решение:**
 
-**Решения:**
+```bash
+# Проверить CUDA
+python -c "import torch; print(torch.cuda.is_available())"
 
-1. Use HPO to find better parameters
-2. Try ensemble prediction
-3. Check market regime (LSTM for trends, Hybrid for sideways)
-4. Increase training data window
+# CPU режим (автоматически)
+# Модель определяет устройство автоматически
+```
 
-### Anomalies Not Detecting
+#### Проблема: ClickHouse connection error
 
-**Проблема:** False negatives/positives
+**Решение:**
 
-**Решения:**
+```bash
+# Проверить доступ
+curl http://49.13.216.63:8123/ping
 
-1. Adjust thresholds (volume_threshold, price_threshold)
-2. Use shorter windows for faster detection
-3. Combine with sentiment analysis
-4. Check data freshness
+# Проверить .env
+CLICKHOUSE_HOST=49.13.216.63
+CLICKHOUSE_PORT=8123
+```
+
+#### Проблема: Out of memory
+
+**Решение:**
+
+```python
+# Уменьшить batch size
+BATCH_SIZE=16  # вместо 32
+
+# Уменьшить hidden size
+hidden_size=64  # вместо 128
+```
+
+### TypeScript ML Service
+
+#### Проблема: Low accuracy (<50%)
+
+**Причина:** Недостаточно исторических данных
+
+**Решение:**
+
+```bash
+# Импортировать больше данных
+bun scripts/quick-import-candles.ts
+```
+
+#### Проблема: Predictions не появляются
+
+**Решение:**
+
+```bash
+# Проверить логи
+tail -f logs/analytics.log
+
+# Проверить модели
+curl http://localhost:3014/api/ml/models
+```
+
+#### Проблема: HPO слишком медленный
+
+**Решение:**
+
+```typescript
+// Уменьшить trials
+trials: 5 // вместо 10
+
+// Использовать Random Search
+method: "random" // вместо 'grid'
+```
+
+### Общие проблемы
+
+#### Model not found
+
+**Причина:** Модель не обучена или удалена
+
+**Решение:**
+
+1. Перейти на `/ml`
+2. Train → Start Optimization
+3. Дождаться завершения
+
+#### Predictions differ from actual
+
+**Это нормально!** ML модели не идеальны.
+
+**Ожидаемая точность:**
+
+- LSTM: 60-70% directional accuracy
+- Hybrid: 55-65%
+- Ensemble: 65-75%
+
+#### High latency
+
+**Причина:** Первый запрос после старта
+
+**Решение:**
+
+- Warm-up period (~30 sec)
+- Используйте кэширование (Redis)
 
 ---
 
-## 📚 Further Reading
+## 📚 Дополнительные ресурсы
 
-- [API Reference](./API_REFERENCE.md) - все ML endpoints
-- [Roadmap](./ROADMAP.md) - будущие улучшения
-- [LSTM Paper](https://www.bioinf.jku.at/publications/older/2604.pdf) - original LSTM paper
-- [Ensemble Methods](https://scikit-learn.org/stable/modules/ensemble.html) - ensemble learning
+### Документация
+
+- [API Reference](API_REFERENCE.md) — все ML endpoints
+- [Architecture](ARCHITECTURE.md) — архитектура ML сервисов
+
+### Примеры
+
+```bash
+# Обучить LSTM модель
+curl -X POST http://localhost:8000/api/ml/train \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "BTCUSDT",
+    "model_type": "lstm",
+    "sequence_length": 60,
+    "hidden_size": 128,
+    "epochs": 100
+  }'
+
+# Получить предсказание
+curl http://localhost:8000/api/ml/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "BTCUSDT",
+    "horizon": "24h",
+    "model_type": "lstm"
+  }'
+
+# Запустить HPO
+curl -X POST http://localhost:8000/api/ml/optimize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "BTCUSDT",
+    "model_type": "lstm",
+    "trials": 10,
+    "metric": "mae"
+  }'
+```
 
 ---
 
-**Все ML функции протестированы и готовы к production использованию.** ✅
+## 🎯 Best Practices
+
+1. **Начните с HPO** — найдите оптимальные параметры
+2. **Используйте Walk-forward** — более реалистичный бэктест
+3. **Ensemble для production** — лучшая стабильность
+4. **Регулярно переобучайте** — рынок меняется
+5. **Проверяйте confidence** — не доверяйте низкой confidence
+6. **Мониторьте accuracy** — деградация модели со временем
+7. **Python для продвинутых задач** — TypeScript для быстрых предсказаний
+
+---
+
+**Made with 🧠 and 💻 for crypto traders**

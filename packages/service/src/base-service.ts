@@ -135,9 +135,134 @@ export abstract class BaseService {
   }
 
   /**
+   * Get cache (simplified API)
+   * Returns CacheService if enabled
+   * @throws Error if cache is not enabled
+   */
+  protected get cache(): CacheService {
+    if (!this.enableCache) {
+      throw new Error(
+        "Cache is not enabled for this service. Set enableCache: true in config."
+      );
+    }
+    if (!this.cacheService) {
+      return this.getCacheService();
+    }
+    return this.cacheService;
+  }
+
+  /**
+   * Get service client (simplified API)
+   * Returns TypedServiceClient if enabled
+   * @throws Error if service client is not enabled
+   */
+  protected get client(): TypedServiceClient {
+    if (!this.enableServiceClient) {
+      throw new Error(
+        "Service client is not enabled for this service. Set enableServiceClient: true in config."
+      );
+    }
+    if (!this.serviceClient) {
+      return this.getServiceClient();
+    }
+    return this.serviceClient;
+  }
+
+  /**
+   * Get Prisma client
+   */
+  getPrisma(): PrismaClient | undefined {
+    return this.prisma;
+  }
+
+  /**
+   * Get ClickHouse client
+   */
+  getClickHouse(): ClickHouseClient | undefined {
+    return this.clickhouse;
+  }
+
+  /**
+   * Get NATS client
+   */
+  getNatsClient(): NatsClient | undefined {
+    return this.natsClient;
+  }
+
+  /**
+   * Publish event to NATS
+   * Helper method for event publishing
+   */
+  protected async publishEvent(subject: string, data: unknown): Promise<void> {
+    if (!this.natsClient) {
+      this.logger.warn("NATS client not available, cannot publish event", {
+        subject,
+      });
+      return;
+    }
+
+    try {
+      await this.natsClient.publish(subject, JSON.stringify(data));
+      this.logger.debug("Published event to NATS", { subject });
+    } catch (error) {
+      this.logger.error("Failed to publish event to NATS", {
+        subject,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to NATS subject
+   * Helper method for event subscription
+   */
+  protected async subscribeToEvents(
+    subject: string,
+    handler: (data: unknown) => Promise<void> | void
+  ): Promise<void> {
+    if (!this.natsClient) {
+      this.logger.warn("NATS client not available, cannot subscribe", {
+        subject,
+      });
+      return;
+    }
+
+    try {
+      await this.natsClient.subscribe(subject, async (msg: string) => {
+        try {
+          const data = JSON.parse(msg);
+          await handler(data);
+        } catch (error) {
+          this.logger.error("Failed to handle NATS message", {
+            subject,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return Promise.resolve();
+      });
+
+      this.logger.info("Subscribed to NATS subject", { subject });
+    } catch (error) {
+      this.logger.error("Failed to subscribe to NATS", {
+        subject,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Get service name
    */
   abstract getServiceName(): string;
+
+  /**
+   * Get logger (public accessor)
+   */
+  getLogger(): Logger {
+    return this.logger;
+  }
 
   /**
    * Initialize the service

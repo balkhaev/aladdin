@@ -21,6 +21,7 @@
     "dev:screener": "turbo -F @aladdin/screener dev",
     "dev:scraper": "turbo -F @aladdin/scraper dev",
     "dev:ml": "turbo -F @aladdin/ml-service dev",
+    "dev:ml-python": "turbo -F @aladdin/ml-python dev",
     "db:push": "turbo -F @aladdin/database db:push",
     "db:seed": "turbo -F @aladdin/database db:seed",
     "db:studio": "turbo -F @aladdin/database db:studio",

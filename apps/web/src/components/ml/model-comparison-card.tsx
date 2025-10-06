@@ -14,6 +14,56 @@ type ModelComparisonCardProps = {
 export function ModelComparisonCard({ comparison }: ModelComparisonCardProps) {
   const { lstm, hybrid, comparison: comparisonData } = comparison;
 
+  // Guard against undefined data
+  const hasLstmMetrics = Boolean(lstm?.metrics);
+  const hasHybridMetrics = Boolean(hybrid?.metrics);
+  const hasComparisonData = Boolean(comparisonData);
+
+  if (!hasLstmMetrics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Model Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-slate-400 text-sm">
+            No LSTM data available. Please run a comparison first.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasHybridMetrics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Model Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-slate-400 text-sm">
+            No Hybrid data available. Please run a comparison first.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasComparisonData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Model Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-slate-400 text-sm">
+            No comparison data available. Please run a comparison first.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -35,9 +85,9 @@ export function ModelComparisonCard({ comparison }: ModelComparisonCardProps) {
                 </h4>
                 <p className="text-slate-400 text-sm">
                   {comparisonData.winner === "LSTM" &&
-                    `LSTM outperforms Hybrid in ${comparisonData.lstmBetter.length} out of ${comparisonData.lstmBetter.length + comparisonData.hybridBetter.length} metrics`}
+                    `LSTM outperforms Hybrid in ${comparisonData.lstmBetter?.length ?? 0} out of ${(comparisonData.lstmBetter?.length ?? 0) + (comparisonData.hybridBetter?.length ?? 0)} metrics`}
                   {comparisonData.winner === "HYBRID" &&
-                    `Hybrid outperforms LSTM in ${comparisonData.hybridBetter.length} out of ${comparisonData.lstmBetter.length + comparisonData.hybridBetter.length} metrics`}
+                    `Hybrid outperforms LSTM in ${comparisonData.hybridBetter?.length ?? 0} out of ${(comparisonData.lstmBetter?.length ?? 0) + (comparisonData.hybridBetter?.length ?? 0)} metrics`}
                   {comparisonData.winner === "TIE" &&
                     "Both models perform equally well across all metrics"}
                 </p>
@@ -97,7 +147,8 @@ export function ModelComparisonCard({ comparison }: ModelComparisonCardProps) {
                 LSTM Strengths
               </h4>
               <ul className="space-y-1">
-                {comparisonData.lstmBetter.length > 0 ? (
+                {comparisonData.lstmBetter &&
+                comparisonData.lstmBetter.length > 0 ? (
                   comparisonData.lstmBetter.map((metric) => (
                     <li
                       className="flex items-center gap-1 text-slate-400 text-sm"
@@ -121,7 +172,8 @@ export function ModelComparisonCard({ comparison }: ModelComparisonCardProps) {
                 Hybrid Strengths
               </h4>
               <ul className="space-y-1">
-                {comparisonData.hybridBetter.length > 0 ? (
+                {comparisonData.hybridBetter &&
+                comparisonData.hybridBetter.length > 0 ? (
                   comparisonData.hybridBetter.map((metric) => (
                     <li
                       className="flex items-center gap-1 text-slate-400 text-sm"

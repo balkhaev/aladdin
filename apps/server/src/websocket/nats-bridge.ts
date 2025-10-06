@@ -96,16 +96,34 @@ export async function unsubscribeFromNatsTopic(
 
   try {
     const subscription = natsSubscriptions.get(topic);
-    if (subscription) {
-      await subscription.unsubscribe();
-      natsSubscriptions.delete(topic);
-      logger.info(`Unsubscribed from NATS topic: ${topic}`, { clientId });
+    if (!subscription) {
+      logger.debug(`Subscription for ${topic} not found`, { clientId });
+      return;
     }
+
+    if (typeof subscription.unsubscribe !== "function") {
+      logger.warn(
+        `Subscription for ${topic} has no unsubscribe method, removing from map`,
+        { clientId }
+      );
+      natsSubscriptions.delete(topic);
+      return;
+    }
+
+    const unsubscribeResult = subscription.unsubscribe();
+    if (unsubscribeResult && typeof unsubscribeResult.then === "function") {
+      await unsubscribeResult;
+    }
+
+    natsSubscriptions.delete(topic);
+    logger.info(`Unsubscribed from NATS topic: ${topic}`, { clientId });
   } catch (error) {
     logger.error(`Failed to unsubscribe from NATS topic: ${topic}`, {
       clientId,
       error: error instanceof Error ? error.message : String(error),
     });
+    // Remove from map anyway to prevent stuck subscriptions
+    natsSubscriptions.delete(topic);
   }
 }
 
@@ -129,14 +147,54 @@ export async function unsubscribeAllNatsTopics(
   const unsubscribePromises: Promise<void>[] = [];
 
   for (const [topic, subscription] of natsSubscriptions.entries()) {
-    unsubscribePromises.push(
-      subscription.unsubscribe().catch((error) => {
-        logger.error(`Failed to unsubscribe from ${topic}`, {
+    // Skip if subscription is undefined/null
+    if (!subscription) {
+      logger.warn(`Subscription for ${topic} is undefined, skipping`, {
+        clientId,
+      });
+      natsSubscriptions.delete(topic);
+      continue;
+    }
+
+    // Check if unsubscribe method exists and is a function
+    if (typeof subscription.unsubscribe !== "function") {
+      logger.warn(
+        `Subscription for ${topic} has no unsubscribe method, skipping`,
+        {
           clientId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      })
-    );
+        }
+      );
+      natsSubscriptions.delete(topic);
+      continue;
+    }
+
+    try {
+      const unsubscribeResult = subscription.unsubscribe();
+
+      // Check if unsubscribe returned a Promise
+      if (unsubscribeResult && typeof unsubscribeResult.catch === "function") {
+        unsubscribePromises.push(
+          unsubscribeResult.catch((error) => {
+            logger.error(`Failed to unsubscribe from ${topic}`, {
+              clientId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          })
+        );
+      } else {
+        logger.warn(
+          `Subscription.unsubscribe() for ${topic} did not return a Promise`,
+          {
+            clientId,
+          }
+        );
+      }
+    } catch (error) {
+      logger.error(`Error calling unsubscribe for ${topic}`, {
+        clientId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   await Promise.all(unsubscribePromises);

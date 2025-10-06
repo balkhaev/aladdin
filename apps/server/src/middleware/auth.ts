@@ -11,9 +11,7 @@ const INTERNAL_ERROR_CODE = 500;
  * Публичные эндпоинты, которые не требуют аутентификации
  */
 const PUBLIC_PATHS = [
-  "/api/auth/sign-in",
-  "/api/auth/sign-up",
-  "/api/auth/sign-out",
+  "/api/auth", // ALL auth endpoints are public (better-auth handles its own logic)
   "/api/market-data", // Market data доступна публично
   "/api/on-chain", // On-chain metrics доступны публично (backward compat)
   "/api/macro", // Macro data доступна публично (backward compat)

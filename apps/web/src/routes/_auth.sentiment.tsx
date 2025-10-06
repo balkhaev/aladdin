@@ -1,185 +1,108 @@
 /**
- * Combined Sentiment Analysis Page
- * Displays combined sentiment from Technical Analytics, Futures, and Order Book data
+ * Sentiment Analysis Page
+ * Social sentiment and market mood analysis
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, BookOpen, Layers } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { AIAnalyzedFeed } from "@/components/ai-analyzed-feed";
+import { FundingRatesCard } from "@/components/analytics/funding-rates-card";
+import { MarketSentimentGrid } from "@/components/analytics/market-sentiment-grid";
+import { OrderBookSentimentCard } from "@/components/analytics/order-book-sentiment-card";
+import { SentimentHistoryChart } from "@/components/analytics/sentiment-history-chart";
+import { CombinedSentimentCard } from "@/components/combined-sentiment-card";
 import { SocialSentimentCard } from "@/components/social-sentiment-card";
-import { SocialSentimentCompact } from "@/components/social-sentiment-compact";
-import { SymbolCombobox } from "@/components/symbol-combobox";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_auth/sentiment")({
   component: SentimentPage,
 });
 
-const POPULAR_SYMBOLS = [
+const AVAILABLE_SYMBOLS = [
   "BTCUSDT",
   "ETHUSDT",
-  "SOLUSDT",
   "BNBUSDT",
-  "XRPUSDT",
+  "SOLUSDT",
   "ADAUSDT",
+  "DOGEUSDT",
 ];
-
-const SYMBOL_OPTIONS = POPULAR_SYMBOLS.map((symbol) => ({
-  value: symbol,
-  label: symbol,
-}));
 
 function SentimentPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
-      {/* Header */}
+    <div className="flex-1 space-y-6 p-4 md:p-6">
+      {/* Page Header with Symbol Selector */}
       <div className="space-y-2">
-        <h1 className="font-bold text-3xl tracking-tight">
-          Combined Sentiment Analysis
-        </h1>
-        <p className="text-muted-foreground">
-          Multi-source sentiment combining Technical Analytics, Futures Market,
-          and Order Book data
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+              <MessageSquare className="size-6 text-green-500" />
+            </div>
+            <div>
+              <h1 className="font-bold text-3xl tracking-tight">
+                Анализ Настроений
+              </h1>
+              <p className="text-muted-foreground">
+                Комплексный анализ рыночных настроений из разных источников
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">Symbol:</span>
+            <Select onValueChange={setSelectedSymbol} value={selectedSymbol}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABLE_SYMBOLS.map((symbol) => (
+                  <SelectItem key={symbol} value={symbol}>
+                    {symbol.replace("USDT", "")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      {/* Data Sources Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Data Sources</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">Technical Analytics</span>
-              <Badge className="text-xs" variant="outline">
-                Active
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">Futures Market</span>
-              <Badge className="text-xs" variant="outline">
-                Active
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-green-500" />
-              <span className="text-sm">Order Book</span>
-              <Badge className="text-xs" variant="outline">
-                Active
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Top Row - Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CombinedSentimentCard symbol={selectedSymbol} />
+        <SocialSentimentCard symbol={selectedSymbol} />
+        <FundingRatesCard symbol={selectedSymbol} />
+      </div>
 
-      {/* Main Content */}
-      <Tabs className="space-y-6" defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="detail">Detailed Analysis</TabsTrigger>
-          <TabsTrigger value="ai-feed">AI Feed</TabsTrigger>
-        </TabsList>
+      {/* Middle Row - History & Analysis */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <SentimentHistoryChart symbol={selectedSymbol} />
+        <OrderBookSentimentCard symbol={selectedSymbol} />
+      </div>
 
-        <TabsContent className="space-y-6" value="overview">
-          {/* Popular Pairs Sentiment */}
-          <SocialSentimentCompact symbols={POPULAR_SYMBOLS} />
+      {/* Market Overview Grid */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="font-semibold text-xl">Обзор Рынка</h2>
+          <p className="text-muted-foreground text-sm">
+            Настроения по остальным топовым криптовалютам для сравнения
+          </p>
+        </div>
+        <MarketSentimentGrid
+          symbols={AVAILABLE_SYMBOLS.filter(
+            (symbol) => symbol !== selectedSymbol
+          )}
+        />
+      </div>
 
-          {/* Info Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-500" />
-                  <CardTitle className="text-sm">Technical Analytics</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  RSI, MACD, EMA, and other technical indicators:
-                </p>
-                <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
-                  <li>Multiple timeframe analysis</li>
-                  <li>Trend detection algorithms</li>
-                  <li>Support/resistance levels</li>
-                  <li>Volume-weighted signals</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-purple-500" />
-                  <CardTitle className="text-sm">Futures Market</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  Funding rates and open interest analysis:
-                </p>
-                <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
-                  <li>Multi-exchange funding rates</li>
-                  <li>Open interest trends</li>
-                  <li>Long/short ratio analysis</li>
-                  <li>Liquidation pressure detection</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-green-500" />
-                  <CardTitle className="text-sm">Order Book</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  Real-time order book depth analysis:
-                </p>
-                <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
-                  <li>Bid/ask spread monitoring</li>
-                  <li>Large order detection</li>
-                  <li>Supply/demand imbalance</li>
-                  <li>Market maker activity</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="detail">
-          {/* Symbol Selector */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Select Symbol</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SymbolCombobox
-                onValueChange={setSelectedSymbol}
-                symbols={SYMBOL_OPTIONS}
-                value={selectedSymbol}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Detailed Sentiment Card */}
-          <SocialSentimentCard symbol={selectedSymbol} />
-        </TabsContent>
-
-        <TabsContent className="space-y-6" value="ai-feed">
-          {/* AI Analyzed Content Feed */}
-          <AIAnalyzedFeed />
-        </TabsContent>
-      </Tabs>
+      {/* AI Analyzed Feed - Full Width */}
+      <AIAnalyzedFeed />
     </div>
   );
 }

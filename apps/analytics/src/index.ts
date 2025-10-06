@@ -6,7 +6,9 @@
 import { initializeService } from "@aladdin/service/bootstrap";
 import { config } from "./config";
 import { setupAnalyticsRoutes } from "./routes";
+import { setupBybitOpportunitiesRoutes } from "./routes/bybit-opportunities";
 import { AnalyticsService } from "./services/analytics";
+import { OpportunitiesService } from "./services/bybit-opportunities/opportunities";
 import { CombinedSentimentService } from "./services/sentiment/combined-sentiment";
 import { SentimentAnalysisService } from "./services/sentiment/sentiment-analysis";
 import "dotenv/config";
@@ -14,6 +16,7 @@ import "dotenv/config";
 // Services будут инициализированы в beforeInit
 let sentimentService: SentimentAnalysisService | undefined;
 let combinedSentimentService: CombinedSentimentService | undefined;
+let opportunitiesService: OpportunitiesService | undefined;
 
 await initializeService({
   serviceName: "analytics",
@@ -21,7 +24,7 @@ await initializeService({
 
   dependencies: {
     clickhouse: true,
-    nats: false,
+    nats: true, // Нужен для bybit-opportunities
     postgres: false,
   },
 
@@ -55,6 +58,14 @@ await initializeService({
       }
 
       deps.logger.info("Combined Sentiment service initialized");
+
+      // Initialize Bybit Opportunities service
+      opportunitiesService = new OpportunitiesService(
+        deps.logger,
+        deps.clickhouse,
+        deps.natsClient
+      );
+      deps.logger.info("Bybit Opportunities service initialized");
     }
   },
 
@@ -72,10 +83,22 @@ await initializeService({
       combinedSentimentService,
       cache
     );
+
+    // Setup Bybit Opportunities routes
+    if (opportunitiesService) {
+      setupBybitOpportunitiesRoutes(app, opportunitiesService);
+    }
   },
 
-  afterInit: (_service, deps) => {
+  afterInit: async (_service, deps) => {
     deps.logger.info("✅ Analytics service fully initialized");
+
+    // Start Bybit Opportunities service
+    if (opportunitiesService) {
+      await opportunitiesService.start();
+      deps.logger.info("✅ Bybit Opportunities service started");
+    }
+
     deps.logger.info("Available endpoints:");
     deps.logger.info("  - GET  /api/analytics/indicators/:symbol");
     deps.logger.info("  - GET  /api/analytics/statistics");
@@ -92,5 +115,12 @@ await initializeService({
     deps.logger.info("  - GET  /api/analytics/reports");
     deps.logger.info("  - GET  /api/analytics/cache/stats");
     deps.logger.info("  - POST /api/analytics/cache/flush");
+    deps.logger.info("  - GET  /api/analytics/bybit-opportunities/list");
+    deps.logger.info("  - GET  /api/analytics/bybit-opportunities/:symbol");
+    deps.logger.info("  - GET  /api/analytics/bybit-opportunities/stats");
+    deps.logger.info("  - GET  /api/analytics/bybit-opportunities/symbols");
+    deps.logger.info(
+      "  - POST /api/analytics/bybit-opportunities/analyze/:symbol"
+    );
   },
 });

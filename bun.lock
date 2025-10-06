@@ -60,24 +60,9 @@
         "typescript": "^5.7.3",
       },
     },
-    "apps/ml-service": {
-      "name": "@aladdin/ml-service",
+    "apps/ml-python": {
+      "name": "@aladdin/ml-python",
       "version": "1.0.0",
-      "dependencies": {
-        "@aladdin/clickhouse": "workspace:*",
-        "@aladdin/core": "workspace:*",
-        "@aladdin/database": "workspace:*",
-        "@aladdin/http": "workspace:*",
-        "@aladdin/logger": "workspace:*",
-        "@aladdin/service": "workspace:*",
-        "dotenv": "^17.2.3",
-        "hono": "^4.7.11",
-        "zod": "^3.23.8",
-      },
-      "devDependencies": {
-        "@types/bun": "^1.2.23",
-        "typescript": "^5.8.2",
-      },
     },
     "apps/portfolio": {
       "name": "@aladdin/portfolio",
@@ -155,9 +140,11 @@
         "@aladdin/auth": "workspace:*",
         "@aladdin/core": "workspace:*",
         "@aladdin/database": "workspace:*",
+        "@aladdin/gateway": "workspace:*",
         "@aladdin/http": "workspace:*",
         "@aladdin/logger": "workspace:*",
         "@aladdin/messaging": "workspace:*",
+        "@aladdin/service": "workspace:*",
         "@aladdin/validation": "workspace:*",
         "better-auth": "^1.3.13",
         "dotenv": "^17.2.1",
@@ -342,6 +329,27 @@
         "typescript": "^5.8.2",
       },
     },
+    "packages/gateway": {
+      "name": "@aladdin/gateway",
+      "version": "1.0.0",
+      "dependencies": {
+        "@aladdin/cache": "workspace:*",
+        "@aladdin/core": "workspace:*",
+        "@aladdin/database": "workspace:*",
+        "@aladdin/http": "workspace:*",
+        "@aladdin/logger": "workspace:*",
+        "@aladdin/messaging": "workspace:*",
+        "@aladdin/resilience": "workspace:*",
+        "@aladdin/service": "workspace:*",
+        "@aladdin/telemetry": "workspace:*",
+        "@aladdin/websocket": "workspace:*",
+        "hono": "^4.0.0",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.2.23",
+        "typescript": "^5.7.3",
+      },
+    },
     "packages/http": {
       "name": "@aladdin/http",
       "version": "0.0.1",
@@ -390,6 +398,16 @@
       "devDependencies": {
         "@types/node": "^22.10.5",
         "typescript": "^5.8.2",
+      },
+    },
+    "packages/routing": {
+      "name": "@aladdin/routing",
+      "version": "1.0.0",
+      "dependencies": {
+        "@aladdin/http": "workspace:*",
+        "@aladdin/validation": "workspace:*",
+        "hono": "^4.6.11",
+        "zod": "^3.23.8",
       },
     },
     "packages/service": {
@@ -472,6 +490,8 @@
 
     "@aladdin/database": ["@aladdin/database@workspace:packages/database"],
 
+    "@aladdin/gateway": ["@aladdin/gateway@workspace:packages/gateway"],
+
     "@aladdin/http": ["@aladdin/http@workspace:packages/http"],
 
     "@aladdin/logger": ["@aladdin/logger@workspace:packages/logger"],
@@ -480,11 +500,13 @@
 
     "@aladdin/messaging": ["@aladdin/messaging@workspace:packages/messaging"],
 
-    "@aladdin/ml-service": ["@aladdin/ml-service@workspace:apps/ml-service"],
+    "@aladdin/ml-python": ["@aladdin/ml-python@workspace:apps/ml-python"],
 
     "@aladdin/portfolio": ["@aladdin/portfolio@workspace:apps/portfolio"],
 
     "@aladdin/resilience": ["@aladdin/resilience@workspace:packages/resilience"],
+
+    "@aladdin/routing": ["@aladdin/routing@workspace:packages/routing"],
 
     "@aladdin/scraper": ["@aladdin/scraper@workspace:apps/scraper"],
 
@@ -2356,9 +2378,7 @@
 
     "@aladdin/market-data/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
-    "@aladdin/ml-service/dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
-
-    "@aladdin/ml-service/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+    "@aladdin/routing/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@aladdin/scraper/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 

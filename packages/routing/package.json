@@ -1,0 +1,12 @@
+{
+  "name": "@aladdin/routing",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@aladdin/http": "workspace:*",
+    "@aladdin/validation": "workspace:*",
+    "hono": "^4.6.11",
+    "zod": "^3.23.8"
+  }
+}

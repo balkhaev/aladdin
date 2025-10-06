@@ -56,7 +56,7 @@ export function PortfolioSummaryDashboard({
   return (
     <div className="space-y-6">
       {/* Quick Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
         {/* Sharpe Ratio */}
         {summary.performance && (
           <QuickStatCard

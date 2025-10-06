@@ -7,7 +7,8 @@ import type { Logger } from "@aladdin/logger";
 import { getExchangeAddresses } from "../data/exchange-addresses";
 import { BaseFetcher } from "./base";
 
-const ETHERSCAN_API = "https://api.etherscan.io/api";
+const ETHERSCAN_API = "https://api.etherscan.io/v2/api";
+const ETHERSCAN_CHAIN_ID = "1"; // Ethereum mainnet
 const BLOCKS_PER_DAY = 7000;
 const TX_PER_BLOCK = 150;
 const UNIQUE_ADDRESS_RATIO = 0.7;
@@ -44,9 +45,9 @@ export class EthereumFetcher extends BaseFetcher {
   async fetchWhaleTransactions(threshold: number): Promise<WhaleTransaction[]> {
     return this.fetchWithRetry(async () => {
       try {
-        // Get latest block number
+        // Get latest block number (Etherscan API V2)
         const blockResponse = await fetch(
-          `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
         );
 
         if (!blockResponse.ok) {
@@ -56,6 +57,7 @@ export class EthereumFetcher extends BaseFetcher {
 
         const blockData = (await blockResponse.json()) as {
           result?: string;
+          jsonrpc?: string;
         };
         const latestBlock = blockData.result
           ? Number.parseInt(blockData.result, 16)
@@ -68,14 +70,6 @@ export class EthereumFetcher extends BaseFetcher {
         const whaleTransactions: WhaleTransaction[] = [];
         const seenTxHashes = new Set<string>();
         const thresholdWei = BigInt(Math.floor(threshold * WEI_TO_ETH));
-
-        // Get exchange addresses for filtering
-        const exchangeAddresses = getExchangeAddresses("ETH");
-        const exchangeSet = new Set(
-          exchangeAddresses.flatMap((ex) =>
-            ex.addresses.map((a) => a.toLowerCase())
-          )
-        );
 
         // Check recent blocks for large transactions
         const startBlock = latestBlock - BLOCKS_TO_CHECK;
@@ -91,9 +85,9 @@ export class EthereumFetcher extends BaseFetcher {
             startBlock + Math.floor(i * (BLOCKS_TO_CHECK / blocksToFetch));
 
           try {
-            // Get block with transactions
+            // Get block with transactions (Etherscan API V2)
             const txResponse = await fetch(
-              `${ETHERSCAN_API}?module=proxy&action=eth_getBlockByNumber&tag=0x${blockNum.toString(16)}&boolean=true&apikey=${this.apiKey}`
+              `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_getBlockByNumber&tag=0x${blockNum.toString(16)}&boolean=true&apikey=${this.apiKey}`
             );
 
             if (!txResponse.ok) {
@@ -133,32 +127,20 @@ export class EthereumFetcher extends BaseFetcher {
               }
 
               if (value >= thresholdWei) {
-                const fromAddr = tx.from.toLowerCase();
-                const toAddr = tx.to?.toLowerCase() ?? "contract";
+                // Include all transactions >= threshold (100 ETH by default)
+                // This ensures we track all significant whale movements
+                whaleTransactions.push({
+                  transactionHash: tx.hash,
+                  timestamp: txData.result?.timestamp
+                    ? Number.parseInt(txData.result.timestamp, 16) * 1000
+                    : Date.now(),
+                  from: tx.from,
+                  to: tx.to ?? "contract",
+                  value: Number(value) / WEI_TO_ETH,
+                  blockchain: "ETH",
+                });
 
-                // Check if involves exchange
-                const fromExchange = exchangeSet.has(fromAddr);
-                const toExchange = exchangeSet.has(toAddr);
-
-                // Only include if involves exchange or very large transfer
-                const VERY_LARGE_MULTIPLIER = 3; // Reduced from 10 to 3 (300 ETH = ~$1.4M)
-                const veryLargeThreshold = BigInt(
-                  Math.floor(threshold * VERY_LARGE_MULTIPLIER * WEI_TO_ETH)
-                );
-                if (fromExchange || toExchange || value >= veryLargeThreshold) {
-                  whaleTransactions.push({
-                    transactionHash: tx.hash,
-                    timestamp: txData.result?.timestamp
-                      ? Number.parseInt(txData.result.timestamp, 16) * 1000
-                      : Date.now(),
-                    from: tx.from,
-                    to: tx.to ?? "contract",
-                    value: Number(value) / WEI_TO_ETH,
-                    blockchain: "ETH",
-                  });
-
-                  seenTxHashes.add(tx.hash);
-                }
+                seenTxHashes.add(tx.hash);
               }
             }
           } catch (error) {
@@ -203,9 +185,9 @@ export class EthereumFetcher extends BaseFetcher {
         let totalInflow = 0;
         let totalOutflow = 0;
 
-        // Get latest block number
+        // Get latest block number (Etherscan API V2)
         const blockResponse = await fetch(
-          `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
         );
 
         if (!blockResponse.ok) {
@@ -215,6 +197,7 @@ export class EthereumFetcher extends BaseFetcher {
 
         const blockData = (await blockResponse.json()) as {
           result?: string;
+          jsonrpc?: string;
         };
         const latestBlock = blockData.result
           ? Number.parseInt(blockData.result, 16)
@@ -235,7 +218,7 @@ export class EthereumFetcher extends BaseFetcher {
         ) {
           try {
             const txResponse = await fetch(
-              `${ETHERSCAN_API}?module=proxy&action=eth_getBlockByNumber&tag=0x${blockNum.toString(16)}&boolean=true&apikey=${this.apiKey}`
+              `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_getBlockByNumber&tag=0x${blockNum.toString(16)}&boolean=true&apikey=${this.apiKey}`
             );
 
             if (!txResponse.ok) {
@@ -250,6 +233,7 @@ export class EthereumFetcher extends BaseFetcher {
                   value: string;
                 }>;
               };
+              jsonrpc?: string;
             };
 
             const transactions = txData.result?.transactions;
@@ -345,9 +329,9 @@ export class EthereumFetcher extends BaseFetcher {
           const address = ex.addresses[0]; // Use first address
 
           try {
-            // Get recent transactions for this address
+            // Get recent transactions for this address (Etherscan API V2)
             const response = await fetch(
-              `${ETHERSCAN_API}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${TX_LIST_OFFSET}&sort=desc&apikey=${this.apiKey}`
+              `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${TX_LIST_OFFSET}&sort=desc&apikey=${this.apiKey}`
             );
 
             if (!response.ok) {
@@ -426,9 +410,9 @@ export class EthereumFetcher extends BaseFetcher {
   async fetchActiveAddresses(_period = "24h"): Promise<number> {
     return this.fetchWithRetry(async () => {
       try {
-        // Get supply info which includes some network stats
+        // Get supply info which includes some network stats (Etherscan API V2)
         const response = await fetch(
-          `${ETHERSCAN_API}?module=stats&action=ethsupply2&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=stats&action=ethsupply2&apikey=${this.apiKey}`
         );
 
         if (!response.ok) {
@@ -436,9 +420,9 @@ export class EthereumFetcher extends BaseFetcher {
         }
 
         // Etherscan free API doesn't provide active addresses directly
-        // Estimate based on transaction count
+        // Estimate based on transaction count (Etherscan API V2)
         const txCountResponse = await fetch(
-          `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
         );
 
         if (!txCountResponse.ok) {
@@ -457,9 +441,9 @@ export class EthereumFetcher extends BaseFetcher {
   async fetchTransactionVolume(): Promise<number> {
     return this.fetchWithRetry(async () => {
       try {
-        // Get latest block to estimate daily volume
+        // Get latest block to estimate daily volume (Etherscan API V2)
         const response = await fetch(
-          `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
         );
 
         if (!response.ok) {
@@ -551,7 +535,7 @@ export class EthereumFetcher extends BaseFetcher {
 
       try {
         const response = await fetch(
-          `${ETHERSCAN_API}?module=account&action=balancemulti&address=${batchAddresses}&tag=latest&apikey=${this.apiKey}`
+          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=account&action=balancemulti&address=${batchAddresses}&tag=latest&apikey=${this.apiKey}`
         );
 
         if (response.ok) {
@@ -587,11 +571,11 @@ export class EthereumFetcher extends BaseFetcher {
           error
         );
 
-        // Fallback: check addresses individually
+        // Fallback: check addresses individually (Etherscan API V2)
         for (const item of addressesToCheck) {
           try {
             const response = await fetch(
-              `${ETHERSCAN_API}?module=account&action=balance&address=${item.address}&tag=latest&apikey=${this.apiKey}`
+              `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=account&action=balance&address=${item.address}&tag=latest&apikey=${this.apiKey}`
             );
 
             if (response.ok) {
@@ -724,9 +708,9 @@ export class EthereumFetcher extends BaseFetcher {
    */
   async fetchSOPR(): Promise<number | undefined> {
     try {
-      // Get latest block transactions
+      // Get latest block transactions (Etherscan API V2)
       const blockResponse = await fetch(
-        `${ETHERSCAN_API}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
+        `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
       );
 
       if (!blockResponse.ok) {
@@ -735,6 +719,7 @@ export class EthereumFetcher extends BaseFetcher {
 
       const blockData = (await blockResponse.json()) as {
         result?: string;
+        jsonrpc?: string;
       };
       const latestBlock = blockData.result
         ? Number.parseInt(blockData.result, 16)
@@ -744,9 +729,9 @@ export class EthereumFetcher extends BaseFetcher {
         return;
       }
 
-      // Get transactions from recent block
+      // Get transactions from recent block (Etherscan API V2)
       const txResponse = await fetch(
-        `${ETHERSCAN_API}?module=proxy&action=eth_getBlockByNumber&tag=0x${latestBlock.toString(16)}&boolean=true&apikey=${this.apiKey}`
+        `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_getBlockByNumber&tag=0x${latestBlock.toString(16)}&boolean=true&apikey=${this.apiKey}`
       );
 
       if (!txResponse.ok) {

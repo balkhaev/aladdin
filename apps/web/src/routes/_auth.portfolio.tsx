@@ -70,7 +70,7 @@ function PortfolioPage() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6">
+    <div className="flex-1 space-y-3 p-3">
       {/* Portfolio Selector */}
       {(() => {
         if (isLoading) {
@@ -94,7 +94,7 @@ function PortfolioPage() {
 
         return (
           <>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="w-full md:w-64">
                 <Select
                   onValueChange={setSelectedPortfolioId}
@@ -137,24 +137,24 @@ function PortfolioPage() {
             </div>
 
             {selectedPortfolioId && (
-              <Tabs className="space-y-4" defaultValue="summary">
-                <TabsList>
-                  <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="overview">Обзор</TabsTrigger>
-                  <TabsTrigger value="positions">Позиции</TabsTrigger>
-                  <TabsTrigger value="transactions">Транзакции</TabsTrigger>
-                  <TabsTrigger value="risks">Риски</TabsTrigger>
+              <Tabs className="space-y-3" defaultValue="overview">
+                <TabsList className="h-9">
+                  <TabsTrigger className="text-xs" value="overview">
+                    Обзор
+                  </TabsTrigger>
+                  <TabsTrigger className="text-xs" value="positions">
+                    Позиции
+                  </TabsTrigger>
+                  <TabsTrigger className="text-xs" value="optimization">
+                    Оптимизация
+                  </TabsTrigger>
                 </TabsList>
 
-                {/* Summary Tab - Single API Request */}
-                <TabsContent value="summary">
-                  <PortfolioSummaryCard portfolioId={selectedPortfolioId} />
-                </TabsContent>
-
                 {/* Overview Tab */}
-                <TabsContent className="space-y-4" value="overview">
+                <TabsContent className="space-y-3" value="overview">
+                  <PortfolioSummaryCard portfolioId={selectedPortfolioId} />
                   <PortfolioMetricsGrid portfolioId={selectedPortfolioId} />
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:grid-cols-2">
                     <PortfolioPerformanceChart
                       portfolioId={selectedPortfolioId}
                     />
@@ -162,13 +162,26 @@ function PortfolioPage() {
                       portfolioId={selectedPortfolioId}
                     />
                   </div>
-                  {optimizationResult && (
-                    <OptimizationResultsCard result={optimizationResult} />
-                  )}
+
+                  {/* Risk Metrics */}
+                  <div className="space-y-2">
+                    <h3 className="trading-heading px-1 text-muted-foreground">
+                      RISK METRICS
+                    </h3>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <RiskVaRCard portfolioId={selectedPortfolioId} />
+                      <RiskExposureCard portfolioId={selectedPortfolioId} />
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <RiskCVaRCard portfolioId={selectedPortfolioId} />
+                      <RiskStressTestCard portfolioId={selectedPortfolioId} />
+                    </div>
+                    <RiskLimitsCard portfolioId={selectedPortfolioId} />
+                  </div>
                 </TabsContent>
 
                 {/* Positions Tab */}
-                <TabsContent className="space-y-4" value="positions">
+                <TabsContent className="space-y-3" value="positions">
                   <div className="flex justify-end">
                     <AddPositionDialog portfolioId={selectedPortfolioId} />
                   </div>
@@ -182,24 +195,21 @@ function PortfolioPage() {
                       Нет открытых позиций
                     </p>
                   )}
+
+                  {/* Transactions */}
+                  <div className="space-y-2">
+                    <h3 className="trading-heading px-1 text-muted-foreground">
+                      ИСТОРИЯ ОПЕРАЦИЙ
+                    </h3>
+                    <TransactionsTable portfolioId={selectedPortfolioId} />
+                  </div>
                 </TabsContent>
 
-                {/* Transactions Tab */}
-                <TabsContent value="transactions">
-                  <TransactionsTable portfolioId={selectedPortfolioId} />
-                </TabsContent>
-
-                {/* Risks Tab */}
-                <TabsContent className="space-y-4" value="risks">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <RiskVaRCard portfolioId={selectedPortfolioId} />
-                    <RiskExposureCard portfolioId={selectedPortfolioId} />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <RiskCVaRCard portfolioId={selectedPortfolioId} />
-                    <RiskStressTestCard portfolioId={selectedPortfolioId} />
-                  </div>
-                  <RiskLimitsCard portfolioId={selectedPortfolioId} />
+                {/* Optimization Tab */}
+                <TabsContent className="space-y-3" value="optimization">
+                  {optimizationResult && (
+                    <OptimizationResultsCard result={optimizationResult} />
+                  )}
                   <CorrelationsTable portfolioId={selectedPortfolioId} />
                 </TabsContent>
               </Tabs>

@@ -29,6 +29,7 @@ export function useRunOptimization() {
       endDate: number;
       optimizationMetric: OptimizationMetric;
       crossValidationFolds?: number;
+      includeSentiment?: boolean;
     }) => runOptimization(config),
   });
 }

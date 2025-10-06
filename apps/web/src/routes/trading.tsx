@@ -99,15 +99,14 @@ function TradingPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Compact Header */}
       <div className="border-border/50 border-b bg-card/50 backdrop-blur-sm">
-        <div className="flex h-12 items-center gap-3 px-4">
+        <div className="flex h-9 items-center gap-2 px-3">
           <Button
             className="h-8 px-2"
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/market" })}
             size="sm"
             variant="ghost"
           >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Назад
+            <ChevronLeft className="mr-1 h-4 w-4" />К обзору
           </Button>
           <div className="h-6 w-px bg-border/50" />
           <SymbolCombobox
@@ -115,10 +114,10 @@ function TradingPage() {
             symbols={symbols}
             value={selectedSymbol}
           />
-          <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
+          <div className="flex gap-0.5 rounded-md bg-muted/50 p-0.5">
             {(["1m", "5m", "15m", "1h", "1d"] as const).map((int) => (
               <Button
-                className={`h-7 px-3 text-xs ${
+                className={`h-6 px-2 text-[10px] ${
                   interval === int
                     ? "bg-background shadow-sm"
                     : "hover:bg-background/50"
@@ -132,14 +131,14 @@ function TradingPage() {
               </Button>
             ))}
           </div>
-          <div className="h-6 w-px bg-border/50" />
+          <div className="h-5 w-px bg-border/50" />
           <IndicatorControls
             onChange={setSelectedIndicators}
             selected={selectedIndicators}
           />
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <ExchangeSelector />
-            <div className="h-6 w-px bg-border/50" />
+            <div className="h-5 w-px bg-border/50" />
             <FuturesMetricsCompact symbol={selectedSymbol} />
           </div>
         </div>
@@ -148,50 +147,50 @@ function TradingPage() {
       {/* Main Trading Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Market Data + Intelligence */}
-        <div className="flex w-80 flex-col border-border/50 border-r bg-card/30">
+        <div className="flex w-72 flex-col border-border/50 border-r bg-card/30">
           <Tabs className="flex h-full flex-col gap-0" defaultValue="orderbook">
-            <div className="bg-card/50 p-1">
-              <TabsList className="grid w-full grid-cols-5">
+            <div className="bg-card/50 p-0.5">
+              <TabsList className="grid h-8 w-full grid-cols-6 text-[10px]">
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="orderbook"
                 >
-                  <BookOpen className="h-3.5 w-3.5" />
+                  <BookOpen className="h-3 w-3" />
                   <span className="hidden xl:inline">Book</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="trades"
                 >
-                  <Activity className="h-3.5 w-3.5" />
+                  <Activity className="h-3 w-3" />
                   <span className="hidden xl:inline">Trades</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="sentiment"
                 >
-                  <Brain className="h-3.5 w-3.5" />
+                  <Brain className="h-3 w-3" />
                   <span className="hidden xl:inline">AI</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="funding"
                 >
-                  <DollarSign className="h-3.5 w-3.5" />
+                  <DollarSign className="h-3 w-3" />
                   <span className="hidden xl:inline">FR</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="oi"
                 >
-                  <TrendingUp className="h-3.5 w-3.5" />
+                  <TrendingUp className="h-3 w-3" />
                   <span className="hidden xl:inline">OI</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1 px-1"
                   value="ml"
                 >
-                  <Brain className="h-3.5 w-3.5" />
+                  <Brain className="h-3 w-3" />
                   <span className="hidden xl:inline">ML</span>
                 </TabsTrigger>
               </TabsList>
@@ -228,13 +227,13 @@ function TradingPage() {
         {/* Center: Chart Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* ML Toggle */}
-          <div className="mb-2 flex items-center justify-end gap-2 px-2">
+          <div className="mb-1 flex items-center justify-end gap-2 px-2 pt-1">
             <label
-              className="flex cursor-pointer items-center gap-2 text-sm"
+              className="flex cursor-pointer items-center gap-1.5 text-xs"
               htmlFor="ml-toggle"
             >
-              <Brain className="h-4 w-4 text-purple-500" />
-              <span className="text-muted-foreground">Show ML on Chart</span>
+              <Brain className="h-3 w-3 text-purple-500" />
+              <span className="text-muted-foreground">Show ML</span>
               <Switch
                 checked={showMLPrediction}
                 id="ml-toggle"
@@ -243,7 +242,7 @@ function TradingPage() {
             </label>
           </div>
 
-          <div className="h-full flex-1 rounded-lg border border-border/50 bg-card/30 p-1.5 shadow-sm backdrop-blur-sm">
+          <div className="h-full flex-1 rounded-md border border-border/50 bg-card/30 p-1 shadow-sm backdrop-blur-sm">
             <TradingChart
               height={600}
               interval={interval}
@@ -254,7 +253,7 @@ function TradingPage() {
           </div>
 
           {/* Tables Area - Compact layout */}
-          <div className="grid h-72 grid-cols-2 gap-2 border-border/50 border-t bg-card/30 p-2">
+          <div className="grid h-64 grid-cols-2 gap-1.5 border-border/50 border-t bg-card/30 p-1.5">
             <div className="overflow-auto">
               <FuturesPositionsTable exchange={selectedExchange} />
             </div>

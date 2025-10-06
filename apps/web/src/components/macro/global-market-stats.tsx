@@ -22,7 +22,7 @@ export function GlobalMarketStats() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -53,7 +53,7 @@ export function GlobalMarketStats() {
   const ChangeIcon = data.marketCapChange24h >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
       {/* Total Market Cap */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

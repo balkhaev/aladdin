@@ -1,5 +1,8 @@
 import type { ClickHouseClient } from "@aladdin/clickhouse";
+import type { OnChainMetrics } from "@aladdin/core";
 import type { Logger } from "@aladdin/logger";
+import { HistoricalContextService } from "./historical-context";
+import { PatternRecognitionService } from "./pattern-recognition";
 
 /**
  * Sentiment Signal Types
@@ -40,6 +43,12 @@ export type CompositeSentiment = {
 
   // Strength indicator
   strength: "WEAK" | "MODERATE" | "STRONG";
+
+  // Historical context and patterns
+  marketCyclePhase?: string;
+  phaseConfidence?: number;
+  detectedPatterns?: string[];
+  historicalRecommendation?: string;
 };
 
 /**
@@ -52,14 +61,28 @@ type FearGreedData = {
 };
 
 /**
- * On-Chain Metrics
+ * On-Chain Metrics (extended with new fields)
  */
-type OnChainMetrics = {
+type OnChainMetricsDB = {
   whale_tx_count: number;
   whale_tx_volume: number;
   exchange_net_flow: number;
   active_addresses: number;
   nvt_ratio: number;
+  mvrv_ratio?: number | null;
+  nupl?: number | null;
+  sopr?: number | null;
+  puell_multiple?: number | null;
+  stock_to_flow?: number | null;
+  exchange_reserve?: number | null;
+  reserve_risk?: number | null;
+  accumulation_score?: number | null;
+  accumulation_trend_7d?: number | null;
+  accumulation_trend_30d?: number | null;
+  accumulation_trend_90d?: number | null;
+  hodl_under1m?: number | null;
+  hodl_over5y?: number | null;
+  binary_cdd?: number | null;
 };
 
 /**
@@ -92,10 +115,19 @@ export class SentimentAnalysisService {
     STRONG_BEARISH: -50,
   };
 
+  private historicalContextService: HistoricalContextService;
+  private patternRecognitionService: PatternRecognitionService;
+
   constructor(
     private clickhouse: ClickHouseClient,
     private logger: Logger
-  ) {}
+  ) {
+    this.historicalContextService = new HistoricalContextService(
+      logger,
+      clickhouse
+    );
+    this.patternRecognitionService = new PatternRecognitionService(logger);
+  }
 
   /**
    * Get composite sentiment for a symbol
@@ -152,6 +184,34 @@ export class SentimentAnalysisService {
       compositeSignal,
     });
 
+    // Add historical context and pattern analysis (async, best effort)
+    let contextAnalysis:
+      | Awaited<ReturnType<typeof this.historicalContextService.analyzeContext>>
+      | undefined;
+    let patternAnalysis:
+      | ReturnType<typeof this.patternRecognitionService.analyzePatterns>
+      | undefined;
+
+    try {
+      const blockchain = symbol.startsWith("BTC") ? "BTC" : "ETH";
+      const currentMetrics = await this.getOnChainMetricsForContext(blockchain);
+      const historicalMetrics =
+        await this.getOnChainMetricsHistoryForContext(blockchain);
+
+      if (currentMetrics) {
+        contextAnalysis = await this.historicalContextService.analyzeContext(
+          currentMetrics,
+          blockchain
+        );
+        patternAnalysis = await this.patternRecognitionService.analyzePatterns(
+          currentMetrics,
+          historicalMetrics
+        );
+      }
+    } catch (error) {
+      this.logger.warn("Failed to analyze historical context/patterns", error);
+    }
+
     return {
       symbol,
       timestamp: new Date(),
@@ -165,6 +225,10 @@ export class SentimentAnalysisService {
       },
       insights,
       strength,
+      marketCyclePhase: contextAnalysis?.currentPhase,
+      phaseConfidence: contextAnalysis?.phaseConfidence,
+      detectedPatterns: patternAnalysis?.patterns.map((p) => p.description),
+      historicalRecommendation: contextAnalysis?.recommendation,
     };
   }
 
@@ -207,12 +271,14 @@ export class SentimentAnalysisService {
   /**
    * Fetch On-Chain metrics from ClickHouse (with historical data for trends)
    */
-  private async getOnChainData(symbol: string): Promise<OnChainMetrics | null> {
+  private async getOnChainData(
+    symbol: string
+  ): Promise<OnChainMetricsDB | null> {
     try {
       // Map symbol to blockchain (BTC/ETH)
       const blockchain = symbol.startsWith("BTC") ? "BTC" : "ETH";
 
-      const result = await this.clickhouse.query<OnChainMetrics>(
+      const result = await this.clickhouse.query<OnChainMetricsDB>(
         `
         SELECT 
           whale_tx_count,
@@ -225,7 +291,15 @@ export class SentimentAnalysisService {
           sopr,
           puell_multiple,
           stock_to_flow,
-          exchange_reserve
+          exchange_reserve,
+          reserve_risk,
+          accumulation_score,
+          accumulation_trend_7d,
+          accumulation_trend_30d,
+          accumulation_trend_90d,
+          hodl_under1m,
+          hodl_over5y,
+          binary_cdd
         FROM on_chain_metrics
         WHERE blockchain = {blockchain:String}
         ORDER BY timestamp DESC
@@ -246,15 +320,201 @@ export class SentimentAnalysisService {
   }
 
   /**
+   * Get OnChainMetrics for context analysis (formatted for HistoricalContextService)
+   */
+  private async getOnChainMetricsForContext(
+    blockchain: string
+  ): Promise<OnChainMetrics | null> {
+    try {
+      const result = await this.clickhouse.query<{
+        timestamp: string;
+        whale_tx_count: number;
+        whale_tx_volume: number;
+        exchange_inflow: number;
+        exchange_outflow: number;
+        exchange_net_flow: number;
+        active_addresses: number;
+        nvt_ratio: number;
+        mvrv_ratio?: number | null;
+        nupl?: number | null;
+        sopr?: number | null;
+        puell_multiple?: number | null;
+        exchange_reserve?: number | null;
+        reserve_risk?: number | null;
+        accumulation_score?: number | null;
+        accumulation_trend_7d?: number | null;
+        accumulation_trend_30d?: number | null;
+        accumulation_trend_90d?: number | null;
+        hodl_under1m?: number | null;
+        hodl_over5y?: number | null;
+        binary_cdd?: number | null;
+      }>(
+        `
+        SELECT *
+        FROM on_chain_metrics
+        WHERE blockchain = {blockchain:String}
+        ORDER BY timestamp DESC
+        LIMIT 1
+      `,
+        { blockchain }
+      );
+
+      if (result.length === 0) return null;
+
+      const raw = result[0];
+      return {
+        timestamp: new Date(raw.timestamp).getTime(),
+        blockchain,
+        whaleTransactions: {
+          count: raw.whale_tx_count,
+          totalVolume: raw.whale_tx_volume,
+        },
+        exchangeFlow: {
+          inflow: raw.exchange_inflow ?? 0,
+          outflow: raw.exchange_outflow ?? 0,
+          netFlow: raw.exchange_net_flow,
+        },
+        activeAddresses: raw.active_addresses,
+        nvtRatio: raw.nvt_ratio,
+        transactionVolume: 0, // Not used in context analysis
+        mvrvRatio: raw.mvrv_ratio ?? undefined,
+        nupl: raw.nupl ?? undefined,
+        sopr: raw.sopr ?? undefined,
+        puellMultiple: raw.puell_multiple ?? undefined,
+        exchangeReserve: raw.exchange_reserve ?? undefined,
+        reserveRisk: raw.reserve_risk ?? undefined,
+        accumulationTrend:
+          raw.accumulation_score !== null
+            ? {
+                score: raw.accumulation_score,
+                trend7d: raw.accumulation_trend_7d ?? 0,
+                trend30d: raw.accumulation_trend_30d ?? 0,
+                trend90d: raw.accumulation_trend_90d ?? 0,
+              }
+            : undefined,
+        hodlWaves:
+          raw.hodl_under1m !== null
+            ? {
+                under1m: raw.hodl_under1m,
+                m1to3: 0,
+                m3to6: 0,
+                m6to12: 0,
+                y1to2: 0,
+                y2to3: 0,
+                y3to5: 0,
+                over5y: raw.hodl_over5y ?? 0,
+              }
+            : undefined,
+        binaryCDD: raw.binary_cdd === 1,
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch on-chain metrics for context", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get historical OnChainMetrics for pattern analysis (last 7 days)
+   */
+  private async getOnChainMetricsHistoryForContext(
+    blockchain: string
+  ): Promise<OnChainMetrics[]> {
+    try {
+      const result = await this.clickhouse.query<{
+        timestamp: string;
+        whale_tx_count: number;
+        whale_tx_volume: number;
+        exchange_net_flow: number;
+        active_addresses: number;
+        nvt_ratio: number;
+        mvrv_ratio?: number | null;
+        nupl?: number | null;
+        exchange_reserve?: number | null;
+        reserve_risk?: number | null;
+        accumulation_score?: number | null;
+        hodl_over5y?: number | null;
+      }>(
+        `
+        SELECT 
+          timestamp,
+          whale_tx_count,
+          whale_tx_volume,
+          exchange_net_flow,
+          active_addresses,
+          nvt_ratio,
+          mvrv_ratio,
+          nupl,
+          exchange_reserve,
+          reserve_risk,
+          accumulation_score,
+          hodl_over5y
+        FROM on_chain_metrics
+        WHERE blockchain = {blockchain:String}
+          AND timestamp >= now() - INTERVAL 7 DAY
+        ORDER BY timestamp DESC
+        LIMIT 7
+      `,
+        { blockchain }
+      );
+
+      return result.map((raw) => ({
+        timestamp: new Date(raw.timestamp).getTime(),
+        blockchain,
+        whaleTransactions: {
+          count: raw.whale_tx_count,
+          totalVolume: raw.whale_tx_volume,
+        },
+        exchangeFlow: {
+          inflow: 0,
+          outflow: 0,
+          netFlow: raw.exchange_net_flow,
+        },
+        activeAddresses: raw.active_addresses,
+        nvtRatio: raw.nvt_ratio,
+        transactionVolume: 0,
+        mvrvRatio: raw.mvrv_ratio ?? undefined,
+        nupl: raw.nupl ?? undefined,
+        exchangeReserve: raw.exchange_reserve ?? undefined,
+        reserveRisk: raw.reserve_risk ?? undefined,
+        accumulationTrend:
+          raw.accumulation_score !== null
+            ? {
+                score: raw.accumulation_score,
+                trend7d: 0,
+                trend30d: 0,
+                trend90d: 0,
+              }
+            : undefined,
+        hodlWaves:
+          raw.hodl_over5y !== null
+            ? {
+                under1m: 0,
+                m1to3: 0,
+                m3to6: 0,
+                m6to12: 0,
+                y1to2: 0,
+                y2to3: 0,
+                y3to5: 0,
+                over5y: raw.hodl_over5y,
+              }
+            : undefined,
+      }));
+    } catch (error) {
+      this.logger.error("Failed to fetch historical on-chain metrics", error);
+      return [];
+    }
+  }
+
+  /**
    * Fetch historical On-Chain metrics for trend analysis (last 7 days)
    */
   private async getOnChainHistoricalData(
     symbol: string
-  ): Promise<OnChainMetrics[]> {
+  ): Promise<OnChainMetricsDB[]> {
     try {
       const blockchain = symbol.startsWith("BTC") ? "BTC" : "ETH";
 
-      const result = await this.clickhouse.query<OnChainMetrics>(
+      const result = await this.clickhouse.query<OnChainMetricsDB>(
         `
         SELECT 
           timestamp,
@@ -263,7 +523,10 @@ export class SentimentAnalysisService {
           active_addresses,
           mvrv_ratio,
           nupl,
-          exchange_reserve
+          exchange_reserve,
+          reserve_risk,
+          accumulation_score,
+          hodl_over5y
         FROM on_chain_metrics
         WHERE blockchain = {blockchain:String}
           AND timestamp >= now() - INTERVAL 7 DAY
@@ -422,13 +685,14 @@ export class SentimentAnalysisService {
   /**
    * Calculate On-Chain sentiment component with advanced metrics and trends
    *
-   * Weight distribution:
-   * - Basic metrics: 40% (whale_tx, exchange_flow, active_addr)
-   * - Advanced metrics: 40% (MVRV, NUPL, SOPR, Puell)
-   * - Trend indicators: 20% (7-day momentum)
+   * Weight distribution (Phase 1 update):
+   * - Basic metrics: 30% (whale_tx, exchange_flow, active_addr)
+   * - Advanced metrics: 45% (MVRV, NUPL, SOPR, Puell, Reserve Risk, Accumulation, HODL, Binary CDD)
+   * - Trend indicators: 15% (7-day momentum)
+   * - Historical context: 10% (cycle phase, patterns)
    */
   private async calculateOnChainSentiment(
-    data: OnChainMetrics | null,
+    data: OnChainMetricsDB | null,
     symbol: string
   ): Promise<ComponentSentiment> {
     if (!data) {
@@ -446,7 +710,7 @@ export class SentimentAnalysisService {
     // Get historical data for trend analysis
     const historicalData = await this.getOnChainHistoricalData(symbol);
 
-    // ===== BASIC METRICS (40% weight) =====
+    // ===== BASIC METRICS (30% weight) =====
     let basicScore = 0;
 
     // 1. Whale activity (dynamic thresholds based on percentile)
@@ -508,10 +772,10 @@ export class SentimentAnalysisService {
       }
     }
 
-    // Apply weight to basic score (40% of total)
-    score += basicScore * 0.4;
+    // Apply weight to basic score (30% of total)
+    score += basicScore * 0.3;
 
-    // ===== ADVANCED METRICS (40% weight) =====
+    // ===== ADVANCED METRICS (45% weight) =====
     let advancedScore = 0;
 
     // 1. MVRV Ratio
@@ -577,10 +841,60 @@ export class SentimentAnalysisService {
       }
     }
 
-    // Apply weight to advanced score (40% of total)
-    score += advancedScore * 0.4;
+    // 6. Reserve Risk (new Phase 1 metric)
+    if (data.reserve_risk !== undefined && data.reserve_risk !== null) {
+      if (data.reserve_risk < 0.002) {
+        advancedScore += 20; // Deep accumulation zone = bullish
+        confidence += 5;
+      } else if (data.reserve_risk > 0.02) {
+        advancedScore -= 20; // Distribution zone = bearish
+        confidence += 5;
+      }
+    }
 
-    // ===== TREND INDICATORS (20% weight) =====
+    // 7. Accumulation Trend Score (new Phase 1 metric)
+    if (
+      data.accumulation_score !== undefined &&
+      data.accumulation_score !== null
+    ) {
+      if (data.accumulation_score > 50) {
+        advancedScore += 25; // Strong accumulation = very bullish
+        confidence += 10;
+      } else if (data.accumulation_score < -50) {
+        advancedScore -= 25; // Strong distribution = very bearish
+        confidence += 10;
+      } else if (data.accumulation_score > 20) {
+        advancedScore += 15; // Moderate accumulation = bullish
+      } else if (data.accumulation_score < -20) {
+        advancedScore -= 15; // Moderate distribution = bearish
+      }
+    }
+
+    // 8. HODL Waves - Long-term holder percentage (new Phase 1 metric)
+    if (data.hodl_over5y !== undefined && data.hodl_over5y !== null) {
+      // Higher percentage of 5+ year holders = bullish long-term conviction
+      if (data.hodl_over5y > 25) {
+        advancedScore += 15; // Strong HODLing = bullish
+        confidence += 5;
+      } else if (data.hodl_over5y < 10) {
+        advancedScore -= 10; // Low long-term conviction = bearish
+      }
+    }
+
+    // 9. Binary CDD - Coin Days Destroyed spike (new Phase 1 metric)
+    if (data.binary_cdd !== undefined && data.binary_cdd !== null) {
+      if (data.binary_cdd === 1) {
+        advancedScore -= 15; // Old coins moving = potential distribution
+        confidence += 5;
+      } else {
+        advancedScore += 5; // HODLing continues = bullish
+      }
+    }
+
+    // Apply weight to advanced score (45% of total, increased from 40%)
+    score += advancedScore * 0.45;
+
+    // ===== TREND INDICATORS (15% weight, decreased from 20%) =====
     if (historicalData.length >= 3) {
       let trendScore = 0;
 
@@ -613,9 +927,15 @@ export class SentimentAnalysisService {
         confidence += Math.abs(avgTrend) * 10; // Higher confidence with stronger trends
       }
 
-      // Apply weight to trend score (20% of total)
-      score += trendScore * 0.2;
+      // Apply weight to trend score (15% of total, decreased from 20%)
+      score += trendScore * 0.15;
     }
+
+    // ===== HISTORICAL CONTEXT (10% weight, new Phase 1) =====
+    // Note: Historical context is computed separately in getCompositeSentiment
+    // Here we add a small adjustment based on available on-chain metrics alignment
+    const contextScore = 0; // Placeholder for now (full implementation in getCompositeSentiment)
+    score += contextScore * 0.1;
 
     // Clamp score between -100 and +100
     score = Math.max(-100, Math.min(100, score));

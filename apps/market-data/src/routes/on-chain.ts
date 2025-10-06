@@ -1,10 +1,7 @@
 import type { ClickHouseClient } from "@aladdin/clickhouse";
-import { NotFoundError } from "@aladdin/http/errors";
-import {
-  validateParams,
-  validateQuery,
-} from "@aladdin/validation/middleware";
 import type { OnChainMetrics } from "@aladdin/core";
+import { NotFoundError } from "@aladdin/http/errors";
+import { validateParams, validateQuery } from "@aladdin/validation/middleware";
 import type { Context, Hono } from "hono";
 import {
   blockchainParamSchema,
@@ -111,6 +108,20 @@ export function setupOnChainRoutes(
         exchange_reserve: number | null;
         puell_multiple: number | null;
         stock_to_flow: number | null;
+        reserve_risk: number | null;
+        accumulation_score: number | null;
+        accumulation_trend_7d: number | null;
+        accumulation_trend_30d: number | null;
+        accumulation_trend_90d: number | null;
+        hodl_under1m: number | null;
+        hodl_m1to3: number | null;
+        hodl_m3to6: number | null;
+        hodl_m6to12: number | null;
+        hodl_y1to2: number | null;
+        hodl_y2to3: number | null;
+        hodl_y3to5: number | null;
+        hodl_over5y: number | null;
+        binary_cdd: number | null;
       }>(
         `
         SELECT *
@@ -150,6 +161,35 @@ export function setupOnChainRoutes(
         exchangeReserve: raw.exchange_reserve ?? undefined,
         puellMultiple: raw.puell_multiple ?? undefined,
         stockToFlow: raw.stock_to_flow ?? undefined,
+        reserveRisk: raw.reserve_risk ?? undefined,
+        accumulationTrend:
+          raw.accumulation_score !== null
+            ? {
+                score: raw.accumulation_score,
+                trend7d: raw.accumulation_trend_7d ?? 0,
+                trend30d: raw.accumulation_trend_30d ?? 0,
+                trend90d: raw.accumulation_trend_90d ?? 0,
+              }
+            : undefined,
+        hodlWaves:
+          raw.hodl_under1m !== null
+            ? {
+                under1m: raw.hodl_under1m,
+                m1to3: raw.hodl_m1to3 ?? 0,
+                m3to6: raw.hodl_m3to6 ?? 0,
+                m6to12: raw.hodl_m6to12 ?? 0,
+                y1to2: raw.hodl_y1to2 ?? 0,
+                y2to3: raw.hodl_y2to3 ?? 0,
+                y3to5: raw.hodl_y3to5 ?? 0,
+                over5y: raw.hodl_over5y ?? 0,
+              }
+            : undefined,
+        binaryCDD:
+          raw.binary_cdd === 1
+            ? true
+            : raw.binary_cdd === 0
+              ? false
+              : undefined,
       };
 
       return c.json({
@@ -555,4 +595,165 @@ export function setupOnChainRoutes(
       );
     }
   });
+
+  /**
+   * GET /api/market-data/on-chain/correlations/:blockchain - Get metric correlations
+   */
+  app.get(
+    "/api/market-data/on-chain/correlations/:blockchain",
+    validateParams(blockchainParamSchema),
+    validateQuery(periodQuerySchema),
+    async (c: Context) => {
+      const { blockchain } = c.get("validatedParams") as {
+        blockchain: string;
+      };
+      const query = c.get("validatedQuery") as PeriodQuery;
+
+      if (!clickhouse) {
+        throw new NotFoundError("ClickHouse connection");
+      }
+
+      try {
+        // Fetch historical data for correlation analysis
+        const metrics = await clickhouse.query<{
+          mvrv_ratio: number | null;
+          nupl: number | null;
+          reserve_risk: number | null;
+          exchange_net_flow: number;
+          whale_tx_count: number;
+          active_addresses: number;
+          puell_multiple: number | null;
+          sopr: number | null;
+        }>(
+          `
+          SELECT 
+            mvrv_ratio,
+            nupl,
+            reserve_risk,
+            exchange_net_flow,
+            whale_tx_count,
+            active_addresses,
+            puell_multiple,
+            sopr
+          FROM on_chain_metrics
+          WHERE blockchain = {blockchain:String}
+            AND timestamp >= {from:DateTime64(3)}
+            AND timestamp <= {to:DateTime64(3)}
+          ORDER BY timestamp ASC
+        `,
+          {
+            blockchain,
+            from: query.from,
+            to: query.to,
+          }
+        );
+
+        // Calculate correlations between metrics
+        const metricNames = [
+          "mvrv_ratio",
+          "nupl",
+          "reserve_risk",
+          "exchange_net_flow",
+          "whale_tx_count",
+          "active_addresses",
+          "puell_multiple",
+          "sopr",
+        ];
+
+        const correlationMatrix: Record<string, Record<string, number>> = {};
+
+        // Initialize correlation matrix
+        for (const metric1 of metricNames) {
+          correlationMatrix[metric1] = {};
+          for (const metric2 of metricNames) {
+            correlationMatrix[metric1][metric2] = 0;
+          }
+        }
+
+        // Calculate Pearson correlation coefficient for each pair
+        for (const metric1 of metricNames) {
+          for (const metric2 of metricNames) {
+            if (metric1 === metric2) {
+              correlationMatrix[metric1][metric2] = 1;
+              continue;
+            }
+
+            const values1: number[] = [];
+            const values2: number[] = [];
+
+            for (const row of metrics) {
+              const val1 = row[metric1 as keyof typeof row];
+              const val2 = row[metric2 as keyof typeof row];
+
+              if (
+                val1 !== null &&
+                val1 !== undefined &&
+                val2 !== null &&
+                val2 !== undefined
+              ) {
+                values1.push(Number(val1));
+                values2.push(Number(val2));
+              }
+            }
+
+            if (values1.length > 1) {
+              const correlation = calculatePearsonCorrelation(values1, values2);
+              correlationMatrix[metric1][metric2] = correlation;
+            }
+          }
+        }
+
+        return c.json({
+          success: true,
+          data: {
+            blockchain,
+            period: {
+              from: query.from,
+              to: query.to,
+            },
+            correlationMatrix,
+            metricNames,
+            dataPoints: metrics.length,
+          },
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        const errorAny = error as { message?: string };
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "CORRELATION_ERROR",
+              message: errorAny.message || "Failed to calculate correlations",
+            },
+            timestamp: Date.now(),
+          },
+          500
+        );
+      }
+    }
+  );
+}
+
+/**
+ * Calculate Pearson correlation coefficient
+ */
+function calculatePearsonCorrelation(x: number[], y: number[]): number {
+  const n = x.length;
+  if (n === 0 || n !== y.length) return 0;
+
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((sum, xi, i) => sum + xi * (y[i] ?? 0), 0);
+  const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+  const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt(
+    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+  );
+
+  if (denominator === 0) return 0;
+
+  return numerator / denominator;
 }

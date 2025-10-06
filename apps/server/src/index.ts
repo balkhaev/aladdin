@@ -1,298 +1,256 @@
+/**
+ * API Gateway Service
+ * Unified gateway using BaseGatewayService from @aladdin/gateway
+ */
+
 import "dotenv/config";
+import { BaseGatewayService } from "@aladdin/gateway";
 import { createLogger, Logger } from "@aladdin/logger";
-import { initNatsClient } from "@aladdin/messaging";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import {
+  initializeService,
+  type ServiceDependencies,
+} from "@aladdin/service/bootstrap";
+import type { Context } from "hono";
 import { logger as honoLogger } from "hono/logger";
 import db from "./db";
 import { auth } from "./lib/auth";
 import { authMiddleware } from "./middleware/auth";
-import { proxyToService } from "./middleware/proxy";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { createExchangeCredentialsRouter } from "./routers/exchange-credentials";
-import {
-  areAllServicesHealthy,
-  checkAllServices,
-  getHealthyServicesCount,
-} from "./utils/health";
-import { handleWebSocketUpgrade, websocketHandlers } from "./websocket/proxy";
+import { websocketHandlers } from "./websocket/proxy";
 
-const winstonLogger = createLogger({ service: "gateway" });
-const logger = new Logger(winstonLogger);
+type WebSocketData = {
+  clientId: string;
+  userId?: string;
+  connections: {
+    marketData?: WebSocket;
+    trading?: WebSocket;
+    portfolio?: WebSocket;
+    risk?: WebSocket;
+  };
+};
 
-const HTTP_OK = 200;
-const HTTP_SERVICE_UNAVAILABLE = 503;
-const DEFAULT_PORT = 3000;
+// Service configuration
+const SERVICES = {
+  "market-data": process.env.MARKET_DATA_URL || "http://localhost:3010",
+  trading: process.env.TRADING_URL || "http://localhost:3011",
+  portfolio: process.env.PORTFOLIO_URL || "http://localhost:3012",
+  analytics: process.env.ANALYTICS_URL || "http://localhost:3014",
+  screener: process.env.SCREENER_URL || "http://localhost:3017",
+  scraper:
+    process.env.SOCIAL_URL ||
+    process.env.SCRAPER_URL ||
+    "http://localhost:3018",
+  "ml-service": process.env.ML_SERVICE_URL || "http://localhost:8000",
+};
 
-const app = new Hono();
+// Path rewrites for backward compatibility
+const PATH_REWRITES = {
+  "/api/macro/*": {
+    target: "market-data",
+    rewrite: "/api/market-data/macro/*",
+  },
+  "/api/on-chain/*": {
+    target: "market-data",
+    rewrite: "/api/market-data/on-chain/*",
+  },
+  "/api/sentiment/*": {
+    target: "analytics",
+    rewrite: "/api/analytics/sentiment/*",
+  },
+  "/api/social/*": {
+    target: "scraper",
+    rewrite: "/api/scraper/*",
+  },
+};
 
-// ====== Глобальные Middleware ======
+// Initialize Gateway service
+const service = await initializeService<BaseGatewayService, WebSocketData>({
+  serviceName: "gateway",
+  port: Number(process.env.PORT) || 3000,
 
-// Логирование всех запросов
-app.use(honoLogger());
-
-// CORS для фронтенда (ВАЖНО: должен быть ДО монтирования роутеров!)
-app.use(
-  "/*",
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3001",
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
-
-// Global error handler
-app.onError((err, c) => {
-  const statusCode =
-    err instanceof Error && "statusCode" in err
-      ? (err.statusCode as number)
-      : HTTP_SERVICE_UNAVAILABLE;
-
-  // Log error
-  if (statusCode >= HTTP_SERVICE_UNAVAILABLE) {
-    logger.error(err.message, err, {
-      path: c.req.path,
-      method: c.req.method,
-    });
-  } else {
-    logger.warn(err.message, {
-      path: c.req.path,
-      method: c.req.method,
-      statusCode,
-    });
-  }
-
-  // Return error response
-  return c.json(
-    {
-      success: false,
-      error: {
-        code: "INTERNAL_ERROR",
-        message: err.message || "An unexpected error occurred",
-        details: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  // Create Gateway service
+  createService: (deps: ServiceDependencies) =>
+    new BaseGatewayService({
+      ...deps,
+      services: SERVICES,
+      pathRewrites: PATH_REWRITES,
+      healthCheckInterval: 30_000, // 30 seconds
+      getUserId: (c: Context) => {
+        // Extract user ID from auth middleware
+        const user = c.get("user") as { id?: string } | undefined;
+        return user?.id;
       },
-      timestamp: Date.now(),
-    },
-    statusCode
-  );
-});
+      enableCache: false,
+      enableServiceClient: false,
+    }),
 
-// Mount exchange credentials router
-const exchangeCredentialsRouter = createExchangeCredentialsRouter({
-  prisma: db,
-  logger,
-});
-app.route("/api/exchange-credentials", exchangeCredentialsRouter);
+  // Setup routes
+  setupRoutes: (app, gateway) => {
+    // ====== Global Middleware ======
 
-// ====== Публичные эндпоинты ======
+    // Request logging
+    app.use(honoLogger());
 
-// Health check для Gateway
-app.get("/health", (c) =>
-  c.json({
-    status: "ok",
-    service: "api-gateway",
-    timestamp: Date.now(),
-  })
-);
+    // ====== Combined CORS and Auth Middleware ======
+    app.use("/*", async (c, next) => {
+      const origin = c.req.header("origin");
+      const allowedOrigin = process.env.CORS_ORIGIN || "http://localhost:3001";
 
-// Health check всех микросервисов
-app.get("/health/services", async (c) => {
-  const services = await checkAllServices();
-  const allHealthy = areAllServicesHealthy(services);
-  const { healthy, total } = getHealthyServicesCount(services);
+      // Special handling for /api/auth/* routes
+      if (c.req.path.startsWith("/api/auth/")) {
+        // For OPTIONS, return CORS directly WITHOUT calling better-auth
+        if (c.req.method === "OPTIONS" && origin === allowedOrigin) {
+          return c.body(null, 204, {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods":
+              "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Max-Age": "86400",
+          });
+        }
 
-  return c.json(
-    {
-      gateway: "ok",
-      services,
-      summary: {
-        healthy,
-        total,
-        allHealthy,
-      },
-      timestamp: Date.now(),
-    },
-    allHealthy ? HTTP_OK : HTTP_SERVICE_UNAVAILABLE
-  );
-});
+        // For other methods, call better-auth
+        const response = await auth.handler(c.req.raw);
 
-// Корневой эндпоинт
-app.get("/", (c) =>
-  c.json({
-    name: "Aladdin API Gateway",
-    version: "1.0.0",
-    status: "running",
-    endpoints: {
-      health: "/health",
-      healthServices: "/health/services",
-      auth: "/api/auth/*",
-      exchangeCredentials: "/api/exchange-credentials",
-      marketData: "/api/market-data/*",
-      trading: "/api/trading/*",
-      portfolio: "/api/portfolio/*",
-      analytics: "/api/analytics/*",
-      onChain: "/api/on-chain/*",
-      screener: "/api/screener/*",
-      macroData: "/api/macro/*",
-      ml: "/api/ml/*",
-      websocket: "ws://localhost:3000/ws",
-    },
-  })
-);
+        // ALWAYS set correct CORS headers for auth routes
+        if (origin === allowedOrigin) {
+          const headers = new Headers(response.headers);
+          headers.delete("Access-Control-Allow-Origin");
+          headers.delete("Vary");
+          headers.set("Access-Control-Allow-Origin", origin);
+          headers.set("Access-Control-Allow-Credentials", "true");
 
-// Аутентификация через Better-Auth
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+          });
+        }
 
-// ====== Защищенные API эндпоинты ======
+        return response;
+      }
 
-// Применяем auth middleware ко всем /api/* запросам (кроме /api/auth/*)
-app.use("/api/*", authMiddleware);
+      // Standard CORS for all other routes
+      if (origin === allowedOrigin) {
+        c.header("Access-Control-Allow-Origin", origin);
+        c.header("Access-Control-Allow-Credentials", "true");
+        c.header(
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        );
+        c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      }
 
-// Применяем rate limiting ко всем /api/* запросам
-app.use("/api/*", rateLimitMiddleware);
+      // Handle OPTIONS preflight
+      if (c.req.method === "OPTIONS") {
+        return c.body(null, 204);
+      }
 
-// ====== Proxy к микросервисам ======
+      await next();
+    });
 
-// ====== Backward Compatibility Routes (после рефакторинга) ======
+    // ====== Public Endpoints ======
 
-// Старый /api/macro/* -> /api/market-data/macro/*
-app.use(
-  "/api/macro/*",
-  proxyToService({
-    targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
-    serviceName: "market-data",
-    rewritePath: (path) => path.replace("/api/macro", "/api/market-data/macro"),
-  })
-);
+    // Gateway health
+    app.get("/health", (c) =>
+      c.json({
+        status: "ok",
+        service: "api-gateway",
+        timestamp: Date.now(),
+      })
+    );
 
-// Старый /api/on-chain/* -> /api/market-data/on-chain/*
-app.use(
-  "/api/on-chain/*",
-  proxyToService({
-    targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
-    serviceName: "market-data",
-    rewritePath: (path) =>
-      path.replace("/api/on-chain", "/api/market-data/on-chain"),
-  })
-);
+    // All services health
+    app.get("/health/services", (c) => {
+      const health = gateway.getAggregatedHealth();
+      const allHealth = gateway.getRegistry().getAllServicesHealth();
 
-// Старый /api/sentiment/* -> /api/analytics/sentiment/* (composite sentiment)
-// Note: /api/social/sentiment/* идет к scraper (Telegram + Twitter + Reddit)
-app.use(
-  "/api/sentiment/*",
-  proxyToService({
-    targetUrl: process.env.ANALYTICS_URL || "http://localhost:3014",
-    serviceName: "analytics",
-    rewritePath: (path) =>
-      path.replace("/api/sentiment", "/api/analytics/sentiment"),
-  })
-);
+      return c.json(
+        {
+          gateway: "ok",
+          services: allHealth,
+          summary: {
+            healthy: allHealth.filter((s) => s.healthy).length,
+            total: allHealth.length,
+            allHealthy: health.allHealthy,
+          },
+          timestamp: Date.now(),
+        },
+        health.allHealthy ? 200 : 503
+      );
+    });
 
-// ====== Direct Service Routes ======
+    // Root endpoint
+    app.get("/", (c) =>
+      c.json({
+        name: "Aladdin API Gateway",
+        version: "1.0.0",
+        status: "running",
+        endpoints: {
+          health: "/health",
+          healthServices: "/health/services",
+          auth: "/api/auth/*",
+          exchangeCredentials: "/api/exchange-credentials",
+          marketData: "/api/market-data/*",
+          trading: "/api/trading/*",
+          portfolio: "/api/portfolio/*",
+          analytics: "/api/analytics/*",
+          onChain: "/api/on-chain/*",
+          screener: "/api/screener/*",
+          macroData: "/api/macro/*",
+          ml: "/api/ml/*",
+          websocket: "ws://localhost:3000/ws",
+        },
+      })
+    );
 
-// Market Data Service
-app.use(
-  "/api/market-data/*",
-  proxyToService({
-    targetUrl: process.env.MARKET_DATA_URL || "http://localhost:3010",
-    serviceName: "market-data",
-  })
-);
+    // Authentication via Better-Auth
+    // Handled by app.all("/api/auth/*") above
 
-// Trading Service
-app.use(
-  "/api/trading/*",
-  proxyToService({
-    targetUrl: process.env.TRADING_URL || "http://localhost:3011",
-    serviceName: "trading",
-  })
-);
+    // ====== Protected API Endpoints ======
 
-// Portfolio Service (includes risk endpoints)
-app.use(
-  "/api/portfolio/*",
-  proxyToService({
-    targetUrl: process.env.PORTFOLIO_URL || "http://localhost:3012",
-    serviceName: "portfolio",
-  })
-);
+    // Apply auth middleware to all /api/* requests (except /api/auth/*)
+    app.use("/api/*", authMiddleware);
 
-// Analytics Service
-app.use(
-  "/api/analytics/*",
-  proxyToService({
-    targetUrl: process.env.ANALYTICS_URL || "http://localhost:3014",
-    serviceName: "analytics",
-  })
-);
-
-// Screener Service
-app.use(
-  "/api/screener/*",
-  proxyToService({
-    targetUrl: process.env.SCREENER_URL || "http://localhost:3017",
-    serviceName: "screener",
-  })
-);
-
-// Social Integrations Service (NEW - combines telega + twity)
-app.use(
-  "/api/social/*",
-  proxyToService({
-    targetUrl:
-      process.env.SOCIAL_URL ||
-      process.env.SCRAPER_URL ||
-      "http://localhost:3018",
-    serviceName: "scraper",
-  })
-);
-
-// ML Service
-app.use(
-  "/api/ml/*",
-  proxyToService({
-    targetUrl: process.env.ML_SERVICE_URL || "http://localhost:3019",
-    serviceName: "ml-service",
-  })
-);
-
-// ====== Запуск сервера с WebSocket ======
-
-const PORT = Number(process.env.PORT) || DEFAULT_PORT;
-
-logger.info("Starting API Gateway", {
-  port: PORT,
-  environment: process.env.NODE_ENV || "development",
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3001",
-});
-
-// Инициализация NATS клиента
-try {
-  await initNatsClient({
-    servers: process.env.NATS_URL || "nats://localhost:4222",
-    logger,
-  });
-  logger.info("NATS client initialized successfully");
-} catch (error) {
-  logger.error("Failed to initialize NATS client", error);
-  throw error;
-}
-
-export default {
-  port: PORT,
-  fetch(
-    req: Request,
-    server: { upgrade: (req: Request, options: { data: unknown }) => boolean }
-  ) {
-    // Обрабатываем WebSocket upgrade
-    const wsResponse = handleWebSocketUpgrade(req, server);
-    if (wsResponse !== null) {
-      return wsResponse;
+    // Apply rate limiting in production
+    if (process.env.NODE_ENV === "production") {
+      app.use("/api/*", rateLimitMiddleware);
     }
 
-    // Обрабатываем обычные HTTP запросы через Hono
-    return app.fetch(req);
+    // Exchange credentials router (Gateway-specific)
+    // Create logger instance for exchange router
+    const winstonLogger = createLogger({ service: "gateway-exchange" });
+    const exchangeRouter = createExchangeCredentialsRouter({
+      prisma: db,
+      logger: new Logger(winstonLogger),
+    });
+    app.route("/api/exchange-credentials", exchangeRouter);
+
+    // ====== Proxy Routes ======
+
+    // Setup proxy routes for all registered services
+    gateway.setupProxyRoutes(app);
   },
-  websocket: websocketHandlers,
-};
+
+  // Dependencies
+  dependencies: {
+    nats: true,
+    postgres: true,
+    clickhouse: false,
+  },
+
+  // WebSocket configuration
+  websocket: {
+    enabled: true,
+    path: "/ws",
+    handlers: {
+      open: (ws) => websocketHandlers.open(ws),
+      message: (ws, message) => websocketHandlers.message(ws, message),
+      close: (ws, code, reason) => websocketHandlers.close(ws, code, reason),
+    },
+  },
+});
+
+export default service;

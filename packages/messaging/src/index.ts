@@ -23,8 +23,9 @@ export class NatsClient {
    * Подключение к NATS серверу
    */
   async connect(): Promise<void> {
+    const servers = this.options.servers ?? "nats://localhost:4222";
+
     try {
-      const servers = this.options.servers ?? "nats://localhost:4222";
       this.connection = await connect({ servers });
 
       this.options.logger?.info("Connected to NATS", { servers });
@@ -41,7 +42,7 @@ export class NatsClient {
         }
       })();
     } catch (error) {
-      this.options.logger?.error("Failed to connect to NATS", error);
+      this.options.logger?.error(`Failed to connect to NATS ${servers}`, error);
       throw error;
     }
   }

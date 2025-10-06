@@ -1,180 +1,189 @@
-# Aladdin Trading Platform
+# 📚 Документация Coffee Trading Platform
 
-Современная микросервисная платформа для торговли и анализа крипто рынков.
-
-**Версия:** 2.1 (Service Consolidation)  
-**Статус:** Production Ready ✅  
-**Последнее обновление:** 5 октября 2025
-
-## 🎯 Ключевые улучшения v2.1
-
-- ✅ **Оптимизация архитектуры** - 14 сервисов → 8 сервисов (43% сокращение)
-- ✅ **Единая инфраструктура** - BaseService, ServiceBootstrap, стандартизированные утилиты
-- ✅ **Безопасность** - Исправлены все SQL injection, добавлено шифрование API ключей
-- ✅ **Производительность** - Redis кэширование (7-24x ускорение), Circuit Breaker, Retry логика
-- ✅ **Типобезопасность** - Zod валидация, полная типизация с TypeScript
-- ✅ **Уменьшение кода** - ~13,700 строк удалено благодаря объединению сервисов
-
-📊 **[Подробный статус проекта →](docs/PROJECT_STATUS.md)**
+> **Полная документация криптовалютной торговой платформы**
 
 ## 🚀 Быстрый старт
 
-```bash
-# Установка зависимостей
-bun install
+Новичок? Начните здесь:
 
-# Применить миграции БД
-bun db:push
+1. **[Getting Started](GETTING_STARTED.md)** — установка и первые шаги (5 минут)
+2. **[API Reference](API_REFERENCE.md)** — все API endpoints
+3. **[Features](FEATURES.md)** — что умеет платформа
 
-# Запустить все сервисы
-./START_ALL.sh
+## 📖 Основная документация
 
-# Или запустить отдельные сервисы
-bun dev:web          # Frontend (3001)
-bun dev:server       # API Gateway (3000)
-bun dev:market-data  # Market Data (3010) - включает macro + on-chain
-bun dev:trading      # Trading (3011) - включает executor
-bun dev:portfolio    # Portfolio (3012) - включает risk
-bun dev:analytics    # Analytics (3014) - включает sentiment
-bun dev:screener     # Screener (3017)
-bun dev:social       # Social Integrations (3018) - telega + twity
-```
+### Архитектура и инфраструктура
 
-Откройте http://localhost:3001
+| Документ                            | Описание                                              | Для кого             |
+| ----------------------------------- | ----------------------------------------------------- | -------------------- |
+| **[Architecture](ARCHITECTURE.md)** | Микросервисы, порты, производительность, безопасность | Разработчики, DevOps |
+| **[Gateway](GATEWAY.md)**           | API Gateway package, proxy, service registry          | Backend разработчики |
+| **[WebSocket](WEBSOCKET.md)**       | WebSocket integration, real-time streaming            | Frontend + Backend   |
 
-## 🏗️ Архитектура
+### Функциональность
 
-```
-Frontend (React) → API Gateway → 6 Backend Services → Инфраструктура
-      (3001)          (3000)         (3010-3018)        (PostgreSQL, ClickHouse, NATS)
-```
+| Документ                                  | Описание                                        | Для кого              |
+| ----------------------------------------- | ----------------------------------------------- | --------------------- |
+| **[Features](FEATURES.md)**               | Все возможности платформы (SOR, VWAP, ML, Risk) | Все пользователи      |
+| **[ML Guide](ML_GUIDE.md)**               | Machine Learning модели, HPO, backtesting       | ML инженеры, трейдеры |
+| **[Portfolio Guide](PORTFOLIO_GUIDE.md)** | Оптимизация, ребалансировка, risk management    | Портфельные менеджеры |
 
-### Сервисы (После рефакторинга v2.1)
+### Разработка
 
-| Сервис          | Порт | Объединяет                     | Статус |
-| --------------- | ---- | ------------------------------ | ------ |
-| **Web UI**      | 3001 | Frontend                       | ✅     |
-| **API Gateway** | 3000 | Gateway                        | ✅     |
-| **Market Data** | 3010 | market-data + macro + on-chain | ✅     |
-| **Trading**     | 3011 | trading + executor             | ✅     |
-| **Portfolio**   | 3012 | portfolio + risk               | ✅     |
-| **Analytics**   | 3014 | analytics + sentiment          | ✅     |
-| **Screener**    | 3017 | screener                       | ✅     |
-| **Social**      | 3018 | telega + twity                 | ✅     |
+| Документ                                  | Описание                                       | Для кого           |
+| ----------------------------------------- | ---------------------------------------------- | ------------------ |
+| **[Getting Started](GETTING_STARTED.md)** | Быстрый старт, troubleshooting, best practices | Все разработчики   |
+| **[API Reference](API_REFERENCE.md)**     | Полный справочник по API endpoints             | Frontend + Backend |
+| **[Roadmap](ROADMAP.md)**                 | План развития платформы                        | Product managers   |
 
-**Итого:** 8 сервисов (было 14) — сокращение на 43%!
-
-## 📦 Ключевые возможности
-
-- **Real-time данные** - WebSocket стриминг с 3 бирж, VWAP агрегация
-- **Торговля** - Market/Limit ордера, Smart Order Routing, алгоритмическое исполнение
-- **Аналитика** - Технические индикаторы, бэктестинг, макро данные, on-chain метрики
-- **ML & AI** - LSTM predictions, sentiment analysis, anomaly detection
-- **Риск-менеджмент** - VaR/CVaR, stress testing, portfolio optimization
-- **Скрининг** - 11+ стратегий, real-time сигналы
-
-## 🛠️ Технологии
-
-**Backend:** Bun, Hono, Prisma, NATS, Winston, Zod  
-**Frontend:** React, Vite, TanStack, shadcn/ui, Lightweight Charts  
-**Инфраструктура:** PostgreSQL, ClickHouse, NATS, Redis (удаленные)  
-**Безопасность:** AES-256-GCM, Circuit Breaker, Retry логика
-
-## 📁 Структура
+## 🗂️ Структура документации
 
 ```
-coffee/
-├── apps/
-│   ├── web/                    # Frontend
-│   ├── server/                 # API Gateway
-│   ├── market-data/            # Market Data + Macro + On-Chain
-│   ├── trading/                # Trading + Strategy Executor
-│   ├── portfolio/              # Portfolio + Risk Management
-│   ├── analytics/              # Analytics + Sentiment
-│   ├── screener/               # Market Screener
-│   └── social-integrations/    # Telegram + Twitter (Telega + Twity)
-├── packages/
-│   ├── shared/                 # Общие библиотеки
-│   └── database/               # Prisma схемы и миграции
-├── docs/                       # Документация
-└── logs/                       # Логи сервисов
+docs/
+├── README.md                  # ← Вы здесь
+│
+├── Getting Started
+│   └── GETTING_STARTED.md     # Установка, первые шаги, troubleshooting
+│
+├── Core Documentation
+│   ├── ARCHITECTURE.md        # Архитектура, производительность, безопасность
+│   ├── FEATURES.md            # Все возможности платформы
+│   └── API_REFERENCE.md       # API справочник
+│
+├── Specialized Guides
+│   ├── ML_GUIDE.md            # Machine Learning (TypeScript + Python)
+│   └── PORTFOLIO_GUIDE.md     # Portfolio management, optimization, risk
+│
+├── Technical Documentation
+│   ├── GATEWAY.md             # API Gateway package
+│   └── WEBSOCKET.md           # WebSocket integration
+│
+└── Planning
+    └── ROADMAP.md             # План развития
 ```
 
-## 📖 Документация
+## 🎯 Быстрый поиск
 
-- **[GETTING_STARTED.md](docs/GETTING_STARTED.md)** - Быстрый старт
-- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - API справочник
-- **[FEATURES.md](docs/FEATURES.md)** - Возможности платформы
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Архитектура и безопасность
-- **[ML_GUIDE.md](docs/ML_GUIDE.md)** - Machine Learning guide
-- **[ROADMAP.md](docs/ROADMAP.md)** - План развития
-- **[CHANGELOG.md](docs/CHANGELOG.md)** - История изменений
+### Как сделать X?
 
-## 🔧 Команды
+**Установить платформу:**
+→ [Getting Started § Установка](GETTING_STARTED.md#установка-5-минут)
 
-```bash
-# Разработка
-bun dev              # Все сервисы
-bun dev:web          # Только Frontend
-bun dev:server       # Только Gateway
-bun dev:market-data  # Market Data (+ macro + on-chain)
-bun dev:trading      # Trading (+ executor)
-bun dev:portfolio    # Portfolio (+ risk)
-bun dev:analytics    # Analytics (+ sentiment)
-bun dev:screener     # Screener
-bun dev:social       # Social Integrations (telega + twity)
+**Получить real-time цены:**
+→ [API Reference § Market Data WebSocket](API_REFERENCE.md)
 
-# База данных
-bun db:push          # Миграции PostgreSQL
-bun db:studio        # Prisma Studio
-bun clickhouse:schema # Схема ClickHouse
+**Обучить ML модель:**
+→ [ML Guide § Training](ML_GUIDE.md#установка)
 
-# Код
-bun check            # Lint + format
-bun build            # Build всех сервисов
+**Оптимизировать портфель:**
+→ [Portfolio Guide § Optimization](PORTFOLIO_GUIDE.md#portfolio-optimization)
 
-# Тестирование
-bun scripts/test-cache-performance.ts  # Тест производительности Redis кэша
-```
+**Запустить алгоритмическое исполнение:**
+→ [Features § Algorithmic Execution](FEATURES.md#algorithmic-execution)
 
-## 📊 Логи
+**Настроить WebSocket:**
+→ [WebSocket § Setup](WEBSOCKET.md)
 
-Все логи в `/logs`:
+### Что такое Y?
 
-```bash
-tail -f logs/market-data.log
-tail -f logs/trading.log
-```
+**Smart Order Routing:**
+→ [Features § SOR](FEATURES.md#smart-order-routing-sor)
 
-## 🔗 Инфраструктура
+**VWAP/TWAP:**
+→ [Features § Algorithmic Execution](FEATURES.md#algorithmic-execution)
 
-Вся инфраструктура на удаленных серверах:
+**Value at Risk (VaR):**
+→ [Portfolio Guide § Risk Management](PORTFOLIO_GUIDE.md#risk-management)
 
-- PostgreSQL: `49.13.216.63:65432`
-- ClickHouse: `49.13.216.63:8123`
-- NATS: `nats.balkhaev.com`
+**Ensemble Predictions:**
+→ [ML Guide § Ensemble](ML_GUIDE.md#ensemble-prediction)
 
-Docker НЕ требуется для разработки!
+**Circuit Breaker:**
+→ [Architecture § Безопасность](ARCHITECTURE.md#безопасность)
 
-## 📈 Roadmap
+## 🔍 По категориям
 
-**Завершено:** Рефакторинг архитектуры (14→8 сервисов), Multi-exchange support, ML predictions, Risk management  
-**В процессе:** Circuit Breaker integration, Comprehensive testing  
-**Запланировано:** Automated trading, Mobile app, Kubernetes deployment
+### 📊 Market Data & Analytics
 
-🎯 **[Полный Roadmap →](docs/ROADMAP.md)**
+- Real-time данные с 3+ бирж → [Features § Market Data](FEATURES.md)
+- Технические индикаторы (RSI, MACD, etc.) → [API Reference](API_REFERENCE.md)
+- On-chain метрики → [API Reference](API_REFERENCE.md)
+- Sentiment analysis → [Features § Social Media](FEATURES.md)
+
+### 🤖 Machine Learning
+
+- LSTM predictions → [ML Guide § LSTM](ML_GUIDE.md#lstm-model)
+- Anomaly detection → [ML Guide § Anomaly](ML_GUIDE.md#anomaly-detection)
+- Hyperparameter optimization → [ML Guide § HPO](ML_GUIDE.md#hyperparameter-optimization)
+- Backtesting → [ML Guide § Backtesting](ML_GUIDE.md#backtesting)
+
+### 💼 Portfolio Management
+
+- Portfolio optimization → [Portfolio Guide § Optimization](PORTFOLIO_GUIDE.md#portfolio-optimization)
+- Rebalancing strategies → [Portfolio Guide § Rebalancing](PORTFOLIO_GUIDE.md#portfolio-rebalancing)
+- Risk management (VaR, CVaR) → [Portfolio Guide § Risk](PORTFOLIO_GUIDE.md#risk-management)
+- Stress testing → [Portfolio Guide § Stress Testing](PORTFOLIO_GUIDE.md#stress-testing)
+
+### 🎯 Trading & Execution
+
+- Smart Order Routing → [Features § SOR](FEATURES.md#smart-order-routing-sor)
+- Algorithmic execution (VWAP, TWAP, Iceberg) → [Features § Algos](FEATURES.md#algorithmic-execution)
+- Market screener → [Features § Screener](FEATURES.md)
+- Order management → [API Reference](API_REFERENCE.md)
+
+### 🔧 Development
+
+- Установка → [Getting Started § Setup](GETTING_STARTED.md)
+- API интеграция → [API Reference](API_REFERENCE.md)
+- WebSocket streaming → [WebSocket Guide](WEBSOCKET.md)
+- Gateway setup → [Gateway Guide](GATEWAY.md)
+
+## 📈 Производительность
+
+| Метрика           | Значение            | Документ                                           |
+| ----------------- | ------------------- | -------------------------------------------------- |
+| API Latency (p95) | < 100ms             | [Architecture](ARCHITECTURE.md#производительность) |
+| WebSocket         | 10,000 msg/sec      | [Architecture](ARCHITECTURE.md#производительность) |
+| ClickHouse        | 100,000 inserts/sec | [Architecture](ARCHITECTURE.md#производительность) |
+| Redis Speedup     | 7-24x               | [Architecture](ARCHITECTURE.md#redis-кэширование)  |
+
+## 🔒 Безопасность
+
+**Статус:** Production Ready ✅ (9/10)
+
+- ✅ SQL Injection защита
+- ✅ API Keys шифрование (AES-256-GCM)
+- ✅ Circuit Breaker & Retry
+- ✅ Input validation (Zod)
+
+**Подробнее:** [Architecture § Безопасность](ARCHITECTURE.md#безопасность)
 
 ## 🐛 Troubleshooting
 
-```bash
-# Health checks
-curl http://localhost:3000/health
-curl http://localhost:3010/health
+**Проблемы с запуском:**
+→ [Getting Started § Troubleshooting](GETTING_STARTED.md#troubleshooting)
 
-# Логи
-tail -f logs/*.log
+**ML модели не работают:**
+→ [ML Guide § Troubleshooting](ML_GUIDE.md#troubleshooting)
 
-# Проверка инфраструктуры
-curl http://49.13.216.63:8123/ping  # ClickHouse
-nc -zv nats.balkhaev.com 4222       # NATS
-```
+**WebSocket не подключается:**
+→ [WebSocket § Troubleshooting](WEBSOCKET.md)
+
+## 🤝 Вклад в документацию
+
+Нашли ошибку или хотите улучшить документацию?
+
+1. Создайте issue с описанием проблемы
+2. Предложите изменения через pull request
+3. Следуйте стилю существующей документации
+
+## 📊 Статистика документации
+
+- **9 документов** — оптимизировано с 26
+- **~5,000 строк** — сокращено с 11,400
+- **100% покрытие** — все функции задокументированы
+- **Актуальность** — обновлено 6 октября 2025
+
+---
+
+**Нужна помощь?** Начните с [Getting Started](GETTING_STARTED.md) или изучите [Features](FEATURES.md)

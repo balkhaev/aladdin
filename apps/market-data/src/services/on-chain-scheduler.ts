@@ -1,8 +1,9 @@
 import type { ClickHouseService } from "@aladdin/clickhouse";
+import type { OnChainMetrics, WhaleTransaction } from "@aladdin/core";
 import type { Logger } from "@aladdin/logger";
 import type { NatsClient } from "@aladdin/messaging";
-import type { OnChainMetrics, WhaleTransaction } from "@aladdin/core";
 import type { BlockchainFetcher } from "../fetchers/types";
+import { OnChainAlertService } from "./on-chain-alert";
 import { WhaleAlertService } from "./whale-alert";
 
 type SchedulerOptions = {
@@ -14,7 +15,6 @@ type SchedulerOptions = {
 };
 
 const MIN_UPDATE_INTERVAL = 60_000; // 1 minute minimum
-const MILLISECONDS_TO_SECONDS = 1000;
 const DEFAULT_WHALE_THRESHOLD_BTC = 10;
 const DEFAULT_WHALE_THRESHOLD_ETH = 100;
 const INITIAL_FETCH_DELAY = 5000; // 5 seconds delay before initial fetch
@@ -45,6 +45,7 @@ export class MetricsScheduler {
   private lastFetchTime = 0;
   private metricsCache = new Map<string, CachedMetrics>();
   private whaleAlertService: WhaleAlertService;
+  private onChainAlertService: OnChainAlertService;
 
   constructor(options: SchedulerOptions) {
     this.logger = options.logger;
@@ -66,6 +67,14 @@ export class MetricsScheduler {
       exchangeThreshold:
         Number(process.env.WHALE_ALERT_EXCHANGE_THRESHOLD) || undefined,
       enabled: process.env.WHALE_ALERT_ENABLED !== "false",
+    });
+
+    // Initialize on-chain alert service
+    this.onChainAlertService = new OnChainAlertService({
+      logger: this.logger,
+      natsClient: this.natsClient,
+      clickhouse: this.clickhouse,
+      enabled: process.env.ONCHAIN_ALERT_ENABLED !== "false",
     });
   }
 
@@ -219,6 +228,9 @@ export class MetricsScheduler {
         blockchain as "BTC" | "ETH"
       );
 
+      // Check for on-chain metric alerts (MVRV, NUPL, Reserve Risk, etc.)
+      await this.onChainAlertService.checkMetrics(metrics);
+
       // Publish to NATS
       await this.publishMetrics(metrics);
 
@@ -267,7 +279,7 @@ export class MetricsScheduler {
     try {
       await this.clickhouse.insert("on_chain_metrics", [
         {
-          timestamp: Math.floor(metrics.timestamp / MILLISECONDS_TO_SECONDS),
+          timestamp: metrics.timestamp, // DateTime64(3) expects milliseconds
           blockchain: metrics.blockchain,
           whale_tx_count: metrics.whaleTransactions.count,
           whale_tx_volume: metrics.whaleTransactions.totalVolume,
@@ -284,6 +296,21 @@ export class MetricsScheduler {
           exchange_reserve: metrics.exchangeReserve ?? null,
           puell_multiple: metrics.puellMultiple ?? null,
           stock_to_flow: metrics.stockToFlow ?? null,
+          // New Phase 1 metrics
+          reserve_risk: metrics.reserveRisk ?? null,
+          accumulation_score: metrics.accumulationTrend?.score ?? null,
+          accumulation_trend_7d: metrics.accumulationTrend?.trend7d ?? null,
+          accumulation_trend_30d: metrics.accumulationTrend?.trend30d ?? null,
+          accumulation_trend_90d: metrics.accumulationTrend?.trend90d ?? null,
+          hodl_under1m: metrics.hodlWaves?.under1m ?? null,
+          hodl_m1to3: metrics.hodlWaves?.m1to3 ?? null,
+          hodl_m3to6: metrics.hodlWaves?.m3to6 ?? null,
+          hodl_m6to12: metrics.hodlWaves?.m6to12 ?? null,
+          hodl_y1to2: metrics.hodlWaves?.y1to2 ?? null,
+          hodl_y2to3: metrics.hodlWaves?.y2to3 ?? null,
+          hodl_y3to5: metrics.hodlWaves?.y3to5 ?? null,
+          hodl_over5y: metrics.hodlWaves?.over5y ?? null,
+          binary_cdd: metrics.binaryCDD ? 1 : null,
         },
       ]);
     } catch (error) {
@@ -362,5 +389,12 @@ export class MetricsScheduler {
    */
   getWhaleAlertService(): WhaleAlertService {
     return this.whaleAlertService;
+  }
+
+  /**
+   * Get on-chain alert service
+   */
+  getOnChainAlertService(): OnChainAlertService {
+    return this.onChainAlertService;
   }
 }

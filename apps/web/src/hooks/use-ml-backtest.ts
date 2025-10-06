@@ -24,6 +24,7 @@ export function useRunBacktest() {
       endDate: number;
       walkForward?: boolean;
       retrainInterval?: number;
+      includeSentiment?: boolean;
     }) => runBacktest(config),
   });
 }
@@ -40,6 +41,7 @@ export function useCompareModels() {
       endDate: number;
       walkForward?: boolean;
       retrainInterval?: number;
+      includeSentiment?: boolean;
     }) => compareModels(config),
   });
 }

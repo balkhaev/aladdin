@@ -3,6 +3,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
+  useRouter,
   useRouterState,
 } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,9 +12,8 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import Loader from "@/components/loader";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { queryClient } from "@/lib/query-client";
 import { ExchangeProvider } from "@/lib/exchange-context";
-import type { RouterAppContext } from "../router";
+import type { RouterAppContext, getRouter } from "../router";
 import "../index.css";
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -41,6 +41,8 @@ function RootComponent() {
   const isFetching = useRouterState({
     select: (s) => s.isLoading,
   });
+  const router = useRouter<Awaited<ReturnType<typeof getRouter>>>();
+  const queryClient = router.options.context.queryClient;
 
   return (
     <>

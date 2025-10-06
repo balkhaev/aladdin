@@ -28,8 +28,6 @@ EXPOSE 3001
 
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
-RUN sed -i "s/listen 80/listen ${PORT}/" /etc/nginx/conf.d/default.conf
-
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
 CMD ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]

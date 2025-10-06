@@ -11,7 +11,7 @@
 | Сервис | Каталог | Порт по умолчанию | Основная команда | Примечания |
 | --- | --- | --- | --- | --- |
 | Gateway | `apps/gateway` | 3000 | `bun run start` | Выполняется сборка (`bun run build`) перед стартом.
-| Web | `apps/web` | 4173 (установите `PORT` при необходимости) | `bun run serve -- --host 0.0.0.0 --port $PORT` | Сначала собирает `vite build`.
+| Web | `apps/web` | 3001 | `bun run serve` | Сначала собирает `vite build`, порт зафиксирован на 3001.
 | Market Data | `apps/market-data` | 3010 | `bun run start` | Нужны рабочие ссылки на ClickHouse и NATS.
 | Trading | `apps/trading` | 3011 | `bun run start` | Использует Redis/NATS.
 | Portfolio | `apps/portfolio` | 3012 | `bun run start` | Требует БД и Redis.

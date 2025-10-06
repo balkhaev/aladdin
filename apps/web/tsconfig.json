@@ -15,9 +15,5 @@
 			"@/*": ["./src/*"]
 		}
 	},
-	"references": [
-		{
-			"path": "../server"
-		}
-	]
+	"references": []
 }

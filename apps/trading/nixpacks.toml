@@ -1,0 +1,13 @@
+[phases.setup]
+nixpkgs = ["bun"]
+
+[phases.install]
+cmds = [
+  "bun install --cwd ../.."
+]
+
+[start]
+cmd = "bun run start"
+
+[environment]
+NODE_ENV = "production"

@@ -1,10 +1,10 @@
 /**
  * API Gateway Service
- * Unified gateway using BaseGatewayService from @aladdin/gateway
+ * Unified gateway using BaseGatewayService from @aladdin/gateway-service
  */
 
 import "dotenv/config";
-import { BaseGatewayService } from "@aladdin/gateway";
+import { BaseGatewayService } from "@aladdin/gateway-service";
 import { createLogger, Logger } from "@aladdin/logger";
 import {
   initializeService,

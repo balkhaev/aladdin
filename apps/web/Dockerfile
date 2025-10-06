@@ -25,7 +25,7 @@ ENV PORT=3001 \
 # Copy nginx config template
 COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 
-# Copy built static files
+# Copy built static files (supports both standard Vite output and SSR client bundle)
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
 EXPOSE 3001

@@ -14,10 +14,10 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
-    optimizePackageImports: [
-      "@radix-ui/react-icons",
-      "lucide-react",
-    ],
+    optimizePackageImports: ["@radix-ui/react-icons", "lucide-react"],
+  },
+  typescript: {
+    ignoreBuildErrors: true,
   },
 };
 

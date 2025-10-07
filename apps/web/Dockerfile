@@ -11,7 +11,7 @@ COPY apps/web/package.json ./apps/web/
 COPY packages/*/package.json ./packages/
 
 # Install dependencies with frozen lockfile
-RUN bun install --frozen-lockfile --production=false
+RUN bun install --frozen-lockfile
 
 # Stage 2: Builder
 FROM oven/bun:1-alpine AS builder

@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
-COPY requirements.txt ./
+COPY apps/ml-service/requirements.txt ./requirements.txt
 RUN pip install --upgrade pip && \
     pip install --user --no-warn-script-location -r requirements.txt
 
@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /root/.local /root/.local
 
 # Copy application source
-COPY . .
+COPY apps/ml-service /app
 
 EXPOSE 8000
 

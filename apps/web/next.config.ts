@@ -1,15 +1,17 @@
 import type { NextConfig } from "next";
 
+import { API_BASE_URL, WS_BASE_URL } from "./lib/runtime-env";
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3000/api/:path*",
+        destination: `${API_BASE_URL}/api/:path*`,
       },
       {
         source: "/ws/:path*",
-        destination: "http://localhost:3000/ws/:path*",
+        destination: `${WS_BASE_URL}/ws/:path*`,
       },
     ];
   },

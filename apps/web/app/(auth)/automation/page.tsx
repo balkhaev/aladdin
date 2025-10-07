@@ -156,7 +156,7 @@ type MLConfigFormProps = {
   isComparePending: boolean;
 };
 
-export function MLConfigurationForm({
+function MLConfigurationForm({
   symbol,
   setSymbol,
   horizon,
@@ -318,7 +318,7 @@ export function MLConfigurationForm({
   );
 }
 
-export function MLStatusStepper({
+function MLStatusStepper({
   isTraining,
   modelSaved,
 }: {
@@ -408,7 +408,7 @@ export function MLStatusStepper({
   );
 }
 
-export function MLModelsContent() {
+function MLModelsContent() {
   // Quick Train state
   const quickTrainMutation = useQuickTrain();
 
@@ -891,7 +891,7 @@ export function MLModelsContent() {
   );
 }
 
-export function BacktestContent() {
+function BacktestContent() {
   const [result, setResult] = useState<BacktestResult | null>(null);
   const backtest = useBacktest();
 

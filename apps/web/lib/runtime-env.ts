@@ -5,11 +5,16 @@ const resolveBase = (value?: string | null) => {
   return trimmed ? trimTrailingSlash(trimmed) : undefined;
 };
 
+const isDev = process.env.NODE_ENV !== "production";
 const isServer = typeof window === "undefined";
 
 const runtimeOrigin = isServer
   ? undefined
   : trimTrailingSlash(window.location.origin);
+
+const defaultApiBaseUrl = resolveBase(
+  isDev ? "http://localhost:3000" : "https://gateway.aladdin.balkhaev.com"
+);
 
 const rawApiFromEnv = resolveBase(process.env.NEXT_PUBLIC_API_URL);
 
@@ -23,10 +28,14 @@ const rawApiFromProcess =
       )
     : undefined;
 
-const clientFallbackApi = runtimeOrigin ?? "http://localhost:3000";
+const fallbackApiBaseUrl =
+  defaultApiBaseUrl ?? (isServer ? undefined : runtimeOrigin);
 
 export const API_BASE_URL =
-  rawApiFromEnv ?? rawApiFromProcess ?? (isServer ? "" : clientFallbackApi);
+  rawApiFromEnv ??
+  rawApiFromProcess ??
+  fallbackApiBaseUrl ??
+  "";
 
 const computeWsFromApi = (apiUrl: string) => {
   if (!apiUrl) {

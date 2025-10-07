@@ -1,7 +1,7 @@
 /**
  * Конфигурация для подключения к API Gateway
- * Frontend работает ТОЛЬКО через Gateway (http://localhost:3000)
- * Прямое обращение к микросервисам НЕ используется
+ * Frontend обращается напрямую к Gateway (http://localhost:3000)
+ * Прямое обращение к микросервисам не используется
  */
 
 import { API_BASE_URL, WS_BASE_URL } from "./runtime-env";

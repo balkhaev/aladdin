@@ -1,9 +1,8 @@
 "use client";
 
-import { AddExchangeCredentialDialog } from "../components/add-exchange-credential-dialog";
-import { AuditLogTable } from "../components/audit-log-table";
-import { ExchangeCredentialsList } from "../components/exchange-credentials-list";
-
+import { AddExchangeCredentialDialog } from "@/components/add-exchange-credential-dialog";
+import { AuditLogTable } from "@/components/audit-log-table";
+import { ExchangeCredentialsList } from "@/components/exchange-credentials-list";
 
 export default function SettingsPage() {
   return (

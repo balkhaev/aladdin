@@ -188,8 +188,8 @@ export function CreatePortfolioDialog({ trigger }: CreatePortfolioDialogProps) {
                 биржи.{" "}
                 <Link
                   className="font-medium underline"
+                  href="/settings"
                   onClick={() => setOpen(false)}
-                  to="/settings"
                 >
                   Перейти в настройки
                 </Link>

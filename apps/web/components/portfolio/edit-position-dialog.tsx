@@ -51,7 +51,7 @@ export function EditPositionDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       quantity: position.quantity,
-      entryPrice: position.entryPrice,
+      entryPrice: position.averagePrice,
     },
   });
 
@@ -59,7 +59,7 @@ export function EditPositionDialog({
     if (dialogProps.open) {
       form.reset({
         quantity: position.quantity,
-        entryPrice: position.entryPrice,
+        entryPrice: position.averagePrice,
       });
     }
   }, [dialogProps.open, position, form]);
@@ -131,7 +131,7 @@ export function EditPositionDialog({
             />
             <DialogFooter>
               <Button
-                onClick={() => setOpen(false)}
+                onClick={() => closeDialog()}
                 type="button"
                 variant="outline"
               >

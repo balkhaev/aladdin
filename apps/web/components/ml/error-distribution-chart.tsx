@@ -78,7 +78,9 @@ export function ErrorDistributionChart({
 
       return () => {
         resizeObserver.disconnect();
-        chart.remove();
+        if (chart) {
+          chart.remove();
+        }
         chartRef.current = null;
         seriesRef.current = null;
       };

@@ -39,13 +39,17 @@ export const OrderBook = memo(function OrderBookComponent({
     }
 
     // Calculate cumulative totals for bids
-    const bids = orderBook.bids.map((_, idx) =>
-      orderBook.bids.slice(0, idx + 1).reduce((sum, [, q]) => sum + q, 0)
+    const bids = orderBook.bids.map((_: unknown, idx: number) =>
+      orderBook.bids
+        .slice(0, idx + 1)
+        .reduce((sum: number, [, q]: [number, number]) => sum + q, 0)
     );
 
     // Calculate cumulative totals for asks
-    const asks = orderBook.asks.map((_, idx) =>
-      orderBook.asks.slice(0, idx + 1).reduce((sum, [, q]) => sum + q, 0)
+    const asks = orderBook.asks.map((_: unknown, idx: number) =>
+      orderBook.asks
+        .slice(0, idx + 1)
+        .reduce((sum: number, [, q]: [number, number]) => sum + q, 0)
     );
 
     return {
@@ -106,7 +110,7 @@ export const OrderBook = memo(function OrderBookComponent({
           {orderBook.asks
             .slice(0, levels)
             .reverse()
-            .map(([price, qty], idx) => {
+            .map(([price, qty]: [number, number], idx: number) => {
               const reversedIdx = levels - 1 - idx;
               const total = askTotals[reversedIdx] || 0;
               const percentage = (total / maxAskTotal) * PERCENTAGE_MULTIPLIER;
@@ -159,7 +163,9 @@ export const OrderBook = memo(function OrderBookComponent({
           className="overflow-y-auto"
           style={{ maxHeight: "calc(50% - 32px)" }}
         >
-          {orderBook.bids.slice(0, levels).map(([price, qty], idx) => {
+          {orderBook.bids
+            .slice(0, levels)
+            .map(([price, qty]: [number, number], idx: number) => {
             const total = bidTotals[idx] || 0;
             const percentage = (total / maxBidTotal) * PERCENTAGE_MULTIPLIER;
 

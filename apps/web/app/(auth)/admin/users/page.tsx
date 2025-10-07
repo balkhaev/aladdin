@@ -35,7 +35,6 @@ import {
 import { apiRequest } from "@/lib/api/client";
 import { authClient } from "@/lib/auth-client";
 
-
 type User = {
   id: string;
   name: string;
@@ -54,7 +53,6 @@ type User = {
 
 export default function AdminUsersPage() {
   const { data: session } = authClient.useSession();
-  const queryClient = useQueryClient();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // Загрузка списка пользователей

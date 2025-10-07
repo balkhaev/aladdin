@@ -3,7 +3,12 @@
  * Исторический график индекса страха/жадности
  */
 
-import { AreaSeries, createChart, type ISeriesApi } from "lightweight-charts";
+import {
+  AreaSeries,
+  createChart,
+  type ISeriesApi,
+  type UTCTimestamp,
+} from "lightweight-charts";
 import { TrendingUp } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -128,7 +133,10 @@ export const FearGreedHistory = memo(function FearGreedHistoryComponent() {
     }
 
     // Deduplicate and format data
-    const chartData = deduplicateTimeSeriesData(data);
+    const chartData = deduplicateTimeSeriesData(data).map((d) => ({
+      ...d,
+      time: d.time as UTCTimestamp,
+    }));
 
     if (chartData.length > 0) {
       seriesRef.current.setData(chartData);

@@ -20,7 +20,7 @@ type ChartInitOptions = {
  * Handles visibility detection, resize, and cleanup
  */
 export function useChartInitialization(
-  containerRef: RefObject<HTMLDivElement>,
+  containerRef: RefObject<HTMLDivElement | null>,
   createChart: (container: HTMLDivElement, width: number) => IChartApi | null,
   options: ChartInitOptions = {}
 ): RefObject<IChartApi | null> {

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import type { OrderBook } from "@/lib/api/trading";
+import type { OrderBook } from "@/lib/api/market-data";
 import { logger } from "@/lib/logger";
 import { useWebSocket } from "./use-websocket";
 
@@ -31,7 +31,7 @@ export function useOrderBookWS(symbol: string, limit = 20, enabled = true) {
   useEffect(() => {
     if (isConnected && symbol && enabled) {
       logger.debug("OrderBook WS", `Subscribing to ${symbol}`);
-      subscribe("orderbook", { symbols: [symbol], limit });
+      subscribe("orderbook", { symbols: [symbol] });
 
       return () => {
         logger.debug("OrderBook WS", `Unsubscribing from ${symbol}`);

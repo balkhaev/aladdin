@@ -48,7 +48,7 @@ const LIMIT_TYPES = [
 ] as const;
 
 export function RiskLimitsCard({ portfolioId }: RiskLimitsCardProps) {
-  const { data: limits, isLoading } = useRiskLimits(portfolioId);
+  const { data: limits, isLoading } = useRiskLimits({ portfolioId });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingLimit, setEditingLimit] = useState<RiskLimit | null>(null);
 
@@ -138,7 +138,7 @@ function LimitRow({ limit, onEdit }: { limit: RiskLimit; onEdit: () => void }) {
   const unit = limitType?.unit ?? "";
 
   const handleToggle = (enabled: boolean) => {
-    updateMutation.mutate({ id: limit.id, input: { enabled } });
+    updateMutation.mutate({ limitId: limit.id, data: { enabled } });
   };
 
   const handleDelete = () => {
@@ -296,7 +296,7 @@ function EditLimitDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(
-      { id: limit.id, input: { value, enabled } },
+      { limitId: limit.id, data: { value, enabled } },
       {
         onSuccess: () => {
           onClose();

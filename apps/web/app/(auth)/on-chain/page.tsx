@@ -18,13 +18,13 @@ import { SimilarPeriodsCard } from "@/components/on-chain/similar-periods-card";
 import { OnChainSentiment } from "@/components/on-chain-sentiment";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOnChainMetricsWS } from "@/hooks/use-onchain-metrics-ws";
-
+import { API_BASE_URL } from "@/lib/runtime-env";
 
 async function fetchOnChainMetrics(
   blockchain: string
 ): Promise<OnChainMetrics> {
   const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}/api/on-chain/metrics/${blockchain}/latest`
+    `${API_BASE_URL}/api/on-chain/metrics/${blockchain}/latest`
   );
   if (!response.ok) {
     throw new Error("Failed to fetch on-chain metrics");

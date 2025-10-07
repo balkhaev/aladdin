@@ -55,7 +55,7 @@ export function SyncPortfolioDialog({
   } = useQuery({
     queryKey: ["exchangeBalances", selectedCredentialId],
     queryFn: () => getExchangeBalances(selectedCredentialId),
-    enabled: !!selectedCredentialId && dialogProps.open,
+    enabled: !!selectedCredentialId && open,
     retry: 1,
   });
 

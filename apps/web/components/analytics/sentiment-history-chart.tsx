@@ -3,7 +3,12 @@
  * Displays historical sentiment scores using lightweight-charts
  */
 
-import { AreaSeries, createChart, type ISeriesApi } from "lightweight-charts";
+import {
+  AreaSeries,
+  createChart,
+  type ISeriesApi,
+  type UTCTimestamp,
+} from "lightweight-charts";
 import { TrendingUp } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -141,10 +146,10 @@ export const SentimentHistoryChart = memo(
             data.map((score, index) => ({
               time: Math.floor(
                 (Date.now() - (data.length - index) * 3_600_000) / 1000
-              ),
+              ) as UTCTimestamp,
               value: score,
             }))
-          )
+          ).map((d) => ({ ...d, time: d.time as UTCTimestamp }))
         : [];
 
       if (chartData.length > 0) {

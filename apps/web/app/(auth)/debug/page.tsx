@@ -26,13 +26,13 @@ export default function DebugPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-muted-foreground text-sm">
-            Environment: {import.meta.env.MODE}
+            Environment: {process.env.NODE_ENV}
           </p>
           <p className="text-muted-foreground text-sm">
-            API URL: {import.meta.env.VITE_API_URL || "не задан"}
+            API URL: {process.env.NEXT_PUBLIC_API_URL || "не задан"}
           </p>
           <p className="text-muted-foreground text-sm">
-            WebSocket URL: {import.meta.env.VITE_WS_URL || "не задан"}
+            WebSocket URL: {process.env.NEXT_PUBLIC_WS_URL || "не задан"}
           </p>
         </CardContent>
       </Card>

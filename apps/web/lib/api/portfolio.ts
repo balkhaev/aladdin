@@ -7,6 +7,7 @@ import { apiClient } from "./client";
 
 // Types
 export type Position = {
+  id: string;
   symbol: string;
   quantity: number;
   averagePrice: number;

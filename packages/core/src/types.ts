@@ -14,6 +14,8 @@ export type Tick = {
   ask: number;
   bidVolume: number;
   askVolume: number;
+  priceChange?: number;
+  priceChangePercent?: number;
 };
 
 export type Candle = {

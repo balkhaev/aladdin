@@ -101,13 +101,14 @@ export function CorrelationsTable({
           Корреляции активов
         </CardTitle>
         <CardDescription>
-          Диверсификация: {correlations.diversificationScore.toFixed(2)} |
-          Средняя корреляция: {correlations.avgCorrelation.toFixed(2)}
+          Диверсификация:{" "}
+          {correlations?.diversificationScore.toFixed(2) ?? "N/A"} | Средняя
+          корреляция: {correlations?.avgCorrelation.toFixed(2) ?? "N/A"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {correlations.highlyCorrelated.length > 0 && (
+          {correlations && correlations.highlyCorrelated.length > 0 && (
             <div>
               <h4 className="mb-2 font-medium text-sm">Высокая корреляция</h4>
               <div className="rounded-md border">

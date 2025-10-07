@@ -20,7 +20,11 @@ export function useBybitOpportunities(filters: {
   return useQuery({
     queryKey: ["bybit-opportunities", filters],
     queryFn: async () => {
-      const response = await bybitOpportunitiesApi.getOpportunities(filters);
+      const apiFilters = {
+        ...filters,
+        signal: filters.signal === "NEUTRAL" ? undefined : filters.signal,
+      };
+      const response = await bybitOpportunitiesApi.getOpportunities(apiFilters);
       return response;
     },
     refetchInterval: REFETCH_INTERVAL,

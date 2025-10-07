@@ -34,7 +34,7 @@ export default function SignInForm({
             router.push("/");
             toast.success("Sign in successful");
           },
-          onError: (error) => {
+          onError: (error: any) => {
             toast.error(error.error.message || error.error.statusText);
           },
         }

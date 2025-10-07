@@ -104,26 +104,26 @@ export function AuditLogTable() {
                     <div className="text-sm">
                       {log.action === "CREATE" && (
                         <span>
-                          Added {log.details.exchange} key:{" "}
+                          Added {(log.details as any).exchange} key:{" "}
                           <span className="font-medium">
-                            {log.details.label}
+                            {(log.details as any).label}
                           </span>
-                          {log.details.testnet && " (Testnet)"}
+                          {(log.details as any).testnet && " (Testnet)"}
                         </span>
                       )}
                       {log.action === "UPDATE" && (
                         <span>
                           Updated{" "}
-                          {Array.isArray(log.details.changes)
-                            ? log.details.changes.join(", ")
+                          {Array.isArray((log.details as any).changes)
+                            ? (log.details as any).changes.join(", ")
                             : "credentials"}
                         </span>
                       )}
                       {log.action === "DELETE" && (
                         <span>
-                          Deleted {log.details.exchange} key:{" "}
+                          Deleted {(log.details as any).exchange} key:{" "}
                           <span className="font-medium">
-                            {log.details.label}
+                            {(log.details as any).label}
                           </span>
                         </span>
                       )}

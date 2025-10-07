@@ -180,7 +180,7 @@ export function ScreenerResultsTable({
                 variant="ghost"
               >
                 Symbol
-                <SortIcon field="symbol" />
+                <SortIcon field="symbol" sortField={sortField} sortOrder={sortOrder} />
               </Button>
             </TableHead>
             <TableHead className="text-right">
@@ -191,7 +191,7 @@ export function ScreenerResultsTable({
                 variant="ghost"
               >
                 Price
-                <SortIcon field="price" />
+                <SortIcon field="price" sortField={sortField} sortOrder={sortOrder} />
               </Button>
             </TableHead>
             <TableHead className="text-right">
@@ -202,7 +202,7 @@ export function ScreenerResultsTable({
                 variant="ghost"
               >
                 24h Change
-                <SortIcon field="change" />
+                <SortIcon field="change" sortField={sortField} sortOrder={sortOrder} />
               </Button>
             </TableHead>
             <TableHead className="text-right">
@@ -213,7 +213,7 @@ export function ScreenerResultsTable({
                 variant="ghost"
               >
                 Volume
-                <SortIcon field="volume" />
+                <SortIcon field="volume" sortField={sortField} sortOrder={sortOrder} />
               </Button>
             </TableHead>
             <TableHead>
@@ -224,7 +224,7 @@ export function ScreenerResultsTable({
                 variant="ghost"
               >
                 Signal
-                <SortIcon field="strength" />
+                <SortIcon field="strength" sortField={sortField} sortOrder={sortOrder} />
               </Button>
             </TableHead>
             <TableHead>Recommendation</TableHead>

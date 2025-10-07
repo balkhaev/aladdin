@@ -108,7 +108,14 @@ export function GlobalTickerBar() {
         priceChangePercent: ticker.priceChangePercent,
       }));
     }
-    return restTickers || [];
+    return (
+      restTickers?.map((ticker) => ({
+        symbol: ticker.symbol,
+        lastPrice: ticker.price,
+        priceChange: 0,
+        priceChangePercent: 0,
+      })) || []
+    );
   }, [wsTickers, restTickers]);
 
   if (displayTickers.length === 0) {

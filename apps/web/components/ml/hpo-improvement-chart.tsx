@@ -93,7 +93,9 @@ export function HPOImprovementChart({
 
       return () => {
         resizeObserver.disconnect();
-        chart.remove();
+        if (chart) {
+          chart.remove();
+        }
         chartRef.current = null;
         seriesRef.current = null;
         bestLineRef.current = null;

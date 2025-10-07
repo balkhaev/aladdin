@@ -1,5 +1,5 @@
 /**
- * Расширение типов Better-Auth для добавления роли пользователя
+ * Глобальное расширение типов Better-Auth
  */
 
 declare module "better-auth/types" {
@@ -11,5 +11,3 @@ declare module "better-auth/types" {
     user: User;
   }
 }
-
-export {};

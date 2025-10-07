@@ -66,8 +66,8 @@ export function useMultiSymbolWS(symbols: string[], enabled = true) {
         newTickers.set(tick.symbol, {
           symbol: tick.symbol,
           price: tick.price,
-          priceChange: tick.priceChange,
-          priceChangePercent: tick.priceChangePercent,
+          priceChange: tick.priceChange ?? 0,
+          priceChangePercent: tick.priceChangePercent ?? 0,
           lastUpdate: Date.now(),
         });
         return newTickers;

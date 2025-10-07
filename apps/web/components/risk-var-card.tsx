@@ -61,10 +61,10 @@ export function RiskVaRCard({ portfolioId }: RiskVaRCardProps) {
                     Максимальный ожидаемый убыток
                   </p>
                   <p className="font-bold text-2xl text-red-600">
-                    {formatCurrency(var95.var)}
+                    {formatCurrency(var95.var95)}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    {formatPercent(var95.var, var95.currentValue)}% от текущей
+                    {formatPercent(var95.var95, var95.portfolioValue)}% от текущей
                     стоимости
                   </p>
                 </div>
@@ -75,7 +75,7 @@ export function RiskVaRCard({ portfolioId }: RiskVaRCardProps) {
                       Текущая стоимость
                     </p>
                     <p className="font-semibold">
-                      {formatCurrency(var95.currentValue)}
+                      {formatCurrency(var95.portfolioValue)}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -150,10 +150,10 @@ export function RiskVaRCard({ portfolioId }: RiskVaRCardProps) {
                     Максимальный ожидаемый убыток
                   </p>
                   <p className="font-bold text-2xl text-red-600">
-                    {formatCurrency(var99.var)}
+                    {formatCurrency(var99.var99)}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    {formatPercent(var99.var, var99.currentValue)}% от текущей
+                    {formatPercent(var99.var99, var99.portfolioValue)}% от текущей
                     стоимости
                   </p>
                 </div>
@@ -164,7 +164,7 @@ export function RiskVaRCard({ portfolioId }: RiskVaRCardProps) {
                       Текущая стоимость
                     </p>
                     <p className="font-semibold">
-                      {formatCurrency(var99.currentValue)}
+                      {formatCurrency(var99.portfolioValue)}
                     </p>
                   </div>
                   <div className="space-y-1">

@@ -47,7 +47,7 @@ const formSchema = z.object({
     .max(MAX_SYMBOL_LENGTH, "Слишком длинный символ"),
   quantity: z.number().positive("Количество должно быть положительным"),
   entryPrice: z.number().positive("Цена должна быть положительной"),
-  side: z.enum(["LONG", "SHORT"]).default("LONG"),
+  side: z.enum(["LONG", "SHORT"]),
 });
 
 type AddPositionDialogProps = {
@@ -173,7 +173,7 @@ export function AddPositionDialog({ portfolioId }: AddPositionDialogProps) {
             />
             <DialogFooter>
               <Button
-                onClick={() => setOpen(false)}
+                onClick={() => closeDialog()}
                 type="button"
                 variant="outline"
               >

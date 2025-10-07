@@ -162,11 +162,11 @@ export function OnChainAlertsPanel({
                           {getSignalIcon(alert.signal)}
                         </div>
                         <p className="font-medium text-sm">{alert.message}</p>
-                        {alert.metadata?.interpretation && (
+                        {alert.metadata?.interpretation ? (
                           <p className="text-xs opacity-80">
-                            {String(alert.metadata.interpretation)}
+                            {alert.metadata.interpretation as string}
                           </p>
-                        )}
+                        ) : null}
                         <p className="text-xs opacity-60">
                           {formatTimestamp(alert.timestamp)}
                         </p>

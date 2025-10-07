@@ -6,8 +6,8 @@ const baseUrl = isDev
   ? "http://localhost:3000"
   : "https://gateway.aladdin.balkhaev.com";
 const wsUrl = isDev
-  ? "ws://localhost:3000"
-  : "ws://gateway.aladdin.balkhaev.com";
+  ? "http://localhost:3000"
+  : "http://gateway.aladdin.balkhaev.com";
 
 const nextConfig: NextConfig = {
   async rewrites() {

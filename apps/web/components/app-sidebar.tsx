@@ -29,6 +29,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
+import type { User } from "@/types/user";
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
 
@@ -94,9 +95,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const currentPath = pathname;
   const { data: session } = authClient.useSession();
+  const sessionUser = session?.user as unknown as User;
 
   // Проверяем, является ли пользователь администратором
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = sessionUser?.role === "admin";
 
   return (
     <Sidebar collapsible="icon">

@@ -54,7 +54,7 @@ export function useSocialFeedWebSocket(contentType?: string, enabled = true) {
   const { status, data, error, isConnected } =
     useWebSocketSubscription<SocialFeedEvent>(
       "social-feed",
-      enabled ? { contentType } : undefined
+      enabled ? {} : undefined
     );
 
   // Обработка новых проанализированных постов

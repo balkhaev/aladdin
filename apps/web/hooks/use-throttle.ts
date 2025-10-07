@@ -22,7 +22,7 @@ export function useThrottle<T extends (...args: unknown[]) => void>(
   delay = 200
 ): T {
   const lastRun = useRef(Date.now());
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   return useCallback(
     ((...args) => {

@@ -3,7 +3,6 @@
  * Centralized error handling with toast notifications
  */
 
-import type { ToastType } from "@/components/ui/use-toast";
 import { logger } from "./logger";
 
 type ErrorHandlerOptions = {
@@ -90,13 +89,13 @@ export function handleError(
 export function createErrorToast(
   error: unknown,
   defaultTitle = "Error"
-): { title: string; description: string; variant: ToastType } {
+): { title: string; description: string; variant: string } {
   const message = getErrorMessage(error);
 
   return {
     title: defaultTitle,
     description: message,
-    variant: "destructive" as ToastType,
+    variant: "destructive",
   };
 }
 
@@ -106,7 +105,7 @@ export function createErrorToast(
 export function createSuccessToast(
   title: string,
   description?: string
-): { title: string; description?: string; variant?: ToastType } {
+): { title: string; description?: string; variant?: string } {
   return {
     title,
     description,

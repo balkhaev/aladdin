@@ -41,15 +41,15 @@ export type AnomalyDetectionResponse = {
 export async function detectAnomalies(
   request: AnomalyDetectionRequest
 ): Promise<AnomalyDetectionResponse> {
-  const response = await apiClient.post("/api/ml/anomalies/detect", {
+  const response = (await apiClient.post("/api/ml/anomalies/detect", {
     json: request,
-  });
+  })) as Response;
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = (await response.json()) as any;
     throw new Error(error.error?.message || "Failed to detect anomalies");
   }
 
-  const result = await response.json();
+  const result = (await response.json()) as any;
   return result.data;
 }

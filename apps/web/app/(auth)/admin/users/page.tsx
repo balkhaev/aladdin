@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Shield, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -34,32 +34,18 @@ import {
 } from "@/components/ui/table";
 import { apiRequest } from "@/lib/api/client";
 import { authClient } from "@/lib/auth-client";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  role: string;
-  image?: string;
-  createdAt: string;
-  updatedAt: string;
-  _count: {
-    portfolios: number;
-    orders: number;
-    exchangeCredentials: number;
-  };
-};
+import type { User } from "@/types/user";
 
 export default function AdminUsersPage() {
   const { data: session } = authClient.useSession();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const sessionUser = session?.user as unknown as User;
 
   // Загрузка списка пользователей
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["admin", "users"],
     queryFn: () => apiRequest<User[]>("/api/admin/users"),
-    enabled: session?.user?.role === "admin",
+    enabled: sessionUser?.role === "admin",
   });
 
   // Мутация для изменения роли
@@ -93,7 +79,7 @@ export default function AdminUsersPage() {
   });
 
   // Проверка прав администратора
-  if (session?.user?.role !== "admin") {
+  if (sessionUser?.role !== "admin") {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <Card className="max-w-md">
@@ -168,7 +154,7 @@ export default function AdminUsersPage() {
                     <Select
                       defaultValue={user.role}
                       disabled={
-                        user.id === session.user.id ||
+                        user.id === session?.user?.id ||
                         changeRoleMutation.isPending
                       }
                       onValueChange={(value) =>
@@ -210,7 +196,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                   <TableCell>
                     <Button
-                      disabled={user.id === session.user.id}
+                      disabled={user.id === session?.user.id}
                       onClick={() => setUserToDelete(user)}
                       size="sm"
                       variant="ghost"

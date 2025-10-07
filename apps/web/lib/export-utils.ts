@@ -171,7 +171,7 @@ ${Object.entries(bestHyperparameters)
     summary,
     bestParams: bestHyperparameters,
     allTrials: trials.map((t) => ({
-      trialId: t.trialId,
+      trialId: t.trialId.toString(),
       score: t.score,
       hyperparameters: t.hyperparameters,
       metrics: t.metrics,

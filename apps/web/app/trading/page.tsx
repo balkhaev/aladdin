@@ -14,7 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { CombinedSentimentCard } from "@/components/combined-sentiment-card";
 import { ExchangeSelector } from "@/components/exchange-selector";
 import { FundingRatesCard } from "@/components/futures/funding-rates-card";
@@ -38,6 +38,22 @@ import { useAllSymbols } from "@/hooks/use-market-data";
 import { useExchange } from "@/lib/exchange-context";
 
 export default function TradingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-background">
+          <span className="text-muted-foreground text-sm">
+            Loading trading terminal…
+          </span>
+        </div>
+      }
+    >
+      <TradingPageContent />
+    </Suspense>
+  );
+}
+
+function TradingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { selectedCredential } = useExchange();

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3001",
-    "build": "node ./scripts/run-next.mjs build",
-    "start": "node ./scripts/run-next.mjs start --port 3001",
+    "build": "next build --turbopack",
+    "start": "next start --port 3001",
     "lint": "eslint"
   },
   "dependencies": {

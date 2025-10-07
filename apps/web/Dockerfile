@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.5
 
 # Stage 1: Dependencies
-FROM oven/bun:1-alpine AS deps
+FROM oven/bun:1.2.21-alpine AS deps
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY packages ./packages
 RUN bun install
 
 # Stage 2: Builder
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:1.2.21-alpine AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ WORKDIR /app/apps/web
 RUN bun run build
 
 # Stage 3: Runner
-FROM oven/bun:1-alpine AS runner
+FROM oven/bun:1.2.21-alpine AS runner
 
 WORKDIR /app
 

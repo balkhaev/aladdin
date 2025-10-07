@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@radix-ui/react-icons", "lucide-react"],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
 };
 
 export default nextConfig;

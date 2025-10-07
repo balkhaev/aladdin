@@ -2,8 +2,12 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
-const baseUrl = isDev ? "http://localhost:3000" : process.env.API_BASE_URL;
-const wsUrl = isDev ? "http://localhost:3000" : process.env.WS_BASE_URL;
+const baseUrl = isDev
+  ? "http://localhost:3000"
+  : "https://gateway.aladdin.balkhaev.com";
+const wsUrl = isDev
+  ? "ws://localhost:3000"
+  : "ws://gateway.aladdin.balkhaev.com";
 
 const nextConfig: NextConfig = {
   async rewrites() {

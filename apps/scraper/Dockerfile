@@ -33,14 +33,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only package files for better caching
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY apps/scraper/package.json ./apps/scraper/
 COPY packages/*/package.json ./packages/
 
 ENV PUPPETEER_SKIP_DOWNLOAD=1
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Stage 2: Builder
 FROM oven/bun:1-debian AS builder

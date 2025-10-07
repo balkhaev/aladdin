@@ -9,12 +9,12 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 
 # Copy only package files for better caching
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY apps/analytics/package.json ./apps/analytics/
 COPY packages/*/package.json ./packages/
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Stage 2: Builder
 FROM oven/bun:1-alpine AS builder

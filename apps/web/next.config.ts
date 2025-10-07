@@ -1,17 +1,20 @@
 import type { NextConfig } from "next";
 
-import { API_BASE_URL, WS_BASE_URL } from "./lib/runtime-env";
+const isDev = process.env.NODE_ENV === "development";
+
+const baseUrl = isDev ? "http://localhost:3000" : process.env.API_BASE_URL;
+const wsUrl = isDev ? "http://localhost:3000" : process.env.WS_BASE_URL;
 
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${API_BASE_URL}/api/:path*`,
+        destination: `${baseUrl}/api/:path*`,
       },
       {
         source: "/ws/:path*",
-        destination: `${WS_BASE_URL}/ws/:path*`,
+        destination: `${wsUrl}/ws/:path*`,
       },
     ];
   },

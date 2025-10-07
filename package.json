@@ -32,7 +32,12 @@
     "infra:down": "docker-compose down",
     "infra:logs": "docker-compose logs -f"
   },
-  "dependencies": {},
+  "dependencies": {
+    "xtend": "workspace:*"
+  },
+  "overrides": {
+    "xtend": "workspace:xtend"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "bun-types": "^1.2.23",

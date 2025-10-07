@@ -6,7 +6,7 @@ FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
 # Copy only package files for better caching
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/*/package.json ./packages/
 

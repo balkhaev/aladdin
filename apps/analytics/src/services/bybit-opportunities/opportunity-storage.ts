@@ -7,6 +7,16 @@ import type { ClickHouseClient } from "@aladdin/clickhouse";
 import type { Logger } from "@aladdin/logger";
 import type { TradingOpportunity } from "./types";
 
+const formatTimestampForClickHouse = (timestampMs: number): string => {
+  const iso = new Date(timestampMs).toISOString();
+  return iso.slice(0, -1).replace("T", " ");
+};
+
+const parseTimestampFromClickHouse = (timestamp: string): number => {
+  const isoLike = `${timestamp.replace(" ", "T")}Z`;
+  return Date.parse(isoLike);
+};
+
 export class OpportunityStorageService {
   constructor(
     private clickhouse: ClickHouseClient,
@@ -20,7 +30,7 @@ export class OpportunityStorageService {
     try {
       await this.clickhouse.insert("bybit_opportunities", [
         {
-          timestamp: new Date(opportunity.timestamp),
+          timestamp: formatTimestampForClickHouse(opportunity.timestamp),
           symbol: opportunity.symbol,
           exchange: opportunity.exchange,
           opportunity_type: opportunity.opportunityType,
@@ -125,7 +135,7 @@ export class OpportunityStorageService {
       }>(query);
 
       return rows.map((row) => ({
-        timestamp: new Date(row.timestamp).getTime(),
+        timestamp: parseTimestampFromClickHouse(row.timestamp),
         symbol: row.symbol,
         exchange: row.exchange,
         opportunityType: row.opportunity_type as "BUY" | "SELL" | "NEUTRAL",

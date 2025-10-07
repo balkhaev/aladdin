@@ -10,6 +10,21 @@ import {
 import type { Context, Next } from "hono";
 import { ZodError, type z } from "zod";
 
+const formatZodIssues = (error: ZodError) => {
+  const issues = Array.isArray((error as ZodError).issues)
+    ? (error as ZodError).issues
+    : // biome-ignore lint/style/noNestedTernary: <poh>
+      Array.isArray((error as { errors?: unknown[] }).errors)
+      ? ((error as { errors: unknown[] }).errors as ZodError["issues"])
+      : [];
+
+  return issues.map((issue) => ({
+    path: issue.path.join("."),
+    message: issue.message,
+    code: issue.code,
+  }));
+};
+
 /**
  * Middleware to validate request body
  */
@@ -25,11 +40,7 @@ export function validateBody<T extends z.ZodType>(schema: T) {
       await next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
-          path: err.path.join("."),
-          message: err.message,
-          code: err.code,
-        }));
+        const formattedErrors = formatZodIssues(error);
 
         return c.json(
           createErrorResponse(ErrorCode.VALIDATION_ERROR, "Validation failed", {
@@ -79,11 +90,7 @@ export function validateQuery<T extends z.ZodType>(schema: T) {
       await next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
-          path: err.path.join("."),
-          message: err.message,
-          code: err.code,
-        }));
+        const formattedErrors = formatZodIssues(error);
 
         return c.json(
           createErrorResponse(ErrorCode.VALIDATION_ERROR, "Validation failed", {
@@ -120,11 +127,7 @@ export function validateParams<T extends z.ZodType>(schema: T) {
       await next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
-          path: err.path.join("."),
-          message: err.message,
-          code: err.code,
-        }));
+        const formattedErrors = formatZodIssues(error);
 
         return c.json(
           createErrorResponse(ErrorCode.VALIDATION_ERROR, "Validation failed", {

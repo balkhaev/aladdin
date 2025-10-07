@@ -17,7 +17,6 @@ const nextConfig: NextConfig = {
     optimizePackageImports: [
       "@radix-ui/react-icons",
       "lucide-react",
-      "recharts",
     ],
   },
 };

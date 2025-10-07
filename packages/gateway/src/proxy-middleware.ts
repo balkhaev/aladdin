@@ -193,6 +193,25 @@ export function createProxyMiddleware(
         // Add gateway forwarding header
         headers.set("x-gateway-forwarded", "true");
 
+        // Normalize Accept-Encoding to avoid Bun's zstd decompression bug
+        // and prevent forwarding encodings we can't reliably stream
+        const originalAcceptEncoding = headers.get("accept-encoding");
+        if (originalAcceptEncoding) {
+          const filteredEncodings = originalAcceptEncoding
+            .split(",")
+            .map((encoding) => encoding.trim())
+            .filter(Boolean)
+            .filter((encoding) => !encoding.toLowerCase().includes("zstd"));
+
+          if (filteredEncodings.length > 0) {
+            headers.set("accept-encoding", filteredEncodings.join(", "));
+          } else {
+            headers.set("accept-encoding", "identity");
+          }
+        } else {
+          headers.set("accept-encoding", "identity");
+        }
+
         // Get request body if present
         const body = ["POST", "PUT", "PATCH"].includes(c.req.method)
           ? await c.req.text()
@@ -211,6 +230,12 @@ export function createProxyMiddleware(
         const responseHeaders = new Headers();
         for (const [key, value] of response.headers) {
           responseHeaders.set(key, value);
+        }
+
+        // Response body is already decoded by fetch(), so drop upstream encoding headers
+        if (responseHeaders.has("content-encoding")) {
+          responseHeaders.delete("content-encoding");
+          responseHeaders.delete("content-length");
         }
 
         // Add CORS headers

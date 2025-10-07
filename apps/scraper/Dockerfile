@@ -32,10 +32,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only package files for better caching
+# Copy workspace packages so Bun keeps directory structure
 COPY package.json bun.lock ./
 COPY apps/scraper/package.json ./apps/scraper/
-COPY packages/*/package.json ./packages/
+COPY packages ./packages
 
 ENV PUPPETEER_SKIP_DOWNLOAD=1
 

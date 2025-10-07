@@ -1,24 +1,57 @@
-# Ignore dependencies and build artifacts
+# Dependencies
 node_modules
 .bun
+**/node_modules
+**/.bun
+
+# Build artifacts
 apps/*/dist
+apps/*/.next
+apps/*/build
+apps/*/out
 packages/*/dist
+packages/*/build
 logs
 
-# Ignore local environment and tooling
+# Environment and secrets
 .env
 .env.*
-*.log
-.DS_Store
+!.env.example
+*.key
+*.pem
 
-# VCS
+# Development
 .git
 .gitignore
+.github
+.husky
+*.log
+.DS_Store
+*.swp
+*.swo
+*~
 
 # IDE/editor
 .vscode
 .idea
+*.sublime-*
+
+# Testing
+coverage
+.nyc_output
+**/__tests__
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+
+# Documentation
+*.md
+!README.md
+docs
 
 # Misc
-coverage
 tmp
+temp
+.turbo
+.eslintcache

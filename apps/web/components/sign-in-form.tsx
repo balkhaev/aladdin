@@ -3,12 +3,17 @@
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import z from "zod";
+import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 import Loader from "./loader";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+
+const signInSchema = z.object({
+  email: z.email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 export default function SignInForm({
   onSwitchToSignUp,
@@ -34,17 +39,14 @@ export default function SignInForm({
             router.push("/");
             toast.success("Sign in successful");
           },
-          onError: (error: any) => {
+          onError: (error) => {
             toast.error(error.error.message || error.error.statusText);
           },
         }
       );
     },
     validators: {
-      onSubmit: z.object({
-        email: z.email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
-      }),
+      onSubmit: signInSchema,
     },
   });
 

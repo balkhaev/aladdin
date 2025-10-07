@@ -186,15 +186,19 @@ export async function initializeService<
     const telemetryConfig = config.telemetry ?? { enabled: true };
     if (telemetryConfig.enabled !== false) {
       try {
-        deps.telemetry = new TelemetryService(
-          {
-            serviceName,
-            enableTracing: telemetryConfig.enableTracing ?? true,
-            enableMetrics: telemetryConfig.enableMetrics ?? true,
-            metricsPort: telemetryConfig.metricsPort,
-          },
-          logger
-        );
+        const telemetryOptions: ConstructorParameters<
+          typeof TelemetryService
+        >[0] = {
+          serviceName,
+          enableTracing: telemetryConfig.enableTracing ?? true,
+          enableMetrics: telemetryConfig.enableMetrics ?? true,
+        };
+
+        if (telemetryConfig.metricsPort !== undefined) {
+          telemetryOptions.metricsPort = telemetryConfig.metricsPort;
+        }
+
+        deps.telemetry = new TelemetryService(telemetryOptions, logger);
         await deps.telemetry.initialize();
       } catch (error) {
         logger.error("Failed to initialize OpenTelemetry", error);

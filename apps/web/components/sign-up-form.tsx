@@ -36,7 +36,7 @@ export default function SignUpForm({
             router.push("/");
             toast.success("Sign up successful");
           },
-          onError: (error: any) => {
+          onError: (error) => {
             toast.error(error.error.message || error.error.statusText);
           },
         }

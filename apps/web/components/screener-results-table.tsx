@@ -73,6 +73,12 @@ function getStrengthColor(strength: number): string {
   return "bg-red-600";
 }
 
+const isFiniteNumber = (value: number | null | undefined): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const safeNumber = (value: number | null | undefined): number =>
+  isFiniteNumber(value) ? value : 0;
+
 export function ScreenerResultsTable({
   results,
   onSymbolClick,
@@ -110,20 +116,20 @@ export function ScreenerResultsTable({
           ? a.symbol.localeCompare(b.symbol)
           : b.symbol.localeCompare(a.symbol);
       case "strength":
-        aValue = a.signals.strength;
-        bValue = b.signals.strength;
+        aValue = safeNumber(a.signals?.strength);
+        bValue = safeNumber(b.signals?.strength);
         break;
       case "price":
-        aValue = a.price.current;
-        bValue = b.price.current;
+        aValue = safeNumber(a.price?.current);
+        bValue = safeNumber(b.price?.current);
         break;
       case "change":
-        aValue = a.price.changePercent24h;
-        bValue = b.price.changePercent24h;
+        aValue = safeNumber(a.price?.changePercent24h);
+        bValue = safeNumber(b.price?.changePercent24h);
         break;
       case "volume":
-        aValue = a.price.volume24h;
-        bValue = b.price.volume24h;
+        aValue = safeNumber(a.price?.volume24h);
+        bValue = safeNumber(b.price?.volume24h);
         break;
       default:
         return 0;
@@ -141,7 +147,9 @@ export function ScreenerResultsTable({
   const DECIMAL_4 = 4;
   const DECIMAL_8 = 8;
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (value: number | null | undefined) => {
+    const price = safeNumber(value);
+
     if (price >= PRICE_THOUSAND) {
       return price.toLocaleString("en-US", {
         minimumFractionDigits: DECIMAL_2,
@@ -154,7 +162,9 @@ export function ScreenerResultsTable({
     return price.toFixed(DECIMAL_8);
   };
 
-  const formatVolume = (volume: number) => {
+  const formatVolume = (value: number | null | undefined) => {
+    const volume = safeNumber(value);
+
     if (volume >= VOLUME_BILLION) {
       return `${(volume / VOLUME_BILLION).toFixed(DECIMAL_2)}B`;
     }
@@ -245,84 +255,89 @@ export function ScreenerResultsTable({
               </TableCell>
             </TableRow>
           ) : (
-            sortedResults.map((result) => (
-              <TableRow className="hover:bg-muted/50" key={result.symbol}>
-                <TableCell>
-                  <Button
-                    className="h-auto p-0 font-mono font-semibold"
-                    onClick={() => onSymbolClick?.(result.symbol)}
-                    variant="link"
-                  >
-                    {result.symbol}
-                  </Button>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  ${formatPrice(result.price.current)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div
-                    className={`flex items-center justify-end gap-1 ${
-                      result.price.changePercent24h >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {result.price.changePercent24h >= 0 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    <span className="font-mono">
-                      {result.price.changePercent24h > 0 ? "+" : ""}
-                      {result.price.changePercent24h.toFixed(2)}%
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  ${formatVolume(result.price.volume24h)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-16 rounded-full bg-secondary">
-                      <div
-                        className={`h-2 rounded-full ${getStrengthColor(result.signals.strength)}`}
-                        style={{ width: `${result.signals.strength}%` }}
-                      />
+            sortedResults.map((result) => {
+              const price = safeNumber(result.price?.current);
+              const changePercent = safeNumber(result.price?.changePercent24h);
+              const volume = safeNumber(result.price?.volume24h);
+              const strength = safeNumber(result.signals?.strength);
+              const recommendation =
+                (result.signals?.recommendation ?? "HOLD") as keyof typeof BADGE_COLORS.recommendation;
+              const trend =
+                (result.signals?.trend ?? "NEUTRAL") as keyof typeof BADGE_COLORS.trend;
+              const momentum =
+                (result.signals?.momentum ?? "MODERATE") as keyof typeof BADGE_COLORS.momentum;
+              const rsi = result.indicators?.rsi;
+              const adx = result.indicators?.adx;
+
+              return (
+                <TableRow className="hover:bg-muted/50" key={result.symbol}>
+                  <TableCell>
+                    <Button
+                      className="h-auto p-0 font-mono font-semibold"
+                      onClick={() => onSymbolClick?.(result.symbol)}
+                      variant="link"
+                    >
+                      {result.symbol}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    ${formatPrice(price)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div
+                      className={`flex items-center justify-end gap-1 ${
+                        changePercent >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {changePercent >= 0 ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      <span className="font-mono">
+                        {changePercent > 0 ? "+" : ""}
+                        {changePercent.toFixed(2)}%
+                      </span>
                     </div>
-                    <span className="w-8 font-mono text-xs">
-                      {result.signals.strength}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      BADGE_COLORS.recommendation[result.signals.recommendation]
-                    }
-                  >
-                    {result.signals.recommendation.replace("_", " ")}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge className={BADGE_COLORS.trend[result.signals.trend]}>
-                    {result.signals.trend}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={BADGE_COLORS.momentum[result.signals.momentum]}
-                  >
-                    {result.signals.momentum}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {result.indicators.rsi?.toFixed(1) ?? "—"}
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {result.indicators.adx?.toFixed(1) ?? "—"}
-                </TableCell>
-              </TableRow>
-            ))
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    ${formatVolume(volume)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-16 rounded-full bg-secondary">
+                        <div
+                          className={`h-2 rounded-full ${getStrengthColor(strength)}`}
+                          style={{ width: `${Math.min(Math.max(strength, 0), 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-8 font-mono text-xs">{strength}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={BADGE_COLORS.recommendation[recommendation]}>
+                      {recommendation.replace("_", " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={BADGE_COLORS.trend[trend]}>
+                      {trend}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={BADGE_COLORS.momentum[momentum]}>
+                      {momentum}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {isFiniteNumber(rsi) ? rsi.toFixed(1) : "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {isFiniteNumber(adx) ? adx.toFixed(1) : "—"}
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

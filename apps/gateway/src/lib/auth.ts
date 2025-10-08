@@ -2,11 +2,32 @@ import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "../db";
 
-const cookieDomain =
-  process.env.BETTER_AUTH_COOKIE_DOMAIN ??
-  (process.env.NODE_ENV === "production"
-    ? ".aladdin.balkhaev.com"
-    : undefined);
+const resolveCookieDomain = () => {
+  if (process.env.BETTER_AUTH_COOKIE_DOMAIN) {
+    return process.env.BETTER_AUTH_COOKIE_DOMAIN;
+  }
+
+  const origin = process.env.CORS_ORIGIN;
+  if (!origin) {
+    return undefined;
+  }
+
+  try {
+    const host = new URL(origin).hostname;
+    const isLoopback = host === "localhost" || host === "127.0.0.1";
+    const isIpAddress = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+
+    if (isLoopback || isIpAddress) {
+      return undefined;
+    }
+
+    return host;
+  } catch {
+    return undefined;
+  }
+};
+
+const cookieDomain = resolveCookieDomain();
 
 export const auth = betterAuth<BetterAuthOptions>({
   database: prismaAdapter(prisma, {

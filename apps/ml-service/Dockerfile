@@ -9,17 +9,26 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    gfortran \
-    libatlas-base-dev \
-    libffi-dev \
-    libssl-dev \
-    libta-lib0 \
-    ta-lib \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies and build TA-Lib from source
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        gcc \
+        gfortran \
+        libffi-dev \
+        libopenblas-dev \
+        libssl-dev; \
+    rm -rf /var/lib/apt/lists/*; \
+    curl -L -o /tmp/ta-lib.tar.gz https://github.com/TA-Lib/ta-lib/releases/download/v0.4.0/ta-lib-0.4.0-src.tar.gz; \
+    tar -xzf /tmp/ta-lib.tar.gz -C /tmp; \
+    cd /tmp/ta-lib-0.4.0; \
+    ./configure --prefix=/usr/local; \
+    make -j"$(nproc)"; \
+    make install; \
+    ldconfig; \
+    rm -rf /tmp/ta-lib-0.4.0 /tmp/ta-lib.tar.gz
 
 # Copy requirements and install dependencies
 COPY apps/ml-service/requirements.txt ./requirements.txt
@@ -36,12 +45,15 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Install only runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libatlas-base-dev \
-    libta-lib0 \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        libopenblas0-pthread; \
+    rm -rf /var/lib/apt/lists/*; \
+    ldconfig
 
-# Copy Python packages from builder
+# Copy TA-Lib artifacts and Python packages from builder
+COPY --from=builder /usr/local /usr/local
 COPY --from=builder /root/.local /root/.local
 
 # Copy application source

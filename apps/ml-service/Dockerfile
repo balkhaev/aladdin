@@ -22,13 +22,14 @@ RUN set -eux; \
         libssl-dev; \
     rm -rf /var/lib/apt/lists/*; \
     curl -L -o /tmp/ta-lib.tar.gz https://github.com/TA-Lib/ta-lib/releases/download/v0.4.0/ta-lib-0.4.0-src.tar.gz; \
-    tar -xzf /tmp/ta-lib.tar.gz -C /tmp; \
-    cd /tmp/ta-lib-0.4.0; \
+    mkdir -p /tmp/ta-lib-src; \
+    tar -xzf /tmp/ta-lib.tar.gz -C /tmp/ta-lib-src --strip-components=1; \
+    cd /tmp/ta-lib-src; \
     ./configure --prefix=/usr/local; \
     make -j"$(nproc)"; \
     make install; \
     ldconfig; \
-    rm -rf /tmp/ta-lib-0.4.0 /tmp/ta-lib.tar.gz
+    rm -rf /tmp/ta-lib-src /tmp/ta-lib.tar.gz
 
 # Copy requirements and install dependencies
 COPY apps/ml-service/requirements.txt ./requirements.txt

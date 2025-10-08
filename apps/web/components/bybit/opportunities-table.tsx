@@ -5,6 +5,7 @@
 import {
   AlertCircle,
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   Loader2,
   RefreshCw,
@@ -16,7 +17,7 @@ import {
   useBybitOpportunities,
   useOpportunitiesStats,
 } from "@/hooks/use-bybit-opportunities";
-import type { OpportunitySignal } from "@/types/bybit";
+import type { OpportunitySignal, OpportunityStrength } from "@/types/bybit";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -40,7 +41,14 @@ import {
 
 const PRICE_DECIMALS = 4;
 
-function formatVolume(volume: number): string {
+const isFiniteNumber = (value: number | null | undefined): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const safeNumber = (value: number | null | undefined): number =>
+  isFiniteNumber(value) ? value : 0;
+
+function formatVolume(value: number | null | undefined): string {
+  const volume = safeNumber(value);
   const MILLION = 1_000_000;
   const THOUSAND = 1000;
   if (volume >= MILLION) return `${(volume / MILLION).toFixed(2)}M`;
@@ -48,9 +56,9 @@ function formatVolume(volume: number): string {
   return volume.toFixed(2);
 }
 
-function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString();
+function formatTimestamp(timestamp: number | null | undefined): string {
+  if (!isFiniteNumber(timestamp)) return "—";
+  return new Date(timestamp).toLocaleTimeString();
 }
 
 function getSignalColor(signal: OpportunitySignal): string {
@@ -279,60 +287,75 @@ export function OpportunitiesTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {opportunities.map((opp, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {formatTimestamp(opp.timestamp)}
-                      </TableCell>
-                      <TableCell className="font-medium font-mono">
-                        {opp.symbol}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {opp.opportunityType === "BUY" ? (
-                            <ArrowUp className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <ArrowDown className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className={getSignalColor(opp.opportunityType)}>
-                            {opp.opportunityType}
+                  {opportunities.map((opp, idx) => {
+                    const totalScore = safeNumber(opp.totalScore);
+                    const confidence = safeNumber(opp.confidence);
+                    const price = safeNumber(opp.price);
+                    const volume24h = safeNumber(opp.volume24h);
+                    const priceChange5m = safeNumber(opp.priceChange5m);
+                    const rsi = safeNumber(opp.rsi);
+                    const opportunityType = (opp.opportunityType ??
+                      "NEUTRAL") as OpportunitySignal;
+                    const strength = (opp.strength ??
+                      "WEAK") as OpportunityStrength;
+
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {formatTimestamp(opp.timestamp)}
+                        </TableCell>
+                        <TableCell className="font-medium font-mono">
+                          {opp.symbol ?? "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {opportunityType === "BUY" ? (
+                              <ArrowUp className="h-4 w-4 text-green-500" />
+                            ) : opportunityType === "SELL" ? (
+                              <ArrowDown className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className={getSignalColor(opportunityType)}>
+                              {opportunityType}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold">
+                            {totalScore.toFixed(1)}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-semibold">
-                          {opp.totalScore.toFixed(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStrengthVariant(opp.strength)}>
-                          {opp.strength}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {opp.confidence.toFixed(0)}%
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        ${opp.price.toFixed(PRICE_DECIMALS)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${formatVolume(opp.volume24h)}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right ${
-                          opp.priceChange5m > 0
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {opp.priceChange5m > 0 ? "+" : ""}
-                        {opp.priceChange5m.toFixed(2)}%
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {opp.rsi.toFixed(1)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStrengthVariant(strength)}>
+                            {strength}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {confidence.toFixed(0)}%
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          ${price.toFixed(PRICE_DECIMALS)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ${formatVolume(volume24h)}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right ${
+                            priceChange5m > 0
+                              ? "text-green-400"
+                              : "text-red-400"
+                          }`}
+                        >
+                          {priceChange5m > 0 ? "+" : ""}
+                          {priceChange5m?.toFixed(2)}%
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {rsi.toFixed(1)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

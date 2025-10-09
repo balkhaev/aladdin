@@ -13,21 +13,24 @@ datasource db {
 // ============ Auth models ============
 
 model User {
-  id                  String                @id @map("_id")
-  name                String
-  email               String
-  emailVerified       Boolean
-  image               String?
-  role                String                @default("user") // user, admin
-  createdAt           DateTime
-  updatedAt           DateTime
-  sessions            Session[]
-  accounts            Account[]
-  portfolios          Portfolio[]
-  orders              Order[]
-  exchangeCredentials ExchangeCredentials[]
-  auditLogs           AuditLog[]
-  riskLimits          RiskLimit[]
+  id                          String                @id @map("_id")
+  name                        String
+  email                       String
+  emailVerified               Boolean
+  image                       String?
+  role                        String                @default("user") // user, admin
+  activeExchangeCredentialsId String? // Выбранный ключ для автотрейдинга
+  createdAt                   DateTime
+  updatedAt                   DateTime
+  sessions                    Session[]
+  accounts                    Account[]
+  portfolios                  Portfolio[]
+  orders                      Order[]
+  exchangeCredentials         ExchangeCredentials[] @relation("UserCredentials")
+  activeExchangeCredentials   ExchangeCredentials?  @relation("ActiveCredentials", fields: [activeExchangeCredentialsId], references: [id], onDelete: SetNull)
+  auditLogs                   AuditLog[]
+  riskLimits                  RiskLimit[]
+  webhooks                    Webhook[]             @relation("CreatedWebhooks")
 
   @@unique([email])
   @@map("user")
@@ -156,7 +159,7 @@ model Order {
 model ExchangeCredentials {
   id               String  @id @default(cuid())
   userId           String
-  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User    @relation("UserCredentials", fields: [userId], references: [id], onDelete: Cascade)
   exchange         String // binance, bybit, okx, etc.
   label            String // User-friendly name like "Main Trading Account"
   apiKey           String
@@ -166,6 +169,7 @@ model ExchangeCredentials {
   testnet          Boolean @default(false)
   isActive         Boolean @default(true)
   category         String  @default("spot") // spot, linear, inverse (для bybit futures)
+  activeUsers      User[]  @relation("ActiveCredentials")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -229,6 +233,26 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============ Webhooks ============
+
+model Webhook {
+  id           String    @id @default(cuid())
+  name         String // Название стратегии
+  secret       String    @unique // Токен безопасности
+  isActive     Boolean   @default(true)
+  createdById  String
+  createdBy    User      @relation("CreatedWebhooks", fields: [createdById], references: [id], onDelete: Cascade)
+  totalCalls   Int       @default(0)
+  lastCalledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([isActive])
+  @@map("webhooks")
 }
 
 // ============ Telega Signals ============

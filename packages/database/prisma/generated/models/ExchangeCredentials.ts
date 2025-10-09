@@ -246,6 +246,7 @@ export type ExchangeCredentialsWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"ExchangeCredentials"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExchangeCredentials"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  activeUsers?: Prisma.UserListRelationFilter
 }
 
 export type ExchangeCredentialsOrderByWithRelationInput = {
@@ -263,6 +264,7 @@ export type ExchangeCredentialsOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
+  activeUsers?: Prisma.UserOrderByRelationAggregateInput
 }
 
 export type ExchangeCredentialsWhereUniqueInput = Prisma.AtLeast<{
@@ -284,6 +286,7 @@ export type ExchangeCredentialsWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"ExchangeCredentials"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExchangeCredentials"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  activeUsers?: Prisma.UserListRelationFilter
 }, "id" | "userId_exchange_apiKey">
 
 export type ExchangeCredentialsOrderByWithAggregationInput = {
@@ -338,6 +341,7 @@ export type ExchangeCredentialsCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutExchangeCredentialsInput
+  activeUsers?: Prisma.UserCreateNestedManyWithoutActiveExchangeCredentialsInput
 }
 
 export type ExchangeCredentialsUncheckedCreateInput = {
@@ -354,6 +358,7 @@ export type ExchangeCredentialsUncheckedCreateInput = {
   category?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  activeUsers?: Prisma.UserUncheckedCreateNestedManyWithoutActiveExchangeCredentialsInput
 }
 
 export type ExchangeCredentialsUpdateInput = {
@@ -370,6 +375,7 @@ export type ExchangeCredentialsUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutExchangeCredentialsNestedInput
+  activeUsers?: Prisma.UserUpdateManyWithoutActiveExchangeCredentialsNestedInput
 }
 
 export type ExchangeCredentialsUncheckedUpdateInput = {
@@ -386,6 +392,7 @@ export type ExchangeCredentialsUncheckedUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activeUsers?: Prisma.UserUncheckedUpdateManyWithoutActiveExchangeCredentialsNestedInput
 }
 
 export type ExchangeCredentialsCreateManyInput = {
@@ -439,6 +446,11 @@ export type ExchangeCredentialsListRelationFilter = {
   every?: Prisma.ExchangeCredentialsWhereInput
   some?: Prisma.ExchangeCredentialsWhereInput
   none?: Prisma.ExchangeCredentialsWhereInput
+}
+
+export type ExchangeCredentialsNullableScalarRelationFilter = {
+  is?: Prisma.ExchangeCredentialsWhereInput | null
+  isNot?: Prisma.ExchangeCredentialsWhereInput | null
 }
 
 export type ExchangeCredentialsOrderByRelationAggregateInput = {
@@ -506,6 +518,12 @@ export type ExchangeCredentialsCreateNestedManyWithoutUserInput = {
   connect?: Prisma.ExchangeCredentialsWhereUniqueInput | Prisma.ExchangeCredentialsWhereUniqueInput[]
 }
 
+export type ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput = {
+  create?: Prisma.XOR<Prisma.ExchangeCredentialsCreateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedCreateWithoutActiveUsersInput>
+  connectOrCreate?: Prisma.ExchangeCredentialsCreateOrConnectWithoutActiveUsersInput
+  connect?: Prisma.ExchangeCredentialsWhereUniqueInput
+}
+
 export type ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput = {
   create?: Prisma.XOR<Prisma.ExchangeCredentialsCreateWithoutUserInput, Prisma.ExchangeCredentialsUncheckedCreateWithoutUserInput> | Prisma.ExchangeCredentialsCreateWithoutUserInput[] | Prisma.ExchangeCredentialsUncheckedCreateWithoutUserInput[]
   connectOrCreate?: Prisma.ExchangeCredentialsCreateOrConnectWithoutUserInput | Prisma.ExchangeCredentialsCreateOrConnectWithoutUserInput[]
@@ -525,6 +543,16 @@ export type ExchangeCredentialsUpdateManyWithoutUserNestedInput = {
   update?: Prisma.ExchangeCredentialsUpdateWithWhereUniqueWithoutUserInput | Prisma.ExchangeCredentialsUpdateWithWhereUniqueWithoutUserInput[]
   updateMany?: Prisma.ExchangeCredentialsUpdateManyWithWhereWithoutUserInput | Prisma.ExchangeCredentialsUpdateManyWithWhereWithoutUserInput[]
   deleteMany?: Prisma.ExchangeCredentialsScalarWhereInput | Prisma.ExchangeCredentialsScalarWhereInput[]
+}
+
+export type ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput = {
+  create?: Prisma.XOR<Prisma.ExchangeCredentialsCreateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedCreateWithoutActiveUsersInput>
+  connectOrCreate?: Prisma.ExchangeCredentialsCreateOrConnectWithoutActiveUsersInput
+  upsert?: Prisma.ExchangeCredentialsUpsertWithoutActiveUsersInput
+  disconnect?: Prisma.ExchangeCredentialsWhereInput | boolean
+  delete?: Prisma.ExchangeCredentialsWhereInput | boolean
+  connect?: Prisma.ExchangeCredentialsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ExchangeCredentialsUpdateToOneWithWhereWithoutActiveUsersInput, Prisma.ExchangeCredentialsUpdateWithoutActiveUsersInput>, Prisma.ExchangeCredentialsUncheckedUpdateWithoutActiveUsersInput>
 }
 
 export type ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput = {
@@ -554,6 +582,7 @@ export type ExchangeCredentialsCreateWithoutUserInput = {
   category?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  activeUsers?: Prisma.UserCreateNestedManyWithoutActiveExchangeCredentialsInput
 }
 
 export type ExchangeCredentialsUncheckedCreateWithoutUserInput = {
@@ -569,6 +598,7 @@ export type ExchangeCredentialsUncheckedCreateWithoutUserInput = {
   category?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  activeUsers?: Prisma.UserUncheckedCreateNestedManyWithoutActiveExchangeCredentialsInput
 }
 
 export type ExchangeCredentialsCreateOrConnectWithoutUserInput = {
@@ -579,6 +609,43 @@ export type ExchangeCredentialsCreateOrConnectWithoutUserInput = {
 export type ExchangeCredentialsCreateManyUserInputEnvelope = {
   data: Prisma.ExchangeCredentialsCreateManyUserInput | Prisma.ExchangeCredentialsCreateManyUserInput[]
   skipDuplicates?: boolean
+}
+
+export type ExchangeCredentialsCreateWithoutActiveUsersInput = {
+  id?: string
+  exchange: string
+  label: string
+  apiKey: string
+  apiSecret: string
+  apiSecretIv: string
+  apiSecretAuthTag: string
+  testnet?: boolean
+  isActive?: boolean
+  category?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutExchangeCredentialsInput
+}
+
+export type ExchangeCredentialsUncheckedCreateWithoutActiveUsersInput = {
+  id?: string
+  userId: string
+  exchange: string
+  label: string
+  apiKey: string
+  apiSecret: string
+  apiSecretIv: string
+  apiSecretAuthTag: string
+  testnet?: boolean
+  isActive?: boolean
+  category?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ExchangeCredentialsCreateOrConnectWithoutActiveUsersInput = {
+  where: Prisma.ExchangeCredentialsWhereUniqueInput
+  create: Prisma.XOR<Prisma.ExchangeCredentialsCreateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedCreateWithoutActiveUsersInput>
 }
 
 export type ExchangeCredentialsUpsertWithWhereUniqueWithoutUserInput = {
@@ -616,6 +683,49 @@ export type ExchangeCredentialsScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ExchangeCredentials"> | Date | string
 }
 
+export type ExchangeCredentialsUpsertWithoutActiveUsersInput = {
+  update: Prisma.XOR<Prisma.ExchangeCredentialsUpdateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedUpdateWithoutActiveUsersInput>
+  create: Prisma.XOR<Prisma.ExchangeCredentialsCreateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedCreateWithoutActiveUsersInput>
+  where?: Prisma.ExchangeCredentialsWhereInput
+}
+
+export type ExchangeCredentialsUpdateToOneWithWhereWithoutActiveUsersInput = {
+  where?: Prisma.ExchangeCredentialsWhereInput
+  data: Prisma.XOR<Prisma.ExchangeCredentialsUpdateWithoutActiveUsersInput, Prisma.ExchangeCredentialsUncheckedUpdateWithoutActiveUsersInput>
+}
+
+export type ExchangeCredentialsUpdateWithoutActiveUsersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  exchange?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecret?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecretIv?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecretAuthTag?: Prisma.StringFieldUpdateOperationsInput | string
+  testnet?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutExchangeCredentialsNestedInput
+}
+
+export type ExchangeCredentialsUncheckedUpdateWithoutActiveUsersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  exchange?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecret?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecretIv?: Prisma.StringFieldUpdateOperationsInput | string
+  apiSecretAuthTag?: Prisma.StringFieldUpdateOperationsInput | string
+  testnet?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ExchangeCredentialsCreateManyUserInput = {
   id?: string
   exchange: string
@@ -644,6 +754,7 @@ export type ExchangeCredentialsUpdateWithoutUserInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activeUsers?: Prisma.UserUpdateManyWithoutActiveExchangeCredentialsNestedInput
 }
 
 export type ExchangeCredentialsUncheckedUpdateWithoutUserInput = {
@@ -659,6 +770,7 @@ export type ExchangeCredentialsUncheckedUpdateWithoutUserInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activeUsers?: Prisma.UserUncheckedUpdateManyWithoutActiveExchangeCredentialsNestedInput
 }
 
 export type ExchangeCredentialsUncheckedUpdateManyWithoutUserInput = {
@@ -677,6 +789,35 @@ export type ExchangeCredentialsUncheckedUpdateManyWithoutUserInput = {
 }
 
 
+/**
+ * Count Type ExchangeCredentialsCountOutputType
+ */
+
+export type ExchangeCredentialsCountOutputType = {
+  activeUsers: number
+}
+
+export type ExchangeCredentialsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  activeUsers?: boolean | ExchangeCredentialsCountOutputTypeCountActiveUsersArgs
+}
+
+/**
+ * ExchangeCredentialsCountOutputType without action
+ */
+export type ExchangeCredentialsCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExchangeCredentialsCountOutputType
+   */
+  select?: Prisma.ExchangeCredentialsCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ExchangeCredentialsCountOutputType without action
+ */
+export type ExchangeCredentialsCountOutputTypeCountActiveUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserWhereInput
+}
+
 
 export type ExchangeCredentialsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -693,6 +834,8 @@ export type ExchangeCredentialsSelect<ExtArgs extends runtime.Types.Extensions.I
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  activeUsers?: boolean | Prisma.ExchangeCredentials$activeUsersArgs<ExtArgs>
+  _count?: boolean | Prisma.ExchangeCredentialsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["exchangeCredentials"]>
 
 export type ExchangeCredentialsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -748,6 +891,8 @@ export type ExchangeCredentialsSelectScalar = {
 export type ExchangeCredentialsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "exchange" | "label" | "apiKey" | "apiSecret" | "apiSecretIv" | "apiSecretAuthTag" | "testnet" | "isActive" | "category" | "createdAt" | "updatedAt", ExtArgs["result"]["exchangeCredentials"]>
 export type ExchangeCredentialsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  activeUsers?: boolean | Prisma.ExchangeCredentials$activeUsersArgs<ExtArgs>
+  _count?: boolean | Prisma.ExchangeCredentialsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ExchangeCredentialsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -760,6 +905,7 @@ export type $ExchangeCredentialsPayload<ExtArgs extends runtime.Types.Extensions
   name: "ExchangeCredentials"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
+    activeUsers: Prisma.$UserPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1170,6 +1316,7 @@ readonly fields: ExchangeCredentialsFieldRefs;
 export interface Prisma__ExchangeCredentialsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  activeUsers<T extends Prisma.ExchangeCredentials$activeUsersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExchangeCredentials$activeUsersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1605,6 +1752,30 @@ export type ExchangeCredentialsDeleteManyArgs<ExtArgs extends runtime.Types.Exte
    * Limit how many ExchangeCredentials to delete.
    */
   limit?: number
+}
+
+/**
+ * ExchangeCredentials.activeUsers
+ */
+export type ExchangeCredentials$activeUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[]
+  cursor?: Prisma.UserWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserScalarFieldEnum | Prisma.UserScalarFieldEnum[]
 }
 
 /**

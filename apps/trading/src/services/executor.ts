@@ -1,7 +1,4 @@
-import {
-  BaseService,
-  type BaseServiceConfig,
-} from "@aladdin/service";
+import { BaseService, type BaseServiceConfig } from "@aladdin/service";
 import {
   AlgorithmicExecutor,
   type ExecutionParams,
@@ -298,6 +295,18 @@ export class StrategyExecutor extends BaseService {
       return;
     }
 
+    // Get effective credentials ID
+    let credentialsId: string;
+    try {
+      credentialsId = await this.getEffectiveCredentialsId();
+    } catch (error) {
+      this.logger.error("Failed to get credentials for signal execution", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.pendingSignals = [];
+      return;
+    }
+
     // Execute orders for filtered signals
     const results: OrderResult[] = [];
 
@@ -306,7 +315,7 @@ export class StrategyExecutor extends BaseService {
         signal,
         this.config.userId,
         this.config.portfolioId,
-        this.config.exchangeCredentialsId
+        credentialsId
       );
 
       results.push(result);
@@ -385,16 +394,50 @@ export class StrategyExecutor extends BaseService {
   }
 
   /**
+   * Get effective credentials ID (from config or user's active key)
+   */
+  private async getEffectiveCredentialsId(): Promise<string> {
+    // If exchangeCredentialsId is set in config, use it
+    if (this.config.exchangeCredentialsId) {
+      return this.config.exchangeCredentialsId;
+    }
+
+    // Otherwise, get user's active exchange credentials
+    if (!this.config.userId) {
+      throw new Error("No userId configured for executor");
+    }
+
+    if (!this.prisma) {
+      throw new Error("Prisma client not available");
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: this.config.userId },
+      select: { activeExchangeCredentialsId: true },
+    });
+
+    if (!user?.activeExchangeCredentialsId) {
+      throw new Error(
+        "No active exchange credentials set for user. Please select an active API key in settings."
+      );
+    }
+
+    return user.activeExchangeCredentialsId;
+  }
+
+  /**
    * Manually execute a specific signal (for testing)
    */
   async manualExecute(signal: ProcessedSignal): Promise<OrderResult> {
     this.logger.info("Manual execution requested", { signal });
 
+    const credentialsId = await this.getEffectiveCredentialsId();
+
     const result = await this.orderManager.executeOrder(
       signal,
       this.config.userId,
       this.config.portfolioId,
-      this.config.exchangeCredentialsId
+      credentialsId
     );
 
     this.stats.totalOrdersExecuted++;

@@ -13,6 +13,9 @@ import { setupPositionsRoutes } from "./positions";
 // Re-export existing executor routes
 export { setupExecutorRoutes } from "./executor";
 
+// Re-export webhook routes
+export { setupWebhookRoutes } from "./webhook";
+
 /**
  * Setup all trading routes
  */

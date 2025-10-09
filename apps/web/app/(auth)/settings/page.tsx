@@ -1,5 +1,6 @@
 "use client";
 
+import { ActiveExchangeSelector } from "@/components/active-exchange-selector";
 import { AddExchangeCredentialDialog } from "@/components/add-exchange-credential-dialog";
 import { AuditLogTable } from "@/components/audit-log-table";
 import { ExchangeCredentialsList } from "@/components/exchange-credentials-list";
@@ -13,6 +14,7 @@ export default function SettingsPage() {
 
       <div className="space-y-6">
         <ExchangeCredentialsList />
+        <ActiveExchangeSelector />
         <AuditLogTable />
       </div>
     </div>

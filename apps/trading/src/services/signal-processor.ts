@@ -88,7 +88,7 @@ export class SignalProcessor {
     let bestSymbol = "";
     let bestScore = 0;
 
-    for (const [symbol, symbolSignals] of bySymbol.entries()) {
+    for (const [currentSymbol, symbolSignals] of bySymbol.entries()) {
       // Calculate weighted score
       const score =
         symbolSignals.reduce((sum, s) => {
@@ -100,7 +100,7 @@ export class SignalProcessor {
 
       if (score > bestScore) {
         bestScore = score;
-        bestSymbol = symbol;
+        bestSymbol = currentSymbol;
       }
     }
 
@@ -109,10 +109,14 @@ export class SignalProcessor {
     }
 
     // Create combined signal
-    const symbolSignals = bySymbol.get(bestSymbol)!;
+    const bestSymbolSignals = bySymbol.get(bestSymbol);
+
+    if (!bestSymbolSignals) {
+      return null;
+    }
     const avgConfidence =
-      symbolSignals.reduce((sum, s) => sum + s.confidence, 0) /
-      symbolSignals.length;
+      bestSymbolSignals.reduce((sum, s) => sum + s.confidence, 0) /
+      bestSymbolSignals.length;
 
     const recommendation =
       bestScore >= STRONG_BUY_CONFIDENCE ? "STRONG_BUY" : "BUY";
@@ -121,7 +125,7 @@ export class SignalProcessor {
       symbol: bestSymbol,
       recommendation,
       confidence: avgConfidence,
-      sentiment: symbolSignals.find((s) => s.sentiment !== undefined)
+      sentiment: bestSymbolSignals.find((s) => s.sentiment !== undefined)
         ?.sentiment,
       source: "screener", // Primary source
       timestamp: new Date(),

@@ -30,6 +30,7 @@ export type UserMinAggregateOutputType = {
   emailVerified: boolean | null
   image: string | null
   role: string | null
+  activeExchangeCredentialsId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -41,6 +42,7 @@ export type UserMaxAggregateOutputType = {
   emailVerified: boolean | null
   image: string | null
   role: string | null
+  activeExchangeCredentialsId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +54,7 @@ export type UserCountAggregateOutputType = {
   emailVerified: number
   image: number
   role: number
+  activeExchangeCredentialsId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -65,6 +68,7 @@ export type UserMinAggregateInputType = {
   emailVerified?: true
   image?: true
   role?: true
+  activeExchangeCredentialsId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,6 +80,7 @@ export type UserMaxAggregateInputType = {
   emailVerified?: true
   image?: true
   role?: true
+  activeExchangeCredentialsId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -87,6 +92,7 @@ export type UserCountAggregateInputType = {
   emailVerified?: true
   image?: true
   role?: true
+  activeExchangeCredentialsId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -171,6 +177,7 @@ export type UserGroupByOutputType = {
   emailVerified: boolean
   image: string | null
   role: string
+  activeExchangeCredentialsId: string | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -203,6 +210,7 @@ export type UserWhereInput = {
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
   image?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.StringFilter<"User"> | string
+  activeExchangeCredentialsId?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sessions?: Prisma.SessionListRelationFilter
@@ -210,8 +218,10 @@ export type UserWhereInput = {
   portfolios?: Prisma.PortfolioListRelationFilter
   orders?: Prisma.OrderListRelationFilter
   exchangeCredentials?: Prisma.ExchangeCredentialsListRelationFilter
+  activeExchangeCredentials?: Prisma.XOR<Prisma.ExchangeCredentialsNullableScalarRelationFilter, Prisma.ExchangeCredentialsWhereInput> | null
   auditLogs?: Prisma.AuditLogListRelationFilter
   riskLimits?: Prisma.RiskLimitListRelationFilter
+  webhooks?: Prisma.WebhookListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -221,6 +231,7 @@ export type UserOrderByWithRelationInput = {
   emailVerified?: Prisma.SortOrder
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  activeExchangeCredentialsId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sessions?: Prisma.SessionOrderByRelationAggregateInput
@@ -228,8 +239,10 @@ export type UserOrderByWithRelationInput = {
   portfolios?: Prisma.PortfolioOrderByRelationAggregateInput
   orders?: Prisma.OrderOrderByRelationAggregateInput
   exchangeCredentials?: Prisma.ExchangeCredentialsOrderByRelationAggregateInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsOrderByWithRelationInput
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   riskLimits?: Prisma.RiskLimitOrderByRelationAggregateInput
+  webhooks?: Prisma.WebhookOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -242,6 +255,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
   image?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.StringFilter<"User"> | string
+  activeExchangeCredentialsId?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sessions?: Prisma.SessionListRelationFilter
@@ -249,8 +263,10 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   portfolios?: Prisma.PortfolioListRelationFilter
   orders?: Prisma.OrderListRelationFilter
   exchangeCredentials?: Prisma.ExchangeCredentialsListRelationFilter
+  activeExchangeCredentials?: Prisma.XOR<Prisma.ExchangeCredentialsNullableScalarRelationFilter, Prisma.ExchangeCredentialsWhereInput> | null
   auditLogs?: Prisma.AuditLogListRelationFilter
   riskLimits?: Prisma.RiskLimitListRelationFilter
+  webhooks?: Prisma.WebhookListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -260,6 +276,7 @@ export type UserOrderByWithAggregationInput = {
   emailVerified?: Prisma.SortOrder
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  activeExchangeCredentialsId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -277,6 +294,7 @@ export type UserScalarWhereWithAggregatesInput = {
   emailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   image?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   role?: Prisma.StringWithAggregatesFilter<"User"> | string
+  activeExchangeCredentialsId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -295,8 +313,10 @@ export type UserCreateInput = {
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -306,6 +326,7 @@ export type UserUncheckedCreateInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -315,6 +336,7 @@ export type UserUncheckedCreateInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUpdateInput = {
@@ -331,8 +353,10 @@ export type UserUpdateInput = {
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -342,6 +366,7 @@ export type UserUncheckedUpdateInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -351,6 +376,7 @@ export type UserUncheckedUpdateInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -360,6 +386,7 @@ export type UserCreateManyInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
 }
@@ -382,6 +409,7 @@ export type UserUncheckedUpdateManyInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -393,6 +421,7 @@ export type UserCountOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   image?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  activeExchangeCredentialsId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -404,6 +433,7 @@ export type UserMaxOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   image?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  activeExchangeCredentialsId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -415,6 +445,7 @@ export type UserMinOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   image?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  activeExchangeCredentialsId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -422,6 +453,16 @@ export type UserMinOrderByAggregateInput = {
 export type UserScalarRelationFilter = {
   is?: Prisma.UserWhereInput
   isNot?: Prisma.UserWhereInput
+}
+
+export type UserListRelationFilter = {
+  every?: Prisma.UserWhereInput
+  some?: Prisma.UserWhereInput
+  none?: Prisma.UserWhereInput
+}
+
+export type UserOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -502,12 +543,54 @@ export type UserCreateNestedOneWithoutExchangeCredentialsInput = {
   connect?: Prisma.UserWhereUniqueInput
 }
 
+export type UserCreateNestedManyWithoutActiveExchangeCredentialsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput> | Prisma.UserCreateWithoutActiveExchangeCredentialsInput[] | Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput | Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput[]
+  createMany?: Prisma.UserCreateManyActiveExchangeCredentialsInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+}
+
+export type UserUncheckedCreateNestedManyWithoutActiveExchangeCredentialsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput> | Prisma.UserCreateWithoutActiveExchangeCredentialsInput[] | Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput | Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput[]
+  createMany?: Prisma.UserCreateManyActiveExchangeCredentialsInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+}
+
 export type UserUpdateOneRequiredWithoutExchangeCredentialsNestedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutExchangeCredentialsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutExchangeCredentialsInput
   upsert?: Prisma.UserUpsertWithoutExchangeCredentialsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutExchangeCredentialsInput, Prisma.UserUpdateWithoutExchangeCredentialsInput>, Prisma.UserUncheckedUpdateWithoutExchangeCredentialsInput>
+}
+
+export type UserUpdateManyWithoutActiveExchangeCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput> | Prisma.UserCreateWithoutActiveExchangeCredentialsInput[] | Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput | Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutActiveExchangeCredentialsInput | Prisma.UserUpsertWithWhereUniqueWithoutActiveExchangeCredentialsInput[]
+  createMany?: Prisma.UserCreateManyActiveExchangeCredentialsInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutActiveExchangeCredentialsInput | Prisma.UserUpdateWithWhereUniqueWithoutActiveExchangeCredentialsInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutActiveExchangeCredentialsInput | Prisma.UserUpdateManyWithWhereWithoutActiveExchangeCredentialsInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+}
+
+export type UserUncheckedUpdateManyWithoutActiveExchangeCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput> | Prisma.UserCreateWithoutActiveExchangeCredentialsInput[] | Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput | Prisma.UserCreateOrConnectWithoutActiveExchangeCredentialsInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutActiveExchangeCredentialsInput | Prisma.UserUpsertWithWhereUniqueWithoutActiveExchangeCredentialsInput[]
+  createMany?: Prisma.UserCreateManyActiveExchangeCredentialsInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutActiveExchangeCredentialsInput | Prisma.UserUpdateWithWhereUniqueWithoutActiveExchangeCredentialsInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutActiveExchangeCredentialsInput | Prisma.UserUpdateManyWithWhereWithoutActiveExchangeCredentialsInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
 }
 
 export type UserCreateNestedOneWithoutRiskLimitsInput = {
@@ -538,6 +621,20 @@ export type UserUpdateOneRequiredWithoutAuditLogsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuditLogsInput, Prisma.UserUpdateWithoutAuditLogsInput>, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
 }
 
+export type UserCreateNestedOneWithoutWebhooksInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWebhooksInput, Prisma.UserUncheckedCreateWithoutWebhooksInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWebhooksInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutWebhooksNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWebhooksInput, Prisma.UserUncheckedCreateWithoutWebhooksInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWebhooksInput
+  upsert?: Prisma.UserUpsertWithoutWebhooksInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWebhooksInput, Prisma.UserUpdateWithoutWebhooksInput>, Prisma.UserUncheckedUpdateWithoutWebhooksInput>
+}
+
 export type UserCreateWithoutSessionsInput = {
   id: string
   name: string
@@ -551,8 +648,10 @@ export type UserCreateWithoutSessionsInput = {
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -562,6 +661,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
@@ -570,6 +670,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -601,8 +702,10 @@ export type UserUpdateWithoutSessionsInput = {
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -612,6 +715,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -620,6 +724,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -635,8 +740,10 @@ export type UserCreateWithoutAccountsInput = {
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -646,6 +753,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -654,6 +762,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -685,8 +794,10 @@ export type UserUpdateWithoutAccountsInput = {
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -696,6 +807,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -704,6 +816,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutPortfoliosInput = {
@@ -719,8 +832,10 @@ export type UserCreateWithoutPortfoliosInput = {
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutPortfoliosInput = {
@@ -730,6 +845,7 @@ export type UserUncheckedCreateWithoutPortfoliosInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -738,6 +854,7 @@ export type UserUncheckedCreateWithoutPortfoliosInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutPortfoliosInput = {
@@ -769,8 +886,10 @@ export type UserUpdateWithoutPortfoliosInput = {
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPortfoliosInput = {
@@ -780,6 +899,7 @@ export type UserUncheckedUpdateWithoutPortfoliosInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -788,6 +908,7 @@ export type UserUncheckedUpdateWithoutPortfoliosInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutOrdersInput = {
@@ -803,8 +924,10 @@ export type UserCreateWithoutOrdersInput = {
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutOrdersInput = {
@@ -814,6 +937,7 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -822,6 +946,7 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutOrdersInput = {
@@ -853,8 +978,10 @@ export type UserUpdateWithoutOrdersInput = {
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOrdersInput = {
@@ -864,6 +991,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -872,6 +1000,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutExchangeCredentialsInput = {
@@ -887,11 +1016,56 @@ export type UserCreateWithoutExchangeCredentialsInput = {
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutExchangeCredentialsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  role?: string
+  activeExchangeCredentialsId?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  portfolios?: Prisma.PortfolioUncheckedCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutExchangeCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutExchangeCredentialsInput>
+}
+
+export type UserCreateWithoutActiveExchangeCredentialsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  role?: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderCreateNestedManyWithoutUserInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutActiveExchangeCredentialsInput = {
   id: string
   name: string
   email: string
@@ -904,13 +1078,20 @@ export type UserUncheckedCreateWithoutExchangeCredentialsInput = {
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   portfolios?: Prisma.PortfolioUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
-export type UserCreateOrConnectWithoutExchangeCredentialsInput = {
+export type UserCreateOrConnectWithoutActiveExchangeCredentialsInput = {
   where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutExchangeCredentialsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput>
+}
+
+export type UserCreateManyActiveExchangeCredentialsInputEnvelope = {
+  data: Prisma.UserCreateManyActiveExchangeCredentialsInput | Prisma.UserCreateManyActiveExchangeCredentialsInput[]
+  skipDuplicates?: boolean
 }
 
 export type UserUpsertWithoutExchangeCredentialsInput = {
@@ -937,8 +1118,10 @@ export type UserUpdateWithoutExchangeCredentialsInput = {
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutExchangeCredentialsInput = {
@@ -948,6 +1131,7 @@ export type UserUncheckedUpdateWithoutExchangeCredentialsInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -956,6 +1140,38 @@ export type UserUncheckedUpdateWithoutExchangeCredentialsInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithWhereUniqueWithoutActiveExchangeCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  update: Prisma.XOR<Prisma.UserUpdateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedUpdateWithoutActiveExchangeCredentialsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedCreateWithoutActiveExchangeCredentialsInput>
+}
+
+export type UserUpdateWithWhereUniqueWithoutActiveExchangeCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutActiveExchangeCredentialsInput, Prisma.UserUncheckedUpdateWithoutActiveExchangeCredentialsInput>
+}
+
+export type UserUpdateManyWithWhereWithoutActiveExchangeCredentialsInput = {
+  where: Prisma.UserScalarWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateManyMutationInput, Prisma.UserUncheckedUpdateManyWithoutActiveExchangeCredentialsInput>
+}
+
+export type UserScalarWhereInput = {
+  AND?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  OR?: Prisma.UserScalarWhereInput[]
+  NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  id?: Prisma.StringFilter<"User"> | string
+  name?: Prisma.StringFilter<"User"> | string
+  email?: Prisma.StringFilter<"User"> | string
+  emailVerified?: Prisma.BoolFilter<"User"> | boolean
+  image?: Prisma.StringNullableFilter<"User"> | string | null
+  role?: Prisma.StringFilter<"User"> | string
+  activeExchangeCredentialsId?: Prisma.StringNullableFilter<"User"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
 }
 
 export type UserCreateWithoutRiskLimitsInput = {
@@ -972,7 +1188,9 @@ export type UserCreateWithoutRiskLimitsInput = {
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutRiskLimitsInput = {
@@ -982,6 +1200,7 @@ export type UserUncheckedCreateWithoutRiskLimitsInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -990,6 +1209,7 @@ export type UserUncheckedCreateWithoutRiskLimitsInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutRiskLimitsInput = {
@@ -1022,7 +1242,9 @@ export type UserUpdateWithoutRiskLimitsInput = {
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRiskLimitsInput = {
@@ -1032,6 +1254,7 @@ export type UserUncheckedUpdateWithoutRiskLimitsInput = {
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -1040,6 +1263,7 @@ export type UserUncheckedUpdateWithoutRiskLimitsInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutAuditLogsInput = {
@@ -1056,7 +1280,9 @@ export type UserCreateWithoutAuditLogsInput = {
   portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
   riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -1066,6 +1292,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   emailVerified: boolean
   image?: string | null
   role?: string
+  activeExchangeCredentialsId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -1074,6 +1301,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
   riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+  webhooks?: Prisma.WebhookUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -1106,10 +1334,153 @@ export type UserUpdateWithoutAuditLogsInput = {
   portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
   riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  portfolios?: Prisma.PortfolioUncheckedUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
+  riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutWebhooksInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  role?: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  portfolios?: Prisma.PortfolioCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderCreateNestedManyWithoutUserInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedManyWithoutUserInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsCreateNestedOneWithoutActiveUsersInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  riskLimits?: Prisma.RiskLimitCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutWebhooksInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  role?: string
+  activeExchangeCredentialsId?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  portfolios?: Prisma.PortfolioUncheckedCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  riskLimits?: Prisma.RiskLimitUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutWebhooksInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWebhooksInput, Prisma.UserUncheckedCreateWithoutWebhooksInput>
+}
+
+export type UserUpsertWithoutWebhooksInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWebhooksInput, Prisma.UserUncheckedUpdateWithoutWebhooksInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWebhooksInput, Prisma.UserUncheckedCreateWithoutWebhooksInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWebhooksInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWebhooksInput, Prisma.UserUncheckedUpdateWithoutWebhooksInput>
+}
+
+export type UserUpdateWithoutWebhooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  activeExchangeCredentials?: Prisma.ExchangeCredentialsUpdateOneWithoutActiveUsersNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWebhooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  activeExchangeCredentialsId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  portfolios?: Prisma.PortfolioUncheckedUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateManyActiveExchangeCredentialsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  role?: string
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export type UserUpdateWithoutActiveExchangeCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  portfolios?: Prisma.PortfolioUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
+  exchangeCredentials?: Prisma.ExchangeCredentialsUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  riskLimits?: Prisma.RiskLimitUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutActiveExchangeCredentialsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1123,7 +1494,20 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   portfolios?: Prisma.PortfolioUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   exchangeCredentials?: Prisma.ExchangeCredentialsUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   riskLimits?: Prisma.RiskLimitUncheckedUpdateManyWithoutUserNestedInput
+  webhooks?: Prisma.WebhookUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateManyWithoutActiveExchangeCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -1139,6 +1523,7 @@ export type UserCountOutputType = {
   exchangeCredentials: number
   auditLogs: number
   riskLimits: number
+  webhooks: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1149,6 +1534,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   exchangeCredentials?: boolean | UserCountOutputTypeCountExchangeCredentialsArgs
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
   riskLimits?: boolean | UserCountOutputTypeCountRiskLimitsArgs
+  webhooks?: boolean | UserCountOutputTypeCountWebhooksArgs
 }
 
 /**
@@ -1210,6 +1596,13 @@ export type UserCountOutputTypeCountRiskLimitsArgs<ExtArgs extends runtime.Types
   where?: Prisma.RiskLimitWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountWebhooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WebhookWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1218,6 +1611,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   emailVerified?: boolean
   image?: boolean
   role?: boolean
+  activeExchangeCredentialsId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -1225,8 +1619,10 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   portfolios?: boolean | Prisma.User$portfoliosArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
   exchangeCredentials?: boolean | Prisma.User$exchangeCredentialsArgs<ExtArgs>
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   riskLimits?: boolean | Prisma.User$riskLimitsArgs<ExtArgs>
+  webhooks?: boolean | Prisma.User$webhooksArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1237,8 +1633,10 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emailVerified?: boolean
   image?: boolean
   role?: boolean
+  activeExchangeCredentialsId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1248,8 +1646,10 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emailVerified?: boolean
   image?: boolean
   role?: boolean
+  activeExchangeCredentialsId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -1259,23 +1659,30 @@ export type UserSelectScalar = {
   emailVerified?: boolean
   image?: boolean
   role?: boolean
+  activeExchangeCredentialsId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "role" | "activeExchangeCredentialsId" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   portfolios?: boolean | Prisma.User$portfoliosArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
   exchangeCredentials?: boolean | Prisma.User$exchangeCredentialsArgs<ExtArgs>
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   riskLimits?: boolean | Prisma.User$riskLimitsArgs<ExtArgs>
+  webhooks?: boolean | Prisma.User$webhooksArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
+}
+export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  activeExchangeCredentials?: boolean | Prisma.User$activeExchangeCredentialsArgs<ExtArgs>
+}
 
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
@@ -1285,8 +1692,10 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     portfolios: Prisma.$PortfolioPayload<ExtArgs>[]
     orders: Prisma.$OrderPayload<ExtArgs>[]
     exchangeCredentials: Prisma.$ExchangeCredentialsPayload<ExtArgs>[]
+    activeExchangeCredentials: Prisma.$ExchangeCredentialsPayload<ExtArgs> | null
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     riskLimits: Prisma.$RiskLimitPayload<ExtArgs>[]
+    webhooks: Prisma.$WebhookPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1295,6 +1704,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     emailVerified: boolean
     image: string | null
     role: string
+    activeExchangeCredentialsId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1696,8 +2106,10 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   portfolios<T extends Prisma.User$portfoliosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$portfoliosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PortfolioPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orders<T extends Prisma.User$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   exchangeCredentials<T extends Prisma.User$exchangeCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$exchangeCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExchangeCredentialsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  activeExchangeCredentials<T extends Prisma.User$activeExchangeCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$activeExchangeCredentialsArgs<ExtArgs>>): Prisma.Prisma__ExchangeCredentialsClient<runtime.Types.Result.GetResult<Prisma.$ExchangeCredentialsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   riskLimits<T extends Prisma.User$riskLimitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$riskLimitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RiskLimitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  webhooks<T extends Prisma.User$webhooksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$webhooksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WebhookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1733,6 +2145,7 @@ export interface UserFieldRefs {
   readonly emailVerified: Prisma.FieldRef<"User", 'Boolean'>
   readonly image: Prisma.FieldRef<"User", 'String'>
   readonly role: Prisma.FieldRef<"User", 'String'>
+  readonly activeExchangeCredentialsId: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
@@ -1984,6 +2397,10 @@ export type UserCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    */
   data: Prisma.UserCreateManyInput | Prisma.UserCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -2054,6 +2471,10 @@ export type UserUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many Users to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -2243,6 +2664,25 @@ export type User$exchangeCredentialsArgs<ExtArgs extends runtime.Types.Extension
 }
 
 /**
+ * User.activeExchangeCredentials
+ */
+export type User$activeExchangeCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExchangeCredentials
+   */
+  select?: Prisma.ExchangeCredentialsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ExchangeCredentials
+   */
+  omit?: Prisma.ExchangeCredentialsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExchangeCredentialsInclude<ExtArgs> | null
+  where?: Prisma.ExchangeCredentialsWhereInput
+}
+
+/**
  * User.auditLogs
  */
 export type User$auditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2288,6 +2728,30 @@ export type User$riskLimitsArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.RiskLimitScalarFieldEnum | Prisma.RiskLimitScalarFieldEnum[]
+}
+
+/**
+ * User.webhooks
+ */
+export type User$webhooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Webhook
+   */
+  select?: Prisma.WebhookSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Webhook
+   */
+  omit?: Prisma.WebhookOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WebhookInclude<ExtArgs> | null
+  where?: Prisma.WebhookWhereInput
+  orderBy?: Prisma.WebhookOrderByWithRelationInput | Prisma.WebhookOrderByWithRelationInput[]
+  cursor?: Prisma.WebhookWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WebhookScalarFieldEnum | Prisma.WebhookScalarFieldEnum[]
 }
 
 /**

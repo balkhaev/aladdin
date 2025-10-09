@@ -59,6 +59,7 @@ export const ModelName = {
   RiskLimit: 'RiskLimit',
   PortfolioRebalance: 'PortfolioRebalance',
   AuditLog: 'AuditLog',
+  Webhook: 'Webhook',
   Signal: 'Signal'
 } as const
 
@@ -85,6 +86,7 @@ export const UserScalarFieldEnum = {
   emailVerified: 'emailVerified',
   image: 'image',
   role: 'role',
+  activeExchangeCredentialsId: 'activeExchangeCredentialsId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -252,6 +254,21 @@ export const AuditLogScalarFieldEnum = {
 } as const
 
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+export const WebhookScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  secret: 'secret',
+  isActive: 'isActive',
+  createdById: 'createdById',
+  totalCalls: 'totalCalls',
+  lastCalledAt: 'lastCalledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WebhookScalarFieldEnum = (typeof WebhookScalarFieldEnum)[keyof typeof WebhookScalarFieldEnum]
 
 
 export const SignalScalarFieldEnum = {

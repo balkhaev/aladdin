@@ -19,6 +19,8 @@ import { authMiddleware } from "./middleware/auth";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { createAdminUsersRouter } from "./routers/admin-users";
 import { createExchangeCredentialsRouter } from "./routers/exchange-credentials";
+import { createUserRouter } from "./routers/user";
+import { createWebhooksRouter } from "./routers/webhooks";
 import { websocketHandlers } from "./websocket/proxy";
 
 type WebSocketData = {
@@ -219,6 +221,41 @@ const service = await initializeService<BaseGatewayService, WebSocketData>({
     // Authentication via Better-Auth
     // Handled by app.all("/api/auth/*") above
 
+    // ====== Webhook endpoint (public, no auth required) ======
+    app.post("/api/trading/webhook/:id", async (c) => {
+      const id = c.req.param("id");
+      const token = c.req.query("token");
+      const tradingUrl = SERVICES.trading;
+
+      const url = `${tradingUrl}/api/trading/webhook/${id}?token=${token || ""}`;
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: await c.req.raw.clone().text(),
+        });
+
+        const data = await response.text();
+        return new Response(data, {
+          status: response.status,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "WEBHOOK_PROXY_ERROR",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+            timestamp: Date.now(),
+          },
+          503
+        );
+      }
+    });
+
     // ====== Protected API Endpoints ======
 
     // Apply auth middleware to all /api/* requests (except /api/auth/*)
@@ -247,6 +284,22 @@ const service = await initializeService<BaseGatewayService, WebSocketData>({
     // Apply admin middleware to admin routes
     app.use("/api/admin/*", adminMiddleware);
     app.route("/api/admin/users", adminUsersRouter);
+
+    // Webhooks router (Gateway-specific, admin only)
+    const webhooksLogger = createLogger({ service: "gateway-webhooks" });
+    const webhooksRouter = createWebhooksRouter({
+      prisma: db,
+      logger: new Logger(webhooksLogger),
+    });
+    app.route("/api/admin/webhooks", webhooksRouter);
+
+    // User router (Gateway-specific, authenticated users)
+    const userLogger = createLogger({ service: "gateway-user" });
+    const userRouter = createUserRouter({
+      prisma: db,
+      logger: new Logger(userLogger),
+    });
+    app.route("/api/user", userRouter);
 
     // ====== Proxy Routes ======
 

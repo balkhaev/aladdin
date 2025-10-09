@@ -11,6 +11,7 @@ import {
   Settings,
   TrendingUp,
   Users,
+  Webhook,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -165,6 +166,19 @@ export function AppSidebar() {
                     <Link href="/admin/users">
                       <Users className="size-3.5" />
                       <span>Пользователи</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 text-xs"
+                    isActive={currentPath === "/admin/webhooks"}
+                    tooltip="Вебхуки"
+                  >
+                    <Link href="/admin/webhooks">
+                      <Webhook className="size-3.5" />
+                      <span>Вебхуки</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

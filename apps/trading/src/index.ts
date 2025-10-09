@@ -6,7 +6,11 @@
 import { initializeService } from "@aladdin/service/bootstrap";
 import type { ServerWebSocket } from "bun";
 import { config } from "./config";
-import { setupExecutorRoutes, setupTradingRoutes } from "./routes";
+import {
+  setupExecutorRoutes,
+  setupTradingRoutes,
+  setupWebhookRoutes,
+} from "./routes";
 import { type ExecutorConfig, StrategyExecutor } from "./services/executor";
 import { TradingService } from "./services/trading";
 import { TradingWebSocketHandler } from "./websocket/handler";
@@ -74,6 +78,16 @@ await initializeService<TradingService, WebSocketData>({
     // Setup executor routes
     if (executor) {
       setupExecutorRoutes(app, executor, service.getPrisma());
+    }
+
+    // Setup webhook routes
+    if (executor) {
+      setupWebhookRoutes(
+        app,
+        executor,
+        service.getPrisma(),
+        service.getLogger()
+      );
     }
   },
 

@@ -72,6 +72,11 @@ export type PortfolioRebalance = Prisma.PortfolioRebalanceModel
  */
 export type AuditLog = Prisma.AuditLogModel
 /**
+ * Model Webhook
+ * 
+ */
+export type Webhook = Prisma.WebhookModel
+/**
  * Model Signal
  * 
  */

@@ -55,9 +55,7 @@ function buildDivergenceAlert(
     const social = sentiment.components.social;
     if (social.signal === "NEUTRAL") return null;
     const type =
-      social.signal === "BULLISH"
-        ? "BULLISH_DIVERGENCE"
-        : "BEARISH_DIVERGENCE";
+      social.signal === "BULLISH" ? "BULLISH_DIVERGENCE" : "BEARISH_DIVERGENCE";
     return {
       symbol: sentiment.symbol,
       type,
@@ -68,7 +66,7 @@ function buildDivergenceAlert(
       description,
       severity,
       confidence: Math.round(social.confidence * 100),
-      timestamp: sentiment.timestamp,
+      timestamp: sentiment.timestamp.toISOString(),
     };
   }
 
@@ -93,7 +91,7 @@ function buildDivergenceAlert(
       description,
       severity,
       confidence: Math.round(futures.confidence * 100),
-      timestamp: sentiment.timestamp,
+      timestamp: sentiment.timestamp.toISOString(),
     };
   }
 
@@ -113,7 +111,7 @@ function buildDivergenceAlert(
       description,
       severity,
       confidence: Math.round(orderBook.confidence * 100),
-      timestamp: sentiment.timestamp,
+      timestamp: sentiment.timestamp.toISOString(),
     };
   }
 
@@ -126,9 +124,10 @@ function extractDivergenceAlerts(
   const alerts: DivergenceAlert[] = [];
 
   for (const sentiment of sentiments) {
-    const divergenceInsights = sentiment.insights.filter((insight) =>
-      insight.toLowerCase().includes("divergence") ||
-      insight.toLowerCase().includes("diverges")
+    const divergenceInsights = sentiment.insights.filter(
+      (insight) =>
+        insight.toLowerCase().includes("divergence") ||
+        insight.toLowerCase().includes("diverges")
     );
 
     for (const insight of divergenceInsights) {
@@ -159,7 +158,7 @@ function extractDivergenceAlerts(
         description: "Community mood diverges from market consensus",
         severity: getSeverity(sentiment.strength),
         confidence: Math.round(social.confidence * 100),
-        timestamp: sentiment.timestamp,
+        timestamp: sentiment.timestamp.toISOString(),
       });
     }
   }
@@ -168,8 +167,7 @@ function extractDivergenceAlerts(
 }
 
 export function DivergenceAlerts() {
-  const { data: sentiments, isLoading } =
-    useBatchCombinedSentiment(WATCHLIST);
+  const { data: sentiments, isLoading } = useBatchCombinedSentiment(WATCHLIST);
 
   const alerts = sentiments ? extractDivergenceAlerts(sentiments) : [];
 

@@ -1,33 +1,98 @@
 /**
  * Sentiment Analysis Card Component
- * Displays composite sentiment with component breakdown
+ * Displays combined sentiment with component breakdown
  */
 
 import {
   Activity,
   AlertTriangle,
+  BarChart3,
+  BookOpen,
+  Layers,
+  MessageSquare,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
+import {
+  getSentimentBgColor,
+  getSentimentColor,
+  getSentimentIcon,
+  type CombinedSentiment,
+  type ComponentSentiment,
+  useCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  type ComponentSentiment,
-  getSentimentBgColor,
-  getSentimentColor,
-  getSentimentIcon,
-  type SentimentSignal,
-  useSentiment,
-} from "@/hooks/use-sentiment";
 
-interface SentimentCardProps {
+type SentimentCardProps = {
   symbol: string;
-}
+  sentiment?: CombinedSentiment;
+  isLoading?: boolean;
+  errorMessage?: string;
+  enableFetch?: boolean;
+};
 
-export function SentimentCard({ symbol }: SentimentCardProps) {
-  const { data: sentiment, isLoading, error } = useSentiment(symbol);
+const SCORE_PROGRESS_OFFSET = 100;
+const SCORE_PROGRESS_RANGE = 200;
+
+const COMPONENT_KEYS = ["analytics", "futures", "orderBook", "social"] as const;
+type ComponentKey = (typeof COMPONENT_KEYS)[number];
+
+const COMPONENT_CONFIG: Record<
+  ComponentKey,
+  {
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+> = {
+  analytics: {
+    label: "Аналитика",
+    description: "Фундаментальные и технические индикаторы",
+    icon: BarChart3,
+  },
+  futures: {
+    label: "Фьючерсы",
+    description: "Ставки финансирования и открытый интерес",
+    icon: Layers,
+  },
+  orderBook: {
+    label: "Ордербук",
+    description: "Дисбаланс заявок и ликвидность",
+    icon: BookOpen,
+  },
+  social: {
+    label: "Сообщество",
+    description: "Настроения Telegram и Twitter",
+    icon: MessageSquare,
+  },
+};
+
+export function SentimentCard({
+  symbol,
+  sentiment: providedSentiment,
+  isLoading: loadingOverride,
+  errorMessage,
+  enableFetch = true,
+}: SentimentCardProps) {
+  const shouldFetch = enableFetch && !providedSentiment;
+  const {
+    data: querySentiment,
+    isLoading: queryLoading,
+    error: queryError,
+  } = useCombinedSentiment(symbol, shouldFetch);
+
+  const sentiment = providedSentiment ?? querySentiment;
+  const isLoading = loadingOverride ?? queryLoading;
+  const resolvedError =
+    errorMessage ??
+    (queryError
+      ? queryError instanceof Error
+        ? queryError.message
+        : String(queryError)
+      : undefined);
 
   if (isLoading) {
     return (
@@ -44,7 +109,7 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
     );
   }
 
-  if (error || !sentiment) {
+  if (!sentiment) {
     return (
       <Card>
         <CardHeader>
@@ -52,25 +117,17 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground text-sm">
-            Failed to load sentiment data
+            {resolvedError ?? "Failed to load sentiment data"}
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const getStrengthColor = (strength: string) => {
-    switch (strength) {
-      case "STRONG":
-        return "bg-orange-500";
-      case "MODERATE":
-        return "bg-yellow-500";
-      case "WEAK":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
+  const confidencePercent = Math.round(sentiment.confidence * 100);
+  const combinedProgress =
+    ((sentiment.combinedScore + SCORE_PROGRESS_OFFSET) / SCORE_PROGRESS_RANGE) *
+    100;
 
   return (
     <Card>
@@ -78,32 +135,37 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Sentiment Analysis</CardTitle>
           <Badge
-            className={getSentimentBgColor(sentiment.compositeSignal)}
+            className={getSentimentBgColor(sentiment.combinedSignal)}
             variant="outline"
           >
-            {getSentimentIcon(sentiment.compositeSignal)}{" "}
-            {sentiment.compositeSignal}
+            <span>{getSentimentIcon(sentiment.combinedSignal)}</span>
+            <span className="ml-1">{sentiment.combinedSignal}</span>
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Composite Score */}
+        {/* Combined Score */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Composite Score</span>
+              <span className="font-medium text-sm">Combined Score</span>
             </div>
-            <span
-              className={`font-bold text-2xl ${getSentimentColor(sentiment.compositeSignal)}`}
-            >
-              {sentiment.compositeScore.toFixed(1)}
-            </span>
+            <div className="flex items-center gap-2">
+              {sentiment.combinedSignal === "BULLISH" && (
+                <TrendingUp className="h-4 w-4 text-green-500" />
+              )}
+              {sentiment.combinedSignal === "BEARISH" && (
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              )}
+              <span
+                className={`font-bold text-2xl ${getSentimentColor(sentiment.combinedSignal)}`}
+              >
+                {sentiment.combinedScore.toFixed(1)}
+              </span>
+            </div>
           </div>
-          <Progress
-            className="h-2"
-            value={((sentiment.compositeScore + 100) / 200) * 100}
-          />
+          <Progress className="h-2" value={combinedProgress} />
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>Bearish (-100)</span>
             <span>Neutral (0)</span>
@@ -115,34 +177,26 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <div className="text-muted-foreground text-sm">Confidence</div>
-            <div className="font-bold text-2xl">{sentiment.confidence}%</div>
+            <div className="font-bold text-2xl">{confidencePercent}%</div>
           </div>
           <div className="space-y-1">
             <div className="text-muted-foreground text-sm">Strength</div>
-            <Badge className={getStrengthColor(sentiment.strength)}>
-              {sentiment.strength}
-            </Badge>
+            <StrengthBadge strength={sentiment.strength} />
           </div>
         </div>
 
         {/* Component Breakdown */}
         <div className="space-y-3">
-          <div className="font-medium text-sm">Components</div>
-          <ComponentBar
-            component={sentiment.components.fearGreed}
-            label="Fear & Greed"
-            weight={sentiment.components.fearGreed.weight}
-          />
-          <ComponentBar
-            component={sentiment.components.onChain}
-            label="On-Chain"
-            weight={sentiment.components.onChain.weight}
-          />
-          <ComponentBar
-            component={sentiment.components.technical}
-            label="Technical"
-            weight={sentiment.components.technical.weight}
-          />
+          <div className="font-medium text-sm">Компоненты анализа</div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {COMPONENT_KEYS.map((key) => (
+              <ComponentCard
+                component={sentiment.components[key]}
+                config={COMPONENT_CONFIG[key]}
+                key={key}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Insights */}
@@ -155,10 +209,12 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
                   className="flex items-start gap-2 rounded-md bg-muted/50 p-2 text-muted-foreground text-xs"
                   key={index}
                 >
-                  {insight.includes("⚠️") && (
+                  {insight.includes("⚠️") ? (
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
+                  ) : (
+                    <span className="mt-0.5 h-4 w-4 shrink-0">•</span>
                   )}
-                  <span>{insight}</span>
+                  <span>{insight.replace("⚠️ ", "")}</span>
                 </div>
               ))}
             </div>
@@ -169,32 +225,77 @@ export function SentimentCard({ symbol }: SentimentCardProps) {
   );
 }
 
-function ComponentBar({
-  label,
-  weight,
-  component,
-}: {
-  label: string;
-  weight: number;
-  component: ComponentSentiment;
-}) {
+function StrengthBadge({ strength }: { strength: string }) {
+  const baseClass = "font-semibold px-2 py-1 rounded-md text-xs";
+
+  if (strength === "STRONG") {
+    return (
+      <Badge className={`${baseClass} bg-orange-500/10`} variant="outline">
+        STRONG
+      </Badge>
+    );
+  }
+
+  if (strength === "MODERATE") {
+    return (
+      <Badge className={`${baseClass} bg-yellow-500/10`} variant="outline">
+        MODERATE
+      </Badge>
+    );
+  }
+
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{label}</span>
-          <span className="text-muted-foreground">
-            ({(weight * 100).toFixed(0)}%)
+    <Badge className={`${baseClass} bg-gray-500/10`} variant="outline">
+      WEAK
+    </Badge>
+  );
+}
+
+function ComponentCard({
+  component,
+  config,
+}: {
+  component: ComponentSentiment;
+  config: (typeof COMPONENT_CONFIG)[ComponentKey];
+}) {
+  const Icon = config.icon;
+  const progressValue = ((component.score + 100) / 200) * 100;
+  const confidencePercent = Math.round(component.confidence * 100);
+  const weightPercent = Math.round(component.weight * 100);
+
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-2">
+          <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+          <div>
+            <div className="font-medium text-sm">{config.label}</div>
+            <p className="text-muted-foreground text-xs">{config.description}</p>
+          </div>
+        </div>
+        <Badge
+          className={getSentimentBgColor(component.signal)}
+          variant="outline"
+        >
+          {component.signal}
+        </Badge>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">Score</span>
+          <span
+            className={`font-semibold ${getSentimentColor(component.signal)}`}
+          >
+            {component.score.toFixed(0)}
           </span>
         </div>
-        <span className={getSentimentColor(component.signal)}>
-          {component.score.toFixed(0)}
-        </span>
+        <Progress className="h-1.5" value={progressValue} />
+        <div className="flex items-center justify-between text-muted-foreground text-xs">
+          <span>Weight: {weightPercent}%</span>
+          <span>Confidence: {confidencePercent}%</span>
+        </div>
       </div>
-      <Progress
-        className="h-1.5"
-        value={((component.score + 100) / 200) * 100}
-      />
     </div>
   );
 }

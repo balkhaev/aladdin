@@ -15,12 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  type CompositeSentiment,
   getSentimentBgColor,
   getSentimentColor,
   getSentimentIcon,
-  useBatchSentiment,
-} from "@/hooks/use-sentiment";
+  type CombinedSentiment,
+  useBatchCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
 // Default watchlist symbols
 const DEFAULT_WATCHLIST = [
@@ -42,7 +42,7 @@ export function WatchlistSentiment() {
     data: sentiments,
     isLoading,
     error,
-  } = useBatchSentiment(DEFAULT_WATCHLIST);
+  } = useBatchCombinedSentiment(DEFAULT_WATCHLIST);
 
   if (isLoading) {
     return (
@@ -75,23 +75,27 @@ export function WatchlistSentiment() {
 
   // Calculate market breadth
   const bullishCount = sentiments.filter(
-    (s) => s.compositeSignal === "BULLISH"
+    (s) => s.combinedSignal === "BULLISH"
   ).length;
   const bearishCount = sentiments.filter(
-    (s) => s.compositeSignal === "BEARISH"
+    (s) => s.combinedSignal === "BEARISH"
   ).length;
   const neutralCount = sentiments.filter(
-    (s) => s.compositeSignal === "NEUTRAL"
+    (s) => s.combinedSignal === "NEUTRAL"
   ).length;
 
   // Sort by composite score
   const sortedBullish = [...sentiments]
-    .filter((s) => s.compositeSignal === "BULLISH")
-    .sort((a, b) => b.compositeScore - a.compositeScore);
+    .filter((s) => s.combinedSignal === "BULLISH")
+    .sort((a, b) => b.combinedScore - a.combinedScore);
 
   const sortedBearish = [...sentiments]
-    .filter((s) => s.compositeSignal === "BEARISH")
-    .sort((a, b) => a.compositeScore - b.compositeScore);
+    .filter((s) => s.combinedSignal === "BEARISH")
+    .sort((a, b) => a.combinedScore - b.combinedScore);
+
+  const selectedSentiment = sentiments.find(
+    (s) => s.symbol === selectedSymbol
+  );
 
   return (
     <Card>
@@ -191,7 +195,11 @@ export function WatchlistSentiment() {
                 </Button>
               ))}
             </div>
-            <SentimentCard symbol={selectedSymbol} />
+            <SentimentCard
+              enableFetch={!selectedSentiment}
+              sentiment={selectedSentiment}
+              symbol={selectedSymbol}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -203,14 +211,15 @@ function MiniSentimentCard({
   sentiment,
   onClick,
 }: {
-  sentiment: CompositeSentiment;
+  sentiment: CombinedSentiment;
   onClick: () => void;
 }) {
   const hasDivergence = sentiment.insights.some((i) => i.includes("⚠️"));
+  const confidencePercent = Math.round(sentiment.confidence * 100);
 
   return (
     <button
-      className={`${getSentimentBgColor(sentiment.compositeSignal)} relative rounded-lg border p-4 text-left transition-all hover:scale-105 hover:shadow-lg`}
+      className={`${getSentimentBgColor(sentiment.combinedSignal)} relative rounded-lg border p-4 text-left transition-all hover:scale-105 hover:shadow-lg`}
       onClick={onClick}
       type="button"
     >
@@ -226,19 +235,19 @@ function MiniSentimentCard({
             {sentiment.symbol.replace("USDT", "")}
           </span>
           <span className="text-xs">
-            {getSentimentIcon(sentiment.compositeSignal)}
+            {getSentimentIcon(sentiment.combinedSignal)}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <span
-            className={`font-bold text-2xl ${getSentimentColor(sentiment.compositeSignal)}`}
+            className={`font-bold text-2xl ${getSentimentColor(sentiment.combinedSignal)}`}
           >
-            {sentiment.compositeScore.toFixed(0)}
+            {sentiment.combinedScore.toFixed(0)}
           </span>
           <div className="text-right text-xs">
             <div className="text-muted-foreground">{sentiment.strength}</div>
-            <div className="font-medium">{sentiment.confidence}%</div>
+            <div className="font-medium">{confidencePercent}%</div>
           </div>
         </div>
       </div>
@@ -250,12 +259,13 @@ function SignalRow({
   sentiment,
   onClick,
 }: {
-  sentiment: CompositeSentiment;
+  sentiment: CombinedSentiment;
   onClick: () => void;
 }) {
   const Icon =
-    sentiment.compositeSignal === "BULLISH" ? TrendingUp : TrendingDown;
+    sentiment.combinedSignal === "BULLISH" ? TrendingUp : TrendingDown;
   const hasDivergence = sentiment.insights.some((i) => i.includes("⚠️"));
+  const confidencePercent = Math.round(sentiment.confidence * 100);
 
   return (
     <button
@@ -265,10 +275,10 @@ function SignalRow({
     >
       <div className="flex items-center gap-4">
         <div
-          className={`flex size-10 items-center justify-center rounded-lg ${getSentimentBgColor(sentiment.compositeSignal)}`}
+          className={`flex size-10 items-center justify-center rounded-lg ${getSentimentBgColor(sentiment.combinedSignal)}`}
         >
           <Icon
-            className={`size-5 ${getSentimentColor(sentiment.compositeSignal)}`}
+            className={`size-5 ${getSentimentColor(sentiment.combinedSignal)}`}
           />
         </div>
         <div>
@@ -289,12 +299,12 @@ function SignalRow({
 
       <div className="text-right">
         <div
-          className={`font-bold text-2xl ${getSentimentColor(sentiment.compositeSignal)}`}
+          className={`font-bold text-2xl ${getSentimentColor(sentiment.combinedSignal)}`}
         >
-          {sentiment.compositeScore.toFixed(0)}
+          {sentiment.combinedScore.toFixed(0)}
         </div>
         <div className="text-muted-foreground text-xs">
-          {sentiment.strength} • {sentiment.confidence}%
+          {sentiment.strength} • {confidencePercent}%
         </div>
       </div>
     </button>

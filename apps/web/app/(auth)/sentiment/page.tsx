@@ -6,7 +6,7 @@
  */
 
 import { MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AIAnalyzedFeed } from "@/components/ai-analyzed-feed";
 import { FundingRatesCard } from "@/components/analytics/funding-rates-card";
 import { MarketSentimentGrid } from "@/components/analytics/market-sentiment-grid";
@@ -14,6 +14,7 @@ import { OrderBookSentimentCard } from "@/components/analytics/order-book-sentim
 import { SentimentHistoryChart } from "@/components/analytics/sentiment-history-chart";
 import { CombinedSentimentCard } from "@/components/combined-sentiment-card";
 import { SocialSentimentCard } from "@/components/social-sentiment-card";
+import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 
 const AVAILABLE_SYMBOLS = [
   "BTCUSDT",
@@ -34,6 +34,18 @@ const AVAILABLE_SYMBOLS = [
 
 export default function SentimentPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
+  const {
+    data: combinedSentiment,
+    isLoading: combinedLoading,
+    error: combinedError,
+  } = useCombinedSentiment(selectedSymbol);
+
+  const combinedErrorMessage = useMemo(() => {
+    if (!combinedError) return undefined;
+    return combinedError instanceof Error
+      ? combinedError.message
+      : String(combinedError);
+  }, [combinedError]);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -73,15 +85,39 @@ export default function SentimentPage() {
 
       {/* Top Row - Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <CombinedSentimentCard symbol={selectedSymbol} />
-        <SocialSentimentCard symbol={selectedSymbol} />
-        <FundingRatesCard symbol={selectedSymbol} />
+        <CombinedSentimentCard
+          enableFetch={false}
+          errorMessage={combinedErrorMessage}
+          isLoading={combinedLoading}
+          sentiment={combinedSentiment}
+          symbol={selectedSymbol}
+        />
+        <SocialSentimentCard
+          enableFetch={false}
+          errorMessage={combinedErrorMessage}
+          isLoading={combinedLoading}
+          sentiment={combinedSentiment}
+          symbol={selectedSymbol}
+        />
+        <FundingRatesCard
+          enableFetch={false}
+          errorMessage={combinedErrorMessage}
+          isLoading={combinedLoading}
+          sentiment={combinedSentiment}
+          symbol={selectedSymbol}
+        />
       </div>
 
       {/* Middle Row - History & Analysis */}
       <div className="grid gap-4 md:grid-cols-2">
         <SentimentHistoryChart symbol={selectedSymbol} />
-        <OrderBookSentimentCard symbol={selectedSymbol} />
+        <OrderBookSentimentCard
+          enableFetch={false}
+          errorMessage={combinedErrorMessage}
+          isLoading={combinedLoading}
+          sentiment={combinedSentiment}
+          symbol={selectedSymbol}
+        />
       </div>
 
       {/* Market Overview Grid */}

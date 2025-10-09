@@ -21,12 +21,11 @@ import { usePortfolioPositions } from "@/hooks/use-portfolio";
 import {
   getSentimentColor,
   type SentimentSignal,
-  useBatchSentiment,
-} from "@/hooks/use-sentiment";
+  type CombinedSentiment,
+  useBatchCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
 // Constants for thresholds
-const EXPOSURE_MEDIUM = 10;
-const EXPOSURE_HIGH = 15;
 const SENTIMENT_NEUTRAL_THRESHOLD = 20;
 const PERCENTAGE_MULTIPLIER = 100;
 const DECIMAL_PRECISION_1 = 1;
@@ -72,7 +71,7 @@ export function PortfolioSentimentTable({
   }, [positions]);
 
   const { data: sentiments, isLoading: isLoadingSentiments } =
-    useBatchSentiment(symbols, symbols.length > 0);
+    useBatchCombinedSentiment(symbols, symbols.length > 0);
 
   const isLoading = isLoadingPositions || isLoadingSentiments;
 
@@ -91,17 +90,17 @@ export function PortfolioSentimentTable({
       const position = positions.find((p) => p.symbol === sentiment.symbol);
       const positionValue = position?.value ?? 0;
       if (positionValue > 0) {
-        weightedScore += sentiment.compositeScore * positionValue;
+        weightedScore += sentiment.combinedScore * positionValue;
         totalWeight += positionValue;
       }
     }
 
     const avgScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
     const bullishCount = sentiments.filter(
-      (s) => s.compositeSignal === "BULLISH"
+      (s) => s.combinedSignal === "BULLISH"
     ).length;
     const bearishCount = sentiments.filter(
-      (s) => s.compositeSignal === "BEARISH"
+      (s) => s.combinedSignal === "BEARISH"
     ).length;
 
     return {
@@ -245,21 +244,21 @@ export function PortfolioSentimentTable({
 
                     {/* Signal */}
                     <TableCell className="text-center">
-                      <SignalBadge signal={sentiment.compositeSignal} />
+                      <SignalBadge signal={sentiment.combinedSignal} />
                     </TableCell>
 
                     {/* Score */}
                     <TableCell className="text-center">
                       <div className="space-y-1">
                         <div
-                          className={`font-bold text-xl ${getSentimentColor(sentiment.compositeSignal)}`}
+                          className={`font-bold text-xl ${getSentimentColor(sentiment.combinedSignal)}`}
                         >
-                          {sentiment.compositeScore.toFixed(0)}
+                          {sentiment.combinedScore.toFixed(0)}
                         </div>
                         <Progress
                           className="h-1 w-16"
                           value={
-                            ((sentiment.compositeScore + PROGRESS_BAR_OFFSET) /
+                            ((sentiment.combinedScore + PROGRESS_BAR_OFFSET) /
                               PROGRESS_BAR_RANGE) *
                             PERCENTAGE_MULTIPLIER
                           }
@@ -280,7 +279,7 @@ export function PortfolioSentimentTable({
                     {/* Confidence */}
                     <TableCell className="text-center">
                       <div className="font-semibold">
-                        {sentiment.confidence}%
+                        {Math.round(sentiment.confidence * PERCENTAGE_MULTIPLIER)}%
                       </div>
                     </TableCell>
 
@@ -288,7 +287,7 @@ export function PortfolioSentimentTable({
                     <TableCell>
                       <RecommendationBadge
                         exposurePercent={exposurePercent}
-                        sentiment={sentiment}
+                        recommendation={sentiment.recommendation}
                       />
                     </TableCell>
                   </TableRow>
@@ -331,75 +330,49 @@ function SignalBadge({ signal }: { signal: SentimentSignal }) {
   );
 }
 
-type RecommendationType = {
-  text: string;
-  variant: "default" | "secondary" | "destructive";
+const RECOMMENDATION_VARIANT: Record<
+  CombinedSentiment["recommendation"]["action"],
+  "default" | "secondary" | "destructive"
+> = {
+  STRONG_BUY: "default",
+  BUY: "default",
+  HOLD: "secondary",
+  SELL: "destructive",
+  STRONG_SELL: "destructive",
 };
 
-function getBullishRecommendation(
-  strength: string,
-  exposurePercent: number
-): RecommendationType {
-  const isLowExposure = exposurePercent < EXPOSURE_MEDIUM;
-  const isMediumExposure = exposurePercent < EXPOSURE_HIGH;
-
-  if (strength === "STRONG" && isMediumExposure) {
-    return { text: "🚀 ACCUMULATE", variant: "default" };
-  }
-  if (isLowExposure) {
-    return { text: "✅ HOLD/BUY", variant: "default" };
-  }
-  return { text: "✅ HOLD", variant: "secondary" };
-}
-
-function getBearishRecommendation(
-  strength: string,
-  exposurePercent: number
-): RecommendationType {
-  if (strength === "STRONG") {
-    return { text: "⚠️ REDUCE", variant: "destructive" };
-  }
-
-  const isHighExposure = exposurePercent > EXPOSURE_HIGH;
-  if (isHighExposure) {
-    return { text: "⚠️ TRIM", variant: "destructive" };
-  }
-
-  return { text: "⏸️ HOLD", variant: "secondary" };
-}
-
-function getRecommendation(
-  signal: SentimentSignal,
-  strength: string,
-  exposurePercent: number
-): RecommendationType {
-  if (signal === "BULLISH") {
-    return getBullishRecommendation(strength, exposurePercent);
-  }
-
-  if (signal === "BEARISH") {
-    return getBearishRecommendation(strength, exposurePercent);
-  }
-
-  return { text: "➖ NEUTRAL", variant: "secondary" };
-}
+const RISK_COLOR: Record<
+  CombinedSentiment["recommendation"]["riskLevel"],
+  string
+> = {
+  LOW: "text-green-500",
+  MEDIUM: "text-yellow-500",
+  HIGH: "text-red-500",
+};
 
 function RecommendationBadge({
-  sentiment,
+  recommendation,
   exposurePercent,
 }: {
-  sentiment: { compositeSignal: SentimentSignal; strength: string };
+  recommendation: CombinedSentiment["recommendation"];
   exposurePercent: number;
 }) {
-  const recommendation = getRecommendation(
-    sentiment.compositeSignal,
-    sentiment.strength,
-    exposurePercent
-  );
+  const variant = RECOMMENDATION_VARIANT[recommendation.action] ?? "secondary";
+  const riskClass = RISK_COLOR[recommendation.riskLevel] ?? "text-muted-foreground";
+  const label = recommendation.action.replace("_", " ");
 
   return (
-    <Badge className="text-xs" variant={recommendation.variant}>
-      {recommendation.text}
-    </Badge>
+    <div className="space-y-1">
+      <Badge className="text-xs" variant={variant}>
+        {label}
+      </Badge>
+      <div className="flex items-center justify-between text-muted-foreground text-xs">
+        <span className={riskClass}>Risk: {recommendation.riskLevel}</span>
+        <span>Exposure: {exposurePercent.toFixed(DECIMAL_PRECISION_1)}%</span>
+      </div>
+      <div className="line-clamp-2 text-muted-foreground text-xs">
+        {recommendation.reasoning}
+      </div>
+    </div>
   );
 }

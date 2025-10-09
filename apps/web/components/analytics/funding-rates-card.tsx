@@ -8,23 +8,48 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
+import {
+  type CombinedSentiment,
+  useCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 import { useAllFundingRates } from "@/hooks/use-funding-rates";
 
 type FundingRatesCardProps = {
   symbol: string;
+  sentiment?: CombinedSentiment;
+  isLoading?: boolean;
+  errorMessage?: string;
+  enableFetch?: boolean;
 };
 
 const PERCENTAGE_MULTIPLIER = 100;
 const FUNDING_RATE_TO_PERCENT = 100;
 
-export function FundingRatesCard({ symbol }: FundingRatesCardProps) {
-  const { data: sentiment, isLoading: sentimentLoading } =
-    useCombinedSentiment(symbol);
-  const { data: fundingRates, isLoading: ratesLoading } =
+export function FundingRatesCard({
+  symbol,
+  sentiment: providedSentiment,
+  isLoading: loadingOverride,
+  errorMessage,
+  enableFetch = true,
+}: FundingRatesCardProps) {
+  const shouldFetch = enableFetch && !providedSentiment;
+  const {
+    data: querySentiment,
+    isLoading: queryLoading,
+    error: queryError,
+  } = useCombinedSentiment(symbol, shouldFetch);
+  const { data: fundingRates, isLoading: ratesLoading, error: fundingError } =
     useAllFundingRates(symbol);
 
-  const isLoading = sentimentLoading || ratesLoading;
+  const sentiment = providedSentiment ?? querySentiment;
+  const isLoading = (loadingOverride ?? queryLoading) || ratesLoading;
+  const resolvedError =
+    errorMessage ??
+    (queryError
+      ? queryError instanceof Error
+        ? queryError.message
+        : String(queryError)
+      : undefined);
 
   if (isLoading) {
     return (
@@ -54,7 +79,7 @@ export function FundingRatesCard({ symbol }: FundingRatesCardProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Unable to load funding data
+            {resolvedError ?? "Unable to load funding data"}
           </p>
         </CardContent>
       </Card>
@@ -170,7 +195,11 @@ export function FundingRatesCard({ symbol }: FundingRatesCardProps) {
           <h4 className="font-medium text-sm">Ставки по биржам</h4>
           {exchanges.length === 0 ? (
             <p className="text-center text-muted-foreground text-xs">
-              No exchange data available
+              {fundingError
+                ? fundingError instanceof Error
+                  ? fundingError.message
+                  : "Failed to load exchange funding data"
+                : "No exchange data available"}
             </p>
           ) : (
             exchanges.map(([exchange, data]) => (

@@ -8,18 +8,44 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
+import {
+  type CombinedSentiment,
+  useCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
 type OrderBookSentimentCardProps = {
   symbol: string;
+  sentiment?: CombinedSentiment;
+  isLoading?: boolean;
+  errorMessage?: string;
+  enableFetch?: boolean;
 };
 
 const PERCENTAGE_MULTIPLIER = 100;
 
 export function OrderBookSentimentCard({
   symbol,
+  sentiment: providedSentiment,
+  isLoading: loadingOverride,
+  errorMessage,
+  enableFetch = true,
 }: OrderBookSentimentCardProps) {
-  const { data: sentiment, isLoading, error } = useCombinedSentiment(symbol);
+  const shouldFetch = enableFetch && !providedSentiment;
+  const {
+    data: querySentiment,
+    isLoading: queryLoading,
+    error: queryError,
+  } = useCombinedSentiment(symbol, shouldFetch);
+
+  const sentiment = providedSentiment ?? querySentiment;
+  const isLoading = loadingOverride ?? queryLoading;
+  const resolvedError =
+    errorMessage ??
+    (queryError
+      ? queryError instanceof Error
+        ? queryError.message
+        : String(queryError)
+      : undefined);
 
   if (isLoading) {
     return (
@@ -39,7 +65,7 @@ export function OrderBookSentimentCard({
     );
   }
 
-  if (error || !sentiment) {
+  if (!sentiment) {
     return (
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
@@ -50,7 +76,7 @@ export function OrderBookSentimentCard({
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Unable to load order book data
+            {resolvedError ?? "Unable to load order book data"}
           </p>
         </CardContent>
       </Card>

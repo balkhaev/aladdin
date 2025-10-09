@@ -4,7 +4,7 @@ import Redis, { type RedisOptions } from "ioredis";
 /**
  * Cache Options
  */
-export interface CacheOptions {
+export type CacheOptions = {
   /**
    * Redis connection string or options
    */
@@ -38,19 +38,19 @@ export interface CacheOptions {
    * @default 3
    */
   maxRetries?: number;
-}
+};
 
 /**
  * Cache Statistics
  */
-export interface CacheStats {
+export type CacheStats = {
   hits: number;
   misses: number;
   sets: number;
   deletes: number;
   errors: number;
   hitRate: number;
-}
+};
 
 /**
  * Cache Service

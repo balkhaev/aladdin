@@ -10,7 +10,10 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react";
-import { useCombinedSentiment } from "../hooks/use-combined-sentiment";
+import {
+  type CombinedSentiment,
+  useCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 import { Badge } from "./ui/badge";
 import {
   Card,
@@ -24,13 +27,38 @@ import { Skeleton } from "./ui/skeleton";
 
 type CombinedSentimentCardProps = {
   symbol: string;
+  sentiment?: CombinedSentiment;
+  isLoading?: boolean;
+  errorMessage?: string;
+  enableFetch?: boolean;
 };
 
 const PERCENTAGE_MULTIPLIER = 100;
 const PROGRESS_SCALE = 100;
 
-export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
-  const { data: sentiment, isLoading, error } = useCombinedSentiment(symbol);
+export function CombinedSentimentCard({
+  symbol,
+  sentiment: providedSentiment,
+  isLoading: loadingOverride,
+  errorMessage,
+  enableFetch = true,
+}: CombinedSentimentCardProps) {
+  const shouldFetch = enableFetch && !providedSentiment;
+  const {
+    data: querySentiment,
+    isLoading: queryLoading,
+    error: queryError,
+  } = useCombinedSentiment(symbol, shouldFetch);
+
+  const sentiment = providedSentiment ?? querySentiment;
+  const isLoading = loadingOverride ?? queryLoading;
+  const resolvedError =
+    errorMessage ??
+    (queryError
+      ? queryError instanceof Error
+        ? queryError.message
+        : String(queryError)
+      : undefined);
 
   if (isLoading) {
     return (
@@ -48,7 +76,7 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
     );
   }
 
-  if (error || !sentiment) {
+  if (resolvedError || !sentiment) {
     return (
       <Card>
         <CardHeader>
@@ -56,7 +84,7 @@ export function CombinedSentimentCard({ symbol }: CombinedSentimentCardProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Unable to load sentiment data
+            {resolvedError || "Unable to load sentiment data"}
           </p>
         </CardContent>
       </Card>

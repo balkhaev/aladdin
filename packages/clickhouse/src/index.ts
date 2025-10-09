@@ -19,6 +19,8 @@ type ClickHouseClientOptions = {
   logger?: Logger;
 };
 
+const CREDENTIALS_REGEX = /:[^:@]+@/;
+
 export class ClickHouseService {
   private client: CHClient;
 
@@ -43,8 +45,7 @@ export class ClickHouseService {
       });
 
       this.options.logger?.info("ClickHouse client initialized", {
-        url: clickhouseUrl.replace(/:[^:@]+@/, ":***@"),
-        database,
+        url: clickhouseUrl.replace(CREDENTIALS_REGEX, ":***@"),
         username,
       });
     } else {
@@ -65,8 +66,7 @@ export class ClickHouseService {
       });
 
       this.options.logger?.info("ClickHouse client initialized", {
-        host,
-        port,
+        url: `http://${host}:${port}`,
         database,
       });
     }

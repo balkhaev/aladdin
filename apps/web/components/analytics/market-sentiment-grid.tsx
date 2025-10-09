@@ -9,16 +9,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   getSentimentColor,
   getSentimentIcon,
-  type SentimentSignal,
-  useBatchSentiment,
-} from "@/hooks/use-sentiment";
+  type CombinedSentiment,
+  useBatchCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
 interface MarketSentimentGridProps {
   symbols: string[];
 }
 
 export function MarketSentimentGrid({ symbols }: MarketSentimentGridProps) {
-  const { data: sentiments, isLoading, error } = useBatchSentiment(symbols);
+  const { data: sentiments, isLoading, error } =
+    useBatchCombinedSentiment(symbols);
 
   if (isLoading) {
     return (
@@ -59,7 +60,7 @@ export function MarketSentimentGrid({ symbols }: MarketSentimentGridProps) {
 
   // Calculate market breadth
   const bullishCount = sentiments.filter(
-    (s) => s.compositeSignal === "BULLISH"
+    (s) => s.combinedSignal === "BULLISH"
   ).length;
   const marketBreadth = ((bullishCount / sentiments.length) * 100).toFixed(0);
 
@@ -84,7 +85,7 @@ export function MarketSentimentGrid({ symbols }: MarketSentimentGridProps) {
       <CardContent>
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
           {sentiments
-            .sort((a, b) => b.compositeScore - a.compositeScore)
+            .sort((a, b) => b.combinedScore - a.combinedScore)
             .map((sentiment) => (
               <SentimentMiniCard key={sentiment.symbol} sentiment={sentiment} />
             ))}
@@ -97,12 +98,7 @@ export function MarketSentimentGrid({ symbols }: MarketSentimentGridProps) {
 function SentimentMiniCard({
   sentiment,
 }: {
-  sentiment: {
-    symbol: string;
-    compositeScore: number;
-    compositeSignal: SentimentSignal;
-    strength: string;
-  };
+  sentiment: CombinedSentiment;
 }) {
   return (
     <div className="flex items-center justify-between rounded-lg border bg-card p-3">
@@ -110,19 +106,19 @@ function SentimentMiniCard({
         <div className="font-medium">{sentiment.symbol}</div>
         <div className="flex items-center gap-2">
           <Badge
-            className={`text-xs ${getSentimentColor(sentiment.compositeSignal)}`}
+            className={`text-xs ${getSentimentColor(sentiment.combinedSignal)}`}
             variant="outline"
           >
-            {getSentimentIcon(sentiment.compositeSignal)}{" "}
-            {sentiment.compositeSignal}
+            {getSentimentIcon(sentiment.combinedSignal)}{" "}
+            {sentiment.combinedSignal}
           </Badge>
         </div>
       </div>
       <div className="text-right">
         <div
-          className={`font-bold text-2xl ${getSentimentColor(sentiment.compositeSignal)}`}
+          className={`font-bold text-2xl ${getSentimentColor(sentiment.combinedSignal)}`}
         >
-          {sentiment.compositeScore.toFixed(0)}
+          {sentiment.combinedScore.toFixed(0)}
         </div>
         <div className="text-muted-foreground text-xs">
           {sentiment.strength}

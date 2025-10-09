@@ -19,6 +19,11 @@ type ComponentSentiment = {
   weight: number; // Weight in final calculation
 };
 
+type AnalyticsSentimentData = {
+  compositeScore: number;
+  confidence: number;
+};
+
 type CombinedSentiment = {
   symbol: string;
   timestamp: Date;
@@ -46,6 +51,14 @@ type CombinedSentiment = {
 
   // Key insights
   insights: string[];
+
+  // Raw context data used for calculations
+  context: {
+    analytics: AnalyticsSentimentData | null;
+    futures: FuturesSentimentData | null;
+    orderBook: OrderBookData | null;
+    social: SocialSentimentData | null;
+  };
 };
 
 type FuturesSentimentData = {
@@ -214,6 +227,18 @@ export class CombinedSentimentService {
       },
       recommendation,
       insights,
+      context: {
+        analytics:
+          analyticsResult.status === "fulfilled" ? analyticsResult.value : null,
+        futures:
+          futuresResult.status === "fulfilled" ? futuresResult.value : null,
+        orderBook:
+          orderBookResult.status === "fulfilled"
+            ? orderBookResult.value
+            : null,
+        social:
+          socialResult.status === "fulfilled" ? socialResult.value : null,
+      },
     };
   }
 

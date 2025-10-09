@@ -4,13 +4,50 @@ import { apiClient } from "@/lib/api/client";
 const REFETCH_INTERVAL = 120_000; // 2 minutes
 const STALE_TIME = 60_000; // 1 minute
 
-type SentimentSignal = "BULLISH" | "BEARISH" | "NEUTRAL";
+export type SentimentSignal = "BULLISH" | "BEARISH" | "NEUTRAL";
 
-type ComponentSentiment = {
+export type ComponentSentiment = {
   score: number;
   signal: SentimentSignal;
   confidence: number;
   weight: number;
+};
+
+type AnalyticsSentimentContext = {
+  compositeScore: number;
+  confidence: number;
+};
+
+type FuturesSentimentContext = {
+  fundingRate: number;
+  fundingAvg24h: number;
+  oiChangePct: number;
+  priceChangePct: number;
+  signal: SentimentSignal;
+};
+
+type OrderBookSentimentContext = {
+  bidAskImbalance: number;
+  spread: number;
+  liquidityScore: number;
+};
+
+type SocialSentimentContext = {
+  overall: number;
+  telegram: {
+    score: number;
+    bullish: number;
+    bearish: number;
+    signals: number;
+  };
+  twitter: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    tweets: number;
+  };
+  confidence: number;
 };
 
 export type CombinedSentiment = {
@@ -32,6 +69,12 @@ export type CombinedSentiment = {
     riskLevel: "LOW" | "MEDIUM" | "HIGH";
   };
   insights: string[];
+  context: {
+    analytics: AnalyticsSentimentContext | null;
+    futures: FuturesSentimentContext | null;
+    orderBook: OrderBookSentimentContext | null;
+    social: SocialSentimentContext | null;
+  };
 };
 
 /**
@@ -83,4 +126,49 @@ export function useBatchCombinedSentiment(
     staleTime: STALE_TIME,
     enabled: enabled && !!symbols && symbols.length > 0,
   });
+}
+
+/**
+ * Helper to get sentiment color based on signal
+ */
+export function getSentimentColor(signal: SentimentSignal): string {
+  switch (signal) {
+    case "BULLISH":
+      return "text-green-500";
+    case "BEARISH":
+      return "text-red-500";
+    case "NEUTRAL":
+    default:
+      return "text-gray-500";
+  }
+}
+
+/**
+ * Helper to get sentiment background color
+ */
+export function getSentimentBgColor(signal: SentimentSignal): string {
+  switch (signal) {
+    case "BULLISH":
+      return "bg-green-500/10 border-green-500/20";
+    case "BEARISH":
+      return "bg-red-500/10 border-red-500/20";
+    case "NEUTRAL":
+    default:
+      return "bg-gray-500/10 border-gray-500/20";
+  }
+}
+
+/**
+ * Helper to get sentiment icon (emoji) based on signal
+ */
+export function getSentimentIcon(signal: SentimentSignal): string {
+  switch (signal) {
+    case "BULLISH":
+      return "📈";
+    case "BEARISH":
+      return "📉";
+    case "NEUTRAL":
+    default:
+      return "➡️";
+  }
 }

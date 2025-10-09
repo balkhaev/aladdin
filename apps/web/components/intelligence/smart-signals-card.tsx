@@ -17,16 +17,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CompositeSentiment } from "@/hooks/use-sentiment";
-import { useBatchSentiment } from "@/hooks/use-sentiment";
+import type { CombinedSentiment } from "@/hooks/use-combined-sentiment";
+import { useBatchCombinedSentiment } from "@/hooks/use-combined-sentiment";
 
 // Constants for signal thresholds
 const BULLISH_SCORE_THRESHOLD = 30;
 const BEARISH_SCORE_THRESHOLD = -30;
-const MIN_CONFIDENCE = 75;
-const ON_CHAIN_WEIGHT = 40;
-const TECHNICAL_WEIGHT = 35;
-const FEAR_GREED_WEIGHT = 25;
+const MIN_CONFIDENCE = 0.75;
+const ANALYTICS_WEIGHT = 35;
+const FUTURES_WEIGHT = 25;
+const ORDER_BOOK_WEIGHT = 15;
+const SOCIAL_WEIGHT = 25;
 const MAX_INSIGHTS = 3;
 
 type SmartSignalsCardProps = {
@@ -58,23 +59,24 @@ type TradingSignal = {
   stop?: string;
   reasoning: string[];
   hasDivergence: boolean;
-  onChainScore: number;
-  technicalScore: number;
-  fearGreedScore: number;
+  analyticsScore: number;
+  futuresScore: number;
+  orderBookScore: number;
+  socialScore: number;
 };
 
-function getSignalType(sentiment: CompositeSentiment): "BUY" | "SELL" | "HOLD" {
+function getSignalType(sentiment: CombinedSentiment): "BUY" | "SELL" | "HOLD" {
   if (
-    sentiment.compositeSignal === "BULLISH" &&
-    sentiment.compositeScore > BULLISH_SCORE_THRESHOLD &&
+    sentiment.combinedSignal === "BULLISH" &&
+    sentiment.combinedScore > BULLISH_SCORE_THRESHOLD &&
     sentiment.confidence >= MIN_CONFIDENCE
   ) {
     return "BUY";
   }
 
   if (
-    sentiment.compositeSignal === "BEARISH" &&
-    sentiment.compositeScore < BEARISH_SCORE_THRESHOLD &&
+    sentiment.combinedSignal === "BEARISH" &&
+    sentiment.combinedScore < BEARISH_SCORE_THRESHOLD &&
     sentiment.confidence >= MIN_CONFIDENCE
   ) {
     return "SELL";
@@ -84,7 +86,8 @@ function getSignalType(sentiment: CompositeSentiment): "BUY" | "SELL" | "HOLD" {
 }
 
 export function SmartSignalsCard(_props: SmartSignalsCardProps) {
-  const { data: sentiments, isLoading } = useBatchSentiment(SIGNALS_WATCHLIST);
+  const { data: sentiments, isLoading } =
+    useBatchCombinedSentiment(SIGNALS_WATCHLIST);
 
   // Generate trading signals from sentiment data
   const signals: TradingSignal[] = useMemo(() => {
@@ -99,18 +102,22 @@ export function SmartSignalsCard(_props: SmartSignalsCardProps) {
         if (type === "HOLD") return null;
 
         const hasDivergence = sentiment.insights.some((i) => i.includes("⚠️"));
+        const confidencePercent = Math.round(
+          sentiment.confidence * 100
+        );
 
         return {
           symbol: sentiment.symbol,
           type,
-          confidence: sentiment.confidence,
-          score: sentiment.compositeScore,
+          confidence: confidencePercent,
+          score: sentiment.combinedScore,
           strength: sentiment.strength,
           reasoning: sentiment.insights,
           hasDivergence,
-          onChainScore: sentiment.components.onChain.score,
-          technicalScore: sentiment.components.technical.score,
-          fearGreedScore: sentiment.components.fearGreed.score,
+          analyticsScore: sentiment.components.analytics.score,
+          futuresScore: sentiment.components.futures.score,
+          orderBookScore: sentiment.components.orderBook.score,
+          socialScore: sentiment.components.social.score,
         };
       })
       .filter(Boolean) as TradingSignal[];
@@ -271,21 +278,26 @@ function SignalCard({ signal }: { signal: TradingSignal }) {
       </div>
 
       {/* Component Scores */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <ScoreCard
-          label="On-Chain"
-          score={signal.onChainScore}
-          weight={ON_CHAIN_WEIGHT}
+          label="Analytics"
+          score={signal.analyticsScore}
+          weight={ANALYTICS_WEIGHT}
         />
         <ScoreCard
-          label="Technical"
-          score={signal.technicalScore}
-          weight={TECHNICAL_WEIGHT}
+          label="Futures"
+          score={signal.futuresScore}
+          weight={FUTURES_WEIGHT}
         />
         <ScoreCard
-          label="Fear & Greed"
-          score={signal.fearGreedScore}
-          weight={FEAR_GREED_WEIGHT}
+          label="Order Book"
+          score={signal.orderBookScore}
+          weight={ORDER_BOOK_WEIGHT}
+        />
+        <ScoreCard
+          label="Social"
+          score={signal.socialScore}
+          weight={SOCIAL_WEIGHT}
         />
       </div>
 

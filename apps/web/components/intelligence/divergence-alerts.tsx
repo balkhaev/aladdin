@@ -9,9 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  type CompositeSentiment,
-  useBatchSentiment,
-} from "@/hooks/use-sentiment";
+  type CombinedSentiment,
+  useBatchCombinedSentiment,
+} from "@/hooks/use-combined-sentiment";
 
 // Watchlist for divergence detection
 const WATCHLIST = [
@@ -33,61 +33,132 @@ type DivergenceAlert = {
   timestamp: string;
 };
 
-function isDivergenceInsight(insight: string): boolean {
-  return insight.includes("⚠️");
-}
-
-function isBullishDivergence(insight: string, onChainSignal: string): boolean {
-  const lowerInsight = insight.toLowerCase();
-  const hasAccumulation =
-    lowerInsight.includes("накопление") ||
-    lowerInsight.includes("accumulation");
-  const hasFearBullish =
-    lowerInsight.includes("fear") && onChainSignal === "BULLISH";
-  return hasAccumulation || hasFearBullish;
-}
-
-function isBearishDivergence(insight: string, onChainSignal: string): boolean {
-  const lowerInsight = insight.toLowerCase();
-  const hasDistribution =
-    lowerInsight.includes("распределение") ||
-    lowerInsight.includes("distribution");
-  const hasGreedBearish =
-    lowerInsight.includes("greed") && onChainSignal === "BEARISH";
-  return hasDistribution || hasGreedBearish;
-}
-
 function getSeverity(strength: string): "HIGH" | "MEDIUM" | "LOW" {
   if (strength === "STRONG") return "HIGH";
   if (strength === "MODERATE") return "MEDIUM";
   return "LOW";
 }
 
+function cleanInsightText(insight: string): string {
+  return insight.replace(/^[⚠️💬]\s?/, "");
+}
+
+function buildDivergenceAlert(
+  sentiment: CombinedSentiment,
+  insight: string
+): DivergenceAlert | null {
+  const lower = insight.toLowerCase();
+  const severity = getSeverity(sentiment.strength);
+  const description = cleanInsightText(insight);
+
+  if (lower.includes("social sentiment")) {
+    const social = sentiment.components.social;
+    if (social.signal === "NEUTRAL") return null;
+    const type =
+      social.signal === "BULLISH"
+        ? "BULLISH_DIVERGENCE"
+        : "BEARISH_DIVERGENCE";
+    return {
+      symbol: sentiment.symbol,
+      type,
+      title:
+        social.signal === "BULLISH"
+          ? "💬 Community Bullish Divergence"
+          : "💬 Community Bearish Divergence",
+      description,
+      severity,
+      confidence: Math.round(social.confidence * 100),
+      timestamp: sentiment.timestamp,
+    };
+  }
+
+  if (lower.includes("analytics") && lower.includes("futures")) {
+    const futures = sentiment.components.futures;
+    const type =
+      futures.signal === "BULLISH"
+        ? "BULLISH_DIVERGENCE"
+        : futures.signal === "BEARISH"
+          ? "BEARISH_DIVERGENCE"
+          : sentiment.combinedSignal === "BULLISH"
+            ? "BULLISH_DIVERGENCE"
+            : "BEARISH_DIVERGENCE";
+
+    return {
+      symbol: sentiment.symbol,
+      type,
+      title:
+        type === "BULLISH_DIVERGENCE"
+          ? "📈 Futures Divergence"
+          : "📉 Futures Divergence",
+      description,
+      severity,
+      confidence: Math.round(futures.confidence * 100),
+      timestamp: sentiment.timestamp,
+    };
+  }
+
+  if (lower.includes("order book")) {
+    const orderBook = sentiment.components.orderBook;
+    if (orderBook.signal === "NEUTRAL") return null;
+    return {
+      symbol: sentiment.symbol,
+      type:
+        orderBook.signal === "BULLISH"
+          ? "BULLISH_DIVERGENCE"
+          : "BEARISH_DIVERGENCE",
+      title:
+        orderBook.signal === "BULLISH"
+          ? "📗 Order Book Buy Pressure"
+          : "📕 Order Book Sell Pressure",
+      description,
+      severity,
+      confidence: Math.round(orderBook.confidence * 100),
+      timestamp: sentiment.timestamp,
+    };
+  }
+
+  return null;
+}
+
 function extractDivergenceAlerts(
-  sentiments: CompositeSentiment[]
+  sentiments: CombinedSentiment[]
 ): DivergenceAlert[] {
   const alerts: DivergenceAlert[] = [];
 
   for (const sentiment of sentiments) {
-    for (const insight of sentiment.insights) {
-      if (!isDivergenceInsight(insight)) continue;
+    const divergenceInsights = sentiment.insights.filter((insight) =>
+      insight.toLowerCase().includes("divergence") ||
+      insight.toLowerCase().includes("diverges")
+    );
 
-      const onChainSignal = sentiment.components.onChain.signal;
-      const isBullish = isBullishDivergence(insight, onChainSignal);
-      const isBearish = isBearishDivergence(insight, onChainSignal);
-      const hasDivergence = isBullish || isBearish;
+    for (const insight of divergenceInsights) {
+      const alert = buildDivergenceAlert(sentiment, insight);
+      if (alert) {
+        alerts.push(alert);
+      }
+    }
 
-      if (!hasDivergence) continue;
-
+    // Fallback: detect social divergence even if insights missing
+    const social = sentiment.components.social;
+    if (
+      divergenceInsights.length === 0 &&
+      social.confidence > 0.6 &&
+      social.signal !== "NEUTRAL" &&
+      social.signal !== sentiment.combinedSignal
+    ) {
       alerts.push({
         symbol: sentiment.symbol,
-        type: isBullish ? "BULLISH_DIVERGENCE" : "BEARISH_DIVERGENCE",
-        title: isBullish
-          ? "🐋 Smart Money Accumulation"
-          : "⚠️ Distribution Alert",
-        description: insight.replace("⚠️ ", ""),
+        type:
+          social.signal === "BULLISH"
+            ? "BULLISH_DIVERGENCE"
+            : "BEARISH_DIVERGENCE",
+        title:
+          social.signal === "BULLISH"
+            ? "💬 Community Bullish Divergence"
+            : "💬 Community Bearish Divergence",
+        description: "Community mood diverges from market consensus",
         severity: getSeverity(sentiment.strength),
-        confidence: sentiment.confidence,
+        confidence: Math.round(social.confidence * 100),
         timestamp: sentiment.timestamp,
       });
     }
@@ -97,7 +168,8 @@ function extractDivergenceAlerts(
 }
 
 export function DivergenceAlerts() {
-  const { data: sentiments, isLoading } = useBatchSentiment(WATCHLIST);
+  const { data: sentiments, isLoading } =
+    useBatchCombinedSentiment(WATCHLIST);
 
   const alerts = sentiments ? extractDivergenceAlerts(sentiments) : [];
 

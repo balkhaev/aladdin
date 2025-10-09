@@ -51,7 +51,9 @@ function extractSinglePost(el: Element): RedditPost | null {
 
     // Subreddit
     const subredditEl = el.querySelector('a[href*="/r/"]');
-    const subredditMatch = subredditEl?.getAttribute("href")?.match(SUBREDDIT_REGEX);
+    const subredditMatch = subredditEl
+      ?.getAttribute("href")
+      ?.match(SUBREDDIT_REGEX);
     const subreddit = subredditMatch?.[1] || "unknown";
 
     // Post URL
@@ -128,58 +130,104 @@ export async function scrapeRedditBySearch(
     query
   )}&sort=${sortBy}`;
 
-  logger.info("Starting Reddit search", { query, limit, sortBy });
+  logger.info("Starting Reddit search", { query, limit, sortBy, url });
 
+  const startTime = Date.now();
   const br = await initBrowser();
   const page = await br.newPage();
   await preparePage(page);
 
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-    timeout: PAGE_LOAD_TIMEOUT_MS,
+  logger.debug("Browser and page initialized", {
+    query,
+    timeMs: Date.now() - startTime,
   });
 
   try {
-    // Wait for posts to load
-    await page.waitForSelector('div[data-testid="post-container"]', {
-      timeout: POST_SELECTOR_TIMEOUT_MS,
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: PAGE_LOAD_TIMEOUT_MS,
     });
+
+    logger.debug("Page loaded", {
+      query,
+      timeMs: Date.now() - startTime,
+    });
+
+    try {
+      // Wait for posts to load
+      await page.waitForSelector('div[data-testid="post-container"]', {
+        timeout: POST_SELECTOR_TIMEOUT_MS,
+      });
+      logger.debug("Posts container found", { query });
+    } catch (error) {
+      logger.warn("No posts found initially", { query, error });
+    }
+
+    // Scroll to load more posts
+    logger.debug("Starting scroll to load more posts", {
+      query,
+      iterations: AUTO_SCROLL_ITERATIONS,
+    });
+
+    for (let i = 0; i < AUTO_SCROLL_ITERATIONS; i++) {
+      await page.evaluate(() => {
+        window.scrollBy(0, window.innerHeight);
+      });
+      await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+    }
+
+    logger.debug("Scroll completed", { query });
+
+    // Extract posts
+    const posts = (await page.$$eval(
+      'div[data-testid="post-container"], shreddit-post',
+      extractRedditPosts
+    )) as RedditPost[];
+
+    logger.debug("Posts extracted from DOM", {
+      query,
+      extracted: posts.length,
+    });
+
+    // Sort by score (most upvoted first)
+    posts.sort((a, b) => b.score - a.score);
+
+    const result: RedditSearchResult = {
+      posts: posts.slice(0, limit),
+      totalFound: posts.length,
+      searchQuery: query,
+      timestamp: Date.now(),
+    };
+
+    const duration = Date.now() - startTime;
+
+    logger.info("Reddit search completed successfully", {
+      query,
+      found: result.posts.length,
+      totalExtracted: posts.length,
+      durationMs: duration,
+      avgScorePerPost:
+        result.posts.length > 0
+          ? Math.round(
+              result.posts.reduce((sum, p) => sum + p.score, 0) /
+                result.posts.length
+            )
+          : 0,
+    });
+
+    return result;
   } catch (error) {
-    logger.debug("No posts found initially", { error });
-  }
-
-  // Scroll to load more posts
-  for (let i = 0; i < AUTO_SCROLL_ITERATIONS; i++) {
-    await page.evaluate(() => {
-      window.scrollBy(0, window.innerHeight);
+    const duration = Date.now() - startTime;
+    logger.error("Reddit search failed", {
+      query,
+      error,
+      durationMs: duration,
     });
-    await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+    throw error;
+  } finally {
+    await page.close();
+    logger.debug("Page closed", { query });
   }
-
-  // Extract posts
-  const posts = (await page.$$eval(
-    'div[data-testid="post-container"], shreddit-post',
-    extractRedditPosts
-  )) as RedditPost[];
-
-  await page.close();
-
-  // Sort by score (most upvoted first)
-  posts.sort((a, b) => b.score - a.score);
-
-  const result: RedditSearchResult = {
-    posts: posts.slice(0, limit),
-    totalFound: posts.length,
-    searchQuery: query,
-    timestamp: Date.now(),
-  };
-
-  logger.info("Reddit search completed", {
-    query,
-    found: result.posts.length,
-  });
-
-  return result;
 }
 
 /**
@@ -196,46 +244,86 @@ export async function scrapeRedditSubreddit(
     url += `?t=${timeFilter}`;
   }
 
-  logger.info("Starting subreddit scrape", { subreddit, limit, sortBy });
+  logger.info("Starting subreddit scrape", {
+    subreddit,
+    limit,
+    sortBy,
+    timeFilter,
+    url,
+  });
 
+  const startTime = Date.now();
   const br = await initBrowser();
   const page = await br.newPage();
   await preparePage(page);
 
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-    timeout: PAGE_LOAD_TIMEOUT_MS,
-  });
-
   try {
-    await page.waitForSelector('div[data-testid="post-container"]', {
-      timeout: POST_SELECTOR_TIMEOUT_MS,
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: PAGE_LOAD_TIMEOUT_MS,
     });
+
+    logger.debug("Subreddit page loaded", {
+      subreddit,
+      timeMs: Date.now() - startTime,
+    });
+
+    try {
+      await page.waitForSelector('div[data-testid="post-container"]', {
+        timeout: POST_SELECTOR_TIMEOUT_MS,
+      });
+      logger.debug("Posts found", { subreddit });
+    } catch (error) {
+      logger.warn("No posts found in subreddit", { subreddit, error });
+    }
+
+    // Scroll to load more posts
+    logger.debug("Scrolling subreddit", {
+      subreddit,
+      iterations: AUTO_SCROLL_ITERATIONS,
+    });
+
+    for (let i = 0; i < AUTO_SCROLL_ITERATIONS; i++) {
+      await page.evaluate(() => {
+        window.scrollBy(0, window.innerHeight);
+      });
+      await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+    }
+
+    const posts = (await page.$$eval(
+      'div[data-testid="post-container"], shreddit-post',
+      extractRedditPosts
+    )) as RedditPost[];
+
+    logger.debug("Posts extracted", {
+      subreddit,
+      extracted: posts.length,
+    });
+
+    const result = posts.slice(0, limit);
+    const duration = Date.now() - startTime;
+
+    logger.info("Subreddit scrape completed successfully", {
+      subreddit,
+      found: result.length,
+      totalExtracted: posts.length,
+      durationMs: duration,
+      topScore: result.length > 0 ? result[0].score : 0,
+    });
+
+    return result;
   } catch (error) {
-    logger.debug("No posts found in subreddit", { subreddit, error });
-  }
-
-  // Scroll to load more posts
-  for (let i = 0; i < AUTO_SCROLL_ITERATIONS; i++) {
-    await page.evaluate(() => {
-      window.scrollBy(0, window.innerHeight);
+    const duration = Date.now() - startTime;
+    logger.error("Subreddit scrape failed", {
+      subreddit,
+      error,
+      durationMs: duration,
     });
-    await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+    throw error;
+  } finally {
+    await page.close();
+    logger.debug("Page closed", { subreddit });
   }
-
-  const posts = (await page.$$eval(
-    'div[data-testid="post-container"], shreddit-post',
-    extractRedditPosts
-  )) as RedditPost[];
-
-  await page.close();
-
-  logger.info("Subreddit scrape completed", {
-    subreddit,
-    found: posts.length,
-  });
-
-  return posts.slice(0, limit);
 }
 
 /**
@@ -344,4 +432,3 @@ export async function scrapeRedditComments(
 
   return comments.slice(0, limit);
 }
-

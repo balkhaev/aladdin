@@ -168,24 +168,54 @@ export function setupWebhookRoutes(
       );
     }
 
+    const startTime = Date.now();
+    const ipAddress =
+      c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
+    const logData: {
+      success: boolean;
+      statusCode: number;
+      signal: string | null;
+      response: string | null;
+      error: string | null;
+    } = {
+      success: false,
+      statusCode: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      signal: null,
+      response: null,
+      error: null,
+    };
+
     try {
       const body = await c.req.json<WebhookSignal>();
+      logData.signal = JSON.stringify(body);
 
       // Валидация базовых полей
       const validationError = validateSignalSide(body);
       if (validationError) {
+        logData.statusCode = validationError.status;
+        logData.error = validationError.response.error.message;
+
+        await prisma.webhookLog.create({
+          data: {
+            webhookId,
+            ...logData,
+            duration: Date.now() - startTime,
+            ipAddress,
+          },
+        });
+
         return c.json(validationError.response, validationError.status);
       }
 
       // Преобразовать в ProcessedSignal
       const signal: ProcessedSignal = {
-        symbol: body.symbol || "BTCUSDT", // Default symbol
+        symbol: body.symbol || "BTCUSDT",
         recommendation: body.side === "buy" ? "BUY" : "SELL",
-        confidence: 0.8, // High confidence for webhook signals
+        confidence: 0.8,
         shouldExecute: true,
         source: "webhook" as const,
         timestamp: new Date(),
-        positionSize: 0.02, // 2% position size
+        positionSize: 0.02,
         stopLoss: body.sl,
         takeProfit: extractTakeProfitPrice(body.tp),
       };
@@ -207,6 +237,18 @@ export function setupWebhookRoutes(
       });
 
       if (!executor) {
+        logData.statusCode = HTTP_STATUS.SERVICE_UNAVAILABLE;
+        logData.error = "Executor not initialized";
+
+        await prisma.webhookLog.create({
+          data: {
+            webhookId,
+            ...logData,
+            duration: Date.now() - startTime,
+            ipAddress,
+          },
+        });
+
         return c.json(
           {
             success: false,
@@ -223,17 +265,45 @@ export function setupWebhookRoutes(
       // Выполнить сигнал
       const result = await executor.manualExecute(signal);
 
-      return c.json(
-        createSuccessResponse({
-          strategy: webhook.name,
+      const responseData = {
+        strategy: webhook.name,
+        webhookId,
+        result,
+      };
+
+      logData.success = true;
+      logData.statusCode = HTTP_STATUS.OK;
+      logData.response = JSON.stringify(responseData);
+
+      await prisma.webhookLog.create({
+        data: {
           webhookId,
-          result,
-        })
-      );
+          ...logData,
+          duration: Date.now() - startTime,
+          ipAddress,
+        },
+      });
+
+      return c.json(createSuccessResponse(responseData));
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
       logger.error("Webhook processing error", {
         webhookId,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
+      });
+
+      logData.statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR;
+      logData.error = errorMessage;
+
+      await prisma.webhookLog.create({
+        data: {
+          webhookId,
+          ...logData,
+          duration: Date.now() - startTime,
+          ipAddress,
+        },
       });
 
       return c.json(
@@ -241,7 +311,7 @@ export function setupWebhookRoutes(
           success: false,
           error: {
             code: "WEBHOOK_PROCESSING_ERROR",
-            message: error instanceof Error ? error.message : "Unknown error",
+            message: errorMessage,
           },
           timestamp: Date.now(),
         },

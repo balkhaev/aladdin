@@ -289,6 +289,106 @@ await initializeService<SocialIntegrationsService>({
     });
 
     /**
+     * News routes
+     */
+    app.get("/api/social/news/health", (c) =>
+      c.json(createSuccessResponse({ status: "ok", service: "news" }))
+    );
+
+    /**
+     * POST /api/social/news/scrape - Manually trigger news scraping
+     */
+    app.post("/api/social/news/scrape", async (c) => {
+      const body = await c.req.json().catch(() => ({}));
+      const source = body.source as string | undefined;
+
+      try {
+        let articlesScraped: number;
+
+        if (source) {
+          // Scrape specific source
+          articlesScraped = await service.scrapeNewsSource(source);
+        } else {
+          // Scrape all sources
+          articlesScraped = await service.scrapeNews();
+        }
+
+        return c.json(
+          createSuccessResponse({
+            articlesScraped,
+            source: source || "all",
+            timestamp: new Date().toISOString(),
+          })
+        );
+      } catch (error) {
+        service.logger.error("Failed to scrape news", { source, error });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "SCRAPE_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+          },
+          500
+        );
+      }
+    });
+
+    /**
+     * GET /api/social/news/latest - Get latest news articles
+     */
+    app.get("/api/social/news/latest", async (c) => {
+      const limit = Number(c.req.query("limit") || 50);
+      const source = c.req.query("source");
+      const symbol = c.req.query("symbol");
+
+      try {
+        const articles = await service.getLatestNews({
+          limit,
+          source,
+          symbol,
+        });
+
+        return c.json(
+          createSuccessResponse({
+            articles,
+            count: articles.length,
+            limit,
+          })
+        );
+      } catch (error) {
+        service.logger.error("Failed to get latest news", { error });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "FETCH_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+          },
+          500
+        );
+      }
+    });
+
+    /**
+     * GET /api/social/news/status - Get news service status
+     */
+    app.get("/api/social/news/status", (c) => {
+      const status = service.getNewsStatus();
+      return c.json(createSuccessResponse(status));
+    });
+
+    /**
+     * GET /api/social/reddit/status - Get Reddit service status
+     */
+    app.get("/api/social/reddit/status", (c) => {
+      const status = service.getRedditStatus();
+      return c.json(createSuccessResponse(status));
+    });
+
+    /**
      * GET /api/social/feed - Get AI analyzed content feed
      */
     app.get("/api/social/feed", async (c) => {

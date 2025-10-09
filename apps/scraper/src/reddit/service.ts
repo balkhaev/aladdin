@@ -14,15 +14,28 @@ const CRYPTO_SUBREDDITS: RedditSubredditConfig[] = [
   { name: "CryptoMarkets", enabled: true, cryptoRelevance: 1.0, weight: 1.2 },
   { name: "altcoin", enabled: true, cryptoRelevance: 1.0, weight: 1.0 },
   { name: "binance", enabled: true, cryptoRelevance: 0.9, weight: 0.9 },
-  { name: "SatoshiStreetBets", enabled: true, cryptoRelevance: 0.8, weight: 0.8 },
+  {
+    name: "SatoshiStreetBets",
+    enabled: true,
+    cryptoRelevance: 0.8,
+    weight: 0.8,
+  },
   { name: "CryptoMoonShots", enabled: true, cryptoRelevance: 0.7, weight: 0.6 },
 ];
 
+const DEFAULT_SCRAPE_INTERVAL_MS = 900_000; // 15 minutes
+const DEFAULT_POSTS_LIMIT = 25;
+const MS_PER_MINUTE = 60_000;
+
 export class RedditService {
+  private scrapeInterval: NodeJS.Timeout | null = null;
+  private isRunning = false;
+
   constructor(
     private readonly clickhouse: ClickHouseClient,
     private readonly sentimentAnalyzer: SentimentAnalyzer,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly postsLimit: number = DEFAULT_POSTS_LIMIT
   ) {}
 
   // Regex patterns (defined at class level for performance)
@@ -35,11 +48,18 @@ export class RedditService {
   async searchSymbol(symbol: string, limit = 25): Promise<RedditPost[]> {
     try {
       // Normalize symbol (remove USDT suffix for search)
-      const baseSymbol = symbol.replace(RedditService.SYMBOL_NORMALIZE_REGEX, "");
+      const baseSymbol = symbol.replace(
+        RedditService.SYMBOL_NORMALIZE_REGEX,
+        ""
+      );
 
       // Search Reddit
       const searchQuery = `${baseSymbol} crypto`;
-      const result = await scrapeRedditBySearch(searchQuery, limit, "relevance");
+      const result = await scrapeRedditBySearch(
+        searchQuery,
+        limit,
+        "relevance"
+      );
 
       this.logger.info("Reddit search completed", {
         symbol,
@@ -101,7 +121,10 @@ export class RedditService {
   }> {
     try {
       // Query posts from ClickHouse (last 24 hours)
-      const baseSymbol = symbol.replace(RedditService.SYMBOL_NORMALIZE_REGEX, "");
+      const baseSymbol = symbol.replace(
+        RedditService.SYMBOL_NORMALIZE_REGEX,
+        ""
+      );
 
       const query = `
         SELECT 
@@ -160,7 +183,10 @@ export class RedditService {
         neutral: sentiment.neutral,
       };
     } catch (error) {
-      this.logger.error("Failed to analyze Reddit sentiment", { symbol, error });
+      this.logger.error("Failed to analyze Reddit sentiment", {
+        symbol,
+        error,
+      });
       return {
         score: 0,
         confidence: 0,
@@ -175,7 +201,10 @@ export class RedditService {
   /**
    * Store posts in ClickHouse
    */
-  private async storePosts(posts: RedditPost[], symbol?: string): Promise<void> {
+  private async storePosts(
+    posts: RedditPost[],
+    symbol?: string
+  ): Promise<void> {
     if (posts.length === 0) return;
 
     try {
@@ -207,8 +236,12 @@ export class RedditService {
       `;
 
       const values = postsWithSymbols.map((post) => {
-        const symbols = post.symbols.map((s) => `'${this.escapeString(s)}'`).join(",");
-        const flair = post.flair ? `'${this.escapeString(post.flair)}'` : "NULL";
+        const symbols = post.symbols
+          .map((s) => `'${this.escapeString(s)}'`)
+          .join(",");
+        const flair = post.flair
+          ? `'${this.escapeString(post.flair)}'`
+          : "NULL";
         const analyzedSymbol = post.analyzedSymbol
           ? `'${this.escapeString(post.analyzedSymbol)}'`
           : "NULL";
@@ -294,10 +327,65 @@ export class RedditService {
    * Escape string for ClickHouse
    */
   private escapeString(str: string): string {
-    return str
-      .replace(/'/g, "\\'")
-      .replace(/\n/g, "\\n")
-      .replace(/\r/g, "\\r");
+    return str.replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+  }
+
+  /**
+   * Start periodic monitoring of crypto subreddits
+   */
+  startPeriodicMonitoring(intervalMs?: number): void {
+    const interval = intervalMs || DEFAULT_SCRAPE_INTERVAL_MS;
+
+    if (this.scrapeInterval) {
+      this.logger.warn("Periodic Reddit monitoring already running");
+      return;
+    }
+
+    this.logger.info("Starting periodic Reddit monitoring", {
+      intervalMinutes: interval / MS_PER_MINUTE,
+      postsLimit: this.postsLimit,
+      subreddits: CRYPTO_SUBREDDITS.length,
+    });
+
+    // Run immediately
+    this.monitorSubreddits(this.postsLimit).catch((error) => {
+      this.logger.error("Initial Reddit monitoring failed", { error });
+    });
+
+    // Then run periodically
+    this.scrapeInterval = setInterval(() => {
+      this.monitorSubreddits(this.postsLimit).catch((error) => {
+        this.logger.error("Periodic Reddit monitoring failed", { error });
+      });
+    }, interval);
+
+    this.isRunning = true;
+  }
+
+  /**
+   * Stop periodic monitoring
+   */
+  stopPeriodicMonitoring(): void {
+    if (this.scrapeInterval) {
+      clearInterval(this.scrapeInterval);
+      this.scrapeInterval = null;
+      this.isRunning = false;
+      this.logger.info("Periodic Reddit monitoring stopped");
+    }
+  }
+
+  /**
+   * Get monitoring status
+   */
+  getStatus(): {
+    running: boolean;
+    postsLimit: number;
+    subreddits: number;
+  } {
+    return {
+      running: this.isRunning,
+      postsLimit: this.postsLimit,
+      subreddits: CRYPTO_SUBREDDITS.filter((s) => s.enabled).length,
+    };
   }
 }
-

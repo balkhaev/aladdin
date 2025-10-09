@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Power, Trash2, Webhook } from "lucide-react";
+import { Copy, Eye, Plus, Power, Trash2, Webhook } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WebhookDetailsDialog } from "@/components/webhook-details-dialog";
 import { apiRequest } from "@/lib/api/client";
 
 type WebhookType = {
@@ -56,6 +57,9 @@ export default function WebhooksPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [webhookName, setWebhookName] = useState("");
   const [webhookToDelete, setWebhookToDelete] = useState<WebhookType | null>(
+    null
+  );
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string | null>(
     null
   );
   const queryClient = useQueryClient();
@@ -242,6 +246,13 @@ export default function WebhooksPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          onClick={() => setSelectedWebhookId(webhook.id)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <Eye className="size-4" />
+                        </Button>
+                        <Button
                           disabled={toggleMutation.isPending}
                           onClick={() =>
                             toggleMutation.mutate({
@@ -302,6 +313,16 @@ export default function WebhooksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <WebhookDetailsDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedWebhookId(null);
+          }
+        }}
+        open={!!selectedWebhookId}
+        webhookId={selectedWebhookId}
+      />
     </div>
   );
 }

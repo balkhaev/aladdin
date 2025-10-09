@@ -238,14 +238,15 @@ model AuditLog {
 // ============ Webhooks ============
 
 model Webhook {
-  id           String    @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String // Название стратегии
-  secret       String    @unique // Токен безопасности
-  isActive     Boolean   @default(true)
+  secret       String       @unique // Токен безопасности
+  isActive     Boolean      @default(true)
   createdById  String
-  createdBy    User      @relation("CreatedWebhooks", fields: [createdById], references: [id], onDelete: Cascade)
-  totalCalls   Int       @default(0)
+  createdBy    User         @relation("CreatedWebhooks", fields: [createdById], references: [id], onDelete: Cascade)
+  totalCalls   Int          @default(0)
   lastCalledAt DateTime?
+  logs         WebhookLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -253,6 +254,26 @@ model Webhook {
   @@index([createdById])
   @@index([isActive])
   @@map("webhooks")
+}
+
+model WebhookLog {
+  id         String   @id @default(cuid())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  success    Boolean
+  statusCode Int
+  signal     String? // JSON сигнала
+  response   String? // JSON ответа
+  error      String? // Текст ошибки
+  duration   Int? // Длительность в мс
+  ipAddress  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([success])
+  @@map("webhook_logs")
 }
 
 // ============ Telega Signals ============

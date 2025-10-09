@@ -83,41 +83,83 @@ export async function scrapeTweetsBySearch(
     query
   )}&src=typed_query&f=live`;
 
-  logger.info("Starting tweet search", { query, limit });
+  logger.info("Starting tweet search", { query, limit, url });
 
+  const startTime = Date.now();
   const br = await initBrowser();
   const page = await br.newPage();
   await preparePage(page);
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-    timeout: PAGE_LOAD_TIMEOUT_MS,
-  });
+
   try {
-    await page.waitForSelector("article", {
-      timeout: ARTICLE_SELECTOR_TIMEOUT_MS,
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: PAGE_LOAD_TIMEOUT_MS,
     });
+
+    logger.debug("Search page loaded", {
+      query,
+      timeMs: Date.now() - startTime,
+    });
+
+    try {
+      await page.waitForSelector("article", {
+        timeout: ARTICLE_SELECTOR_TIMEOUT_MS,
+      });
+      logger.debug("Tweets found on search page", { query });
+    } catch (error) {
+      logger.warn("No tweets found initially, scrolling", { query, error });
+      await autoScroll(page, AUTO_SCROLL_ITERATIONS);
+    }
+
+    logger.debug("Scrolling to load enough tweets", { query, target: limit });
+    await scrollUntilEnough(page, limit);
+
+    const rawTweets = (await page.$$eval(
+      "article",
+      extractTweets,
+      limit
+    )) as Tweet[];
+
+    logger.debug("Tweets extracted from DOM", {
+      query,
+      extracted: rawTweets.length,
+    });
+
+    rawTweets.sort(
+      (a, b) =>
+        new Date(b.datetime || 0).getTime() -
+        new Date(a.datetime || 0).getTime()
+    );
+
+    const result = rawTweets.slice(0, limit);
+    const duration = Date.now() - startTime;
+
+    logger.info("Tweet search completed successfully", {
+      query,
+      found: result.length,
+      totalExtracted: rawTweets.length,
+      durationMs: duration,
+      avgLikes:
+        result.length > 0
+          ? Math.round(
+              result.reduce((sum, t) => sum + t.likes, 0) / result.length
+            )
+          : 0,
+    });
+
+    return result;
   } catch (error) {
-    logger.debug("No articles found initially, scrolling", { error });
-    await autoScroll(page, AUTO_SCROLL_ITERATIONS);
+    const duration = Date.now() - startTime;
+    logger.error("Tweet search failed", {
+      query,
+      error,
+      durationMs: duration,
+    });
+    throw error;
+  } finally {
+    await page.close();
+    logger.debug("Page closed", { query });
   }
-
-  await scrollUntilEnough(page, limit);
-
-  const rawTweets = (await page.$$eval(
-    "article",
-    extractTweets,
-    limit
-  )) as Tweet[];
-  await page.close();
-
-  rawTweets.sort(
-    (a, b) =>
-      new Date(b.datetime || 0).getTime() - new Date(a.datetime || 0).getTime()
-  );
-
-  logger.info("Tweet search completed", { query, found: rawTweets.length });
-
-  return rawTweets.slice(0, limit);
 }
 
 export async function scrapeTweetsByUser(
@@ -126,58 +168,113 @@ export async function scrapeTweetsByUser(
 ): Promise<Tweet[]> {
   const url = `https://twitter.com/${username}`;
 
-  logger.info("Starting user tweets scrape", { username, limit });
+  logger.info("Starting user tweets scrape", { username, limit, url });
 
+  const startTime = Date.now();
   const br = await initBrowser();
   const page = await br.newPage();
   await preparePage(page);
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-    timeout: PAGE_LOAD_TIMEOUT_MS,
-  });
 
   try {
-    await page.waitForSelector("article", {
-      timeout: ARTICLE_SELECTOR_TIMEOUT_MS,
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: PAGE_LOAD_TIMEOUT_MS,
     });
-  } catch (error) {
-    logger.debug("No articles found for user", { username, error });
-  }
 
-  const tweets: Tweet[] = [];
-  const seen = new Set<string>();
-  for (let i = 0; i < MAX_USER_SCROLLS && tweets.length < limit; i++) {
-    const chunk = (await page.$$eval(
-      "article",
-      extractTweets,
-      LARGE_EXTRACTION_LIMIT
-    )) as Tweet[];
+    logger.debug("User page loaded", {
+      username,
+      timeMs: Date.now() - startTime,
+    });
 
-    for (const t of chunk) {
-      if (t.datetime && !seen.has(t.datetime)) {
-        seen.add(t.datetime);
-        tweets.push(t);
-      }
+    try {
+      await page.waitForSelector("article", {
+        timeout: ARTICLE_SELECTOR_TIMEOUT_MS,
+      });
+      logger.debug("User tweets found", { username });
+    } catch (error) {
+      logger.warn("No tweets found for user", { username, error });
     }
 
-    if (tweets.length >= limit) break;
+    const tweets: Tweet[] = [];
+    const seen = new Set<string>();
 
-    await page.evaluate(() => {
-      window.scrollBy(0, window.innerHeight);
+    logger.debug("Starting scroll iterations", {
+      username,
+      maxScrolls: MAX_USER_SCROLLS,
+      target: limit,
     });
-    await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+
+    for (let i = 0; i < MAX_USER_SCROLLS && tweets.length < limit; i++) {
+      const chunk = (await page.$$eval(
+        "article",
+        extractTweets,
+        LARGE_EXTRACTION_LIMIT
+      )) as Tweet[];
+
+      let newTweets = 0;
+      for (const t of chunk) {
+        if (t.datetime && !seen.has(t.datetime)) {
+          seen.add(t.datetime);
+          tweets.push(t);
+          newTweets++;
+        }
+      }
+
+      logger.debug("Scroll iteration completed", {
+        username,
+        iteration: i + 1,
+        newTweets,
+        totalTweets: tweets.length,
+      });
+
+      if (tweets.length >= limit) {
+        logger.debug("Target reached, stopping scroll", {
+          username,
+          tweets: tweets.length,
+        });
+        break;
+      }
+
+      await page.evaluate(() => {
+        window.scrollBy(0, window.innerHeight);
+      });
+      await new Promise((r) => setTimeout(r, SCROLL_DELAY_MS));
+    }
+
+    tweets.sort(
+      (a, b) =>
+        new Date(b.datetime || 0).getTime() -
+        new Date(a.datetime || 0).getTime()
+    );
+
+    const result = tweets.slice(0, limit);
+    const duration = Date.now() - startTime;
+
+    logger.info("User tweets scrape completed successfully", {
+      username,
+      found: result.length,
+      totalExtracted: tweets.length,
+      durationMs: duration,
+      avgEngagement:
+        result.length > 0
+          ? Math.round(
+              result.reduce((sum, t) => sum + t.likes + t.retweets, 0) /
+                result.length
+            )
+          : 0,
+    });
+
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error("User tweets scrape failed", {
+      username,
+      error,
+      durationMs: duration,
+    });
+    throw error;
+  } finally {
+    await page.close();
+    logger.debug("Page closed", { username });
   }
-
-  await page.close();
-  tweets.sort(
-    (a, b) =>
-      new Date(b.datetime || 0).getTime() - new Date(a.datetime || 0).getTime()
-  );
-
-  logger.info("User tweets scrape completed", {
-    username,
-    found: tweets.length,
-  });
-
-  return tweets.slice(0, limit);
 }

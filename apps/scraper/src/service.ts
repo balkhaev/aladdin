@@ -7,6 +7,7 @@ import {
   OpenAIClientWrapper,
 } from "@aladdin/ai";
 import { BaseService } from "@aladdin/service";
+import { NewsService } from "./news/service";
 import { RedditService } from "./reddit/service";
 import { SentimentAnalyzer } from "./sentiment/analyzer";
 import { HybridSentimentAnalyzer } from "./sentiment/hybrid-analyzer";
@@ -46,6 +47,7 @@ export class SocialIntegrationsService extends BaseService {
   private sentimentAnalyzer!: SentimentAnalyzer;
   private hybridAnalyzer!: HybridSentimentAnalyzer;
   private redditService!: RedditService;
+  private newsService!: NewsService;
   private openAIClient: OpenAIClientWrapper | null = null;
   private aiCache: AICacheService | null = null;
   private gptAnalyzer: GPTSentimentAnalyzer | null = null;
@@ -157,10 +159,25 @@ export class SocialIntegrationsService extends BaseService {
 
     // Initialize Reddit service
     if (this.clickhouse) {
+      const redditPostsLimit = Number(process.env.REDDIT_POSTS_LIMIT || 25);
       this.redditService = new RedditService(
         this.clickhouse,
         this.sentimentAnalyzer,
-        this.logger
+        this.logger,
+        redditPostsLimit
+      );
+    }
+
+    // Initialize News service
+    if (this.clickhouse) {
+      const newsArticlesLimit = Number(process.env.NEWS_ARTICLES_LIMIT || 20);
+      this.newsService = new NewsService(
+        this.clickhouse,
+        this.newsAnalyzer,
+        this.logger,
+        {
+          articlesLimit: newsArticlesLimit,
+        }
       );
     }
 
@@ -168,8 +185,44 @@ export class SocialIntegrationsService extends BaseService {
     return Promise.resolve();
   }
 
+  protected onStart(): Promise<void> {
+    this.logger.info("Starting Scraper Service...");
+
+    // Start periodic Reddit monitoring
+    if (this.redditService) {
+      const redditInterval = Number(
+        process.env.REDDIT_SCRAPE_INTERVAL || 900_000
+      ); // 15 minutes
+      this.redditService.startPeriodicMonitoring(redditInterval);
+      this.logger.info("Reddit periodic monitoring started", {
+        intervalMinutes: redditInterval / 60_000,
+      });
+    }
+
+    // Start periodic news scraping
+    if (this.newsService) {
+      const newsInterval = Number(process.env.NEWS_SCRAPE_INTERVAL || 600_000); // 10 minutes
+      this.newsService.startPeriodicScraping(newsInterval);
+      this.logger.info("News periodic scraping started", {
+        intervalMinutes: newsInterval / 60_000,
+      });
+    }
+
+    return Promise.resolve();
+  }
+
   protected onShutdown(): Promise<void> {
     this.logger.info("Shutting down Scraper Service");
+
+    // Stop periodic monitoring
+    if (this.redditService) {
+      this.redditService.stopPeriodicMonitoring();
+    }
+
+    if (this.newsService) {
+      this.newsService.stopPeriodicScraping();
+    }
+
     return Promise.resolve();
   }
 
@@ -638,6 +691,60 @@ export class SocialIntegrationsService extends BaseService {
   }
 
   /**
+   * Scrape news from all sources
+   */
+  async scrapeNews(): Promise<number> {
+    if (!this.newsService) {
+      this.logger.warn("News service not initialized");
+      return 0;
+    }
+
+    return await this.newsService.scrapeAllSources();
+  }
+
+  /**
+   * Scrape news from specific source
+   */
+  async scrapeNewsSource(sourceName: string): Promise<number> {
+    if (!this.newsService) {
+      this.logger.warn("News service not initialized");
+      return 0;
+    }
+
+    return await this.newsService.scrapeSource(sourceName);
+  }
+
+  /**
+   * Get latest news articles
+   */
+  async getLatestNews(params: {
+    limit?: number;
+    source?: string;
+    symbol?: string;
+  }): Promise<ReturnType<NewsService["getLatestArticles"]>> {
+    if (!this.newsService) {
+      this.logger.warn("News service not initialized");
+      return [];
+    }
+
+    return await this.newsService.getLatestArticles(params);
+  }
+
+  /**
+   * Get news service status
+   */
+  getNewsStatus(): ReturnType<NewsService["getStatus"]> | null {
+    return this.newsService?.getStatus() || null;
+  }
+
+  /**
+   * Get Reddit service status
+   */
+  getRedditStatus(): ReturnType<RedditService["getStatus"]> | null {
+    return this.redditService?.getStatus() || null;
+  }
+
+  /**
    * Save analyzed content to feed (for AI-analyzed texts)
    */
   async saveToAnalyzedFeed(params: {
@@ -690,11 +797,15 @@ export class SocialIntegrationsService extends BaseService {
 
       const title = params.title ? `'${escapeString(params.title)}'` : "NULL";
       const url = params.url ? `'${escapeString(params.url)}'` : "NULL";
-      const author = params.author ? `'${escapeString(params.author)}'` : "NULL";
+      const author = params.author
+        ? `'${escapeString(params.author)}'`
+        : "NULL";
       const marketImpact = params.marketImpact
         ? `'${params.marketImpact}'`
         : "NULL";
-      const summary = params.summary ? `'${escapeString(params.summary)}'` : "NULL";
+      const summary = params.summary
+        ? `'${escapeString(params.summary)}'`
+        : "NULL";
 
       const query = `
         INSERT INTO aladdin.ai_analyzed_content (

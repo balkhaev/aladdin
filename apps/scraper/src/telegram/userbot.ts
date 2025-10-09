@@ -97,6 +97,14 @@ async function subscribeToChannelInternal(
         if (!message) return;
         if (!message.message) return;
 
+        logger.debug("New message received", {
+          channel: channelUsername,
+          messageId: message.id,
+          textLength: message.message.length,
+          views: message.views,
+          forwards: message.forwards,
+        });
+
         // Публикуем сырое сообщение в NATS
         if (natsClient) {
           const payload = {
@@ -114,19 +122,33 @@ async function subscribeToChannelInternal(
             logger.info("Message published to NATS", {
               channel: channelUsername,
               messageId: message.id,
+              textPreview: message.message.substring(0, 50),
             });
           } catch (error) {
-            logger.error("Failed to publish message to NATS", error);
+            logger.error("Failed to publish message to NATS", {
+              channel: channelUsername,
+              messageId: message.id,
+              error,
+            });
           }
         } else {
-          logger.warn("NATS client not initialized, message not published");
+          logger.warn("NATS client not initialized, message not published", {
+            channel: channelUsername,
+            messageId: message.id,
+          });
         }
       } catch (error) {
-        logger.error("Ошибка обработки сообщения", error);
+        logger.error("Ошибка обработки сообщения", {
+          channel: channelUsername,
+          error,
+        });
       }
     };
     handleMessage().catch((error) => {
-      logger.error("Ошибка в обработчике сообщений", error);
+      logger.error("Ошибка в обработчике сообщений", {
+        channel: channelUsername,
+        error,
+      });
     });
   };
 
@@ -162,10 +184,16 @@ export async function startUserbot(): Promise<void> {
     return;
   }
 
+  logger.info("Starting Telegram userbot...");
+  const startTime = Date.now();
+
   try {
     userbotRunning = true;
     const client = await getTelegramClient();
-    logger.info("Userbot авторизован");
+
+    logger.info("Userbot авторизован", {
+      timeMs: Date.now() - startTime,
+    });
 
     // Добавляем обработчик разрыва соединения
     client.addEventHandler((update: { className?: string }) => {
@@ -176,16 +204,24 @@ export async function startUserbot(): Promise<void> {
         return;
       }
 
-      logger.warn("Соединение потеряно, будет выполнено переподключение...");
+      logger.warn("Соединение потеряно, будет выполнено переподключение...", {
+        updateClass: update.className,
+      });
       userbotRunning = false;
     });
 
-    logger.info("Userbot запущен");
+    logger.info("Userbot запущен успешно", {
+      totalTimeMs: Date.now() - startTime,
+      monitoringInterval: CONNECTION_MONITOR_INTERVAL_MS,
+    });
 
     // Запускаем мониторинг соединения
     startConnectionMonitoring();
   } catch (error) {
-    logger.error("Ошибка запуска userbot", error);
+    logger.error("Ошибка запуска userbot", {
+      error,
+      timeMs: Date.now() - startTime,
+    });
     userbotRunning = false;
     throw error;
   }
@@ -202,7 +238,14 @@ export async function subscribeToChannels(
     return;
   }
 
+  logger.info("Subscribing to Telegram channels", {
+    totalChannels: channels.length,
+    activeChannels: channels.filter((c) => c.active).length,
+  });
+
   const client = await getTelegramClient();
+  let subscribed = 0;
+  let failed = 0;
 
   for (const channel of channels) {
     if (!channel.active) {
@@ -220,16 +263,22 @@ export async function subscribeToChannels(
 
     try {
       await subscribeToChannelInternal(client, channel.channelId);
+      subscribed++;
     } catch (error) {
-      logger.error("Ошибка подписки на канал", error, {
+      failed++;
+      logger.error("Ошибка подписки на канал", {
         channel: channel.channelId,
+        error,
       });
     }
   }
 
   logger.info("Завершена подписка на каналы", {
     total: channels.length,
-    subscribed: subscribedChannels.size,
+    active: channels.filter((c) => c.active).length,
+    subscribed,
+    failed,
+    totalSubscribed: subscribedChannels.size,
   });
 }
 

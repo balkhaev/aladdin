@@ -187,6 +187,60 @@ export function createWebhooksRouter({
   });
 
   /**
+   * GET /api/admin/webhooks/:id - Получить детали вебхука
+   */
+  app.get("/:id", async (c) => {
+    try {
+      const id = c.req.param("id");
+
+      const webhook = await prisma.webhook.findUnique({
+        where: { id },
+        include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+          logs: {
+            orderBy: { createdAt: "desc" },
+            take: 100, // Last 100 logs
+          },
+        },
+      });
+
+      if (!webhook) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "WEBHOOK_NOT_FOUND",
+              message: "Webhook not found",
+            },
+            timestamp: Date.now(),
+          },
+          HTTP_STATUS.NOT_FOUND
+        );
+      }
+
+      return c.json(createSuccessResponse(webhook));
+    } catch (error) {
+      logger.error("Failed to fetch webhook details", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "FETCH_WEBHOOK_FAILED",
+            message: error instanceof Error ? error.message : "Unknown error",
+          },
+          timestamp: Date.now(),
+        },
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
+  });
+
+  /**
    * DELETE /api/admin/webhooks/:id - Удалить вебхук
    */
   app.delete("/:id", async (c) => {

@@ -10,6 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Install build dependencies and build TA-Lib from source
+# TA-Lib's autotools setup is not parallel-safe, so force a sequential make.
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -26,7 +27,7 @@ RUN set -eux; \
     tar -xzf /tmp/ta-lib.tar.gz -C /tmp/ta-lib-src --strip-components=1; \
     cd /tmp/ta-lib-src; \
     ./configure --prefix=/usr/local; \
-    make -j"$(nproc)"; \
+    make -j1; \
     make install; \
     ldconfig; \
     rm -rf /tmp/ta-lib-src /tmp/ta-lib.tar.gz

@@ -1,8 +1,11 @@
 /**
  * Social/Scraper API Client
+ * Unified API client using apiGet/apiPost
  */
 
-import { API_BASE_URL } from "../runtime-env";
+import { apiGet, apiPost } from "./client";
+
+// ==================== Types ====================
 
 export type ScraperQueueStats = {
   name: string;
@@ -31,59 +34,32 @@ export type ScrapersOverview = {
   timestamp: string;
 };
 
+export type TriggerScraperResult = {
+  jobId: string;
+  queued: boolean;
+};
+
+// ==================== API Functions ====================
+
 /**
  * Get scrapers overview
  */
-export async function getScrapersOverview(): Promise<ScrapersOverview> {
-  const response = await fetch(`${API_BASE_URL}/api/social/scrapers/overview`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get scrapers overview: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
+export function getScrapersOverview(): Promise<ScrapersOverview> {
+  return apiGet<ScrapersOverview>("/api/social/scrapers/overview");
 }
 
 /**
  * Get queue statistics
  */
-export async function getQueueStats(): Promise<ScraperQueueStats[]> {
-  const response = await fetch(`${API_BASE_URL}/api/social/queues/stats`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get queue stats: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data || [];
+export function getQueueStats(): Promise<ScraperQueueStats[]> {
+  return apiGet<ScraperQueueStats[]>("/api/social/queues/stats");
 }
 
 /**
  * Trigger a scraper job manually
  */
-export async function triggerScraper(
+export function triggerScraper(
   type: "reddit" | "news"
-): Promise<{ jobId: string; queued: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/api/social/queues/trigger`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({ type }),
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to trigger ${type} scraper: ${response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  return data.data;
+): Promise<TriggerScraperResult> {
+  return apiPost<TriggerScraperResult>("/api/social/queues/trigger", { type });
 }

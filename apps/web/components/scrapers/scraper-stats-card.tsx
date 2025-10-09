@@ -94,14 +94,6 @@ function QueueStatCard({ queue }: { queue: ScraperQueueStats }) {
             <Progress className="h-2" value={successRate} />
           </div>
         )}
-
-        {/* Last Processed */}
-        {queue.lastProcessedAt && (
-          <div className="text-muted-foreground text-xs">
-            Last processed:{" "}
-            {new Date(queue.lastProcessedAt).toLocaleTimeString()}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

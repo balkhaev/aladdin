@@ -4,7 +4,7 @@
  */
 
 import { CheckCircle2, TrendingDown, TrendingUp } from "lucide-react";
-import type { OptimizationResult, TrialResult } from "../../lib/api/ml";
+import type { OptimizationResult } from "../../lib/api/ml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type HPOTrialsTableProps = {
@@ -12,16 +12,16 @@ type HPOTrialsTableProps = {
 };
 
 export function HPOTrialsTable({ result }: HPOTrialsTableProps) {
-  const { trials, bestTrial, config } = result;
+  const { trials, optimizationMetric, bestValue } = result;
 
-  // Sort trials by score
+  // Sort trials by value
   const sortedTrials = [...trials].sort((a, b) => {
     const lowerIsBetter =
-      config.optimizationMetric === "mae" ||
-      config.optimizationMetric === "rmse" ||
-      config.optimizationMetric === "mape";
+      optimizationMetric === "mae" ||
+      optimizationMetric === "rmse" ||
+      optimizationMetric === "mape";
 
-    return lowerIsBetter ? a.score - b.score : b.score - a.score;
+    return lowerIsBetter ? a.value - b.value : b.value - a.value;
   });
 
   return (
@@ -39,24 +39,23 @@ export function HPOTrialsTable({ result }: HPOTrialsTableProps) {
                   Hyperparameters
                 </th>
                 <th className="p-2 text-right text-slate-400">
-                  {config.optimizationMetric.toUpperCase()}
+                  {optimizationMetric.replace("_", " ").toUpperCase()}
                 </th>
                 <th className="p-2 text-right text-slate-400">MAE</th>
                 <th className="p-2 text-right text-slate-400">RMSE</th>
                 <th className="p-2 text-right text-slate-400">Direction</th>
-                <th className="p-2 text-right text-slate-400">Time</th>
                 <th className="p-2 text-center text-slate-400">Best</th>
               </tr>
             </thead>
             <tbody>
               {sortedTrials.map((trial, idx) => {
-                const isBest = trial.trialId === bestTrial.trialId;
+                const isBest = trial.value === bestValue;
                 return (
                   <TrialRow
                     isBest={isBest}
                     isTop3={idx < 3}
-                    key={trial.trialId}
-                    metric={config.optimizationMetric}
+                    key={trial.trialNumber}
+                    metric={optimizationMetric}
                     trial={trial}
                   />
                 );
@@ -75,7 +74,7 @@ function TrialRow({
   isBest,
   isTop3,
 }: {
-  trial: TrialResult;
+  trial: import("../../lib/api/ml").OptimizationTrial;
   metric: string;
   isBest: boolean;
   isTop3: boolean;
@@ -91,22 +90,23 @@ function TrialRow({
   return (
     <tr className={rowClass}>
       <td className="p-2">
-        <span className="font-mono text-slate-300">#{trial.trialId}</span>
+        <span className="font-mono text-slate-300">#{trial.trialNumber}</span>
       </td>
       <td className="p-2">
         <div className="flex flex-wrap gap-1">
-          {Object.entries(trial.hyperparameters).map(([key, value]) => (
+          {Object.entries(trial.params).map(([key, value]) => (
             <span
               className="rounded bg-slate-700 px-2 py-0.5 text-slate-300 text-xs"
               key={key}
             >
-              {key}={formatValue(value)}
+              {key}=
+              {formatValue(typeof value === "number" ? value : String(value))}
             </span>
           ))}
         </div>
       </td>
       <td className="p-2 text-right">
-        <ScoreCell metric={metric} score={trial.score} />
+        <ScoreCell metric={metric} score={trial.value} />
       </td>
       <td className="p-2 text-right font-mono text-slate-300">
         ${trial.metrics.mae.toFixed(2)}
@@ -116,9 +116,6 @@ function TrialRow({
       </td>
       <td className="p-2 text-right font-mono">
         <DirectionCell accuracy={trial.metrics.directionalAccuracy} />
-      </td>
-      <td className="p-2 text-right text-slate-400">
-        {(trial.executionTime / 1000).toFixed(1)}s
       </td>
       <td className="p-2 text-center">
         {isBest && <CheckCircle2 className="inline h-4 w-4 text-green-500" />}
@@ -192,7 +189,8 @@ function formatScore(metric: string, score: number): string {
   return score.toFixed(2);
 }
 
-function formatValue(value: number): string {
+function formatValue(value: number | string): string {
+  if (typeof value === "string") return value;
   if (value < 0.01 && value > 0) {
     return value.toFixed(4);
   }

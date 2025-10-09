@@ -59,130 +59,88 @@ export function ModelStatsDialog({
 
         {stats && (
           <div className="space-y-6">
-            {/* Model Info */}
+            {/* Overall Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-slate-400 text-sm">Model Type</p>
-                <Badge className="mt-1" variant="outline">
-                  {stats.modelType}
-                </Badge>
+                <p className="text-slate-400 text-sm">Total Models</p>
+                <p className="mt-1 font-mono text-lg">{stats.totalModels}</p>
               </div>
               <div>
-                <p className="text-slate-400 text-sm">Version</p>
-                <p className="mt-1 font-mono text-sm">{stats.version}</p>
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Trained</p>
-                <p className="mt-1 text-sm">
-                  {formatDistanceToNow(stats.trainedAt, { addSuffix: true })}
+                <p className="text-slate-400 text-sm">Total Size</p>
+                <p className="mt-1 font-mono text-lg">
+                  {(stats.totalSizeBytes / (1024 * 1024)).toFixed(2)} MB
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-sm">Training Duration</p>
+                <p className="text-slate-400 text-sm">Oldest Model</p>
                 <p className="mt-1 text-sm">
-                  {stats.trainingDuration
-                    ? (stats.trainingDuration / 1000).toFixed(1)
-                    : "0"}
-                  s
+                  {formatDistanceToNow(new Date(stats.oldestModel), {
+                    addSuffix: true,
+                  })}
                 </p>
               </div>
-              <div className="col-span-2">
-                <p className="text-slate-400 text-sm">Data Points</p>
-                <p className="mt-1 font-mono text-sm">
-                  {stats.dataPoints?.toLocaleString() ?? "N/A"}
+              <div>
+                <p className="text-slate-400 text-sm">Newest Model</p>
+                <p className="mt-1 text-sm">
+                  {formatDistanceToNow(new Date(stats.newestModel), {
+                    addSuffix: true,
+                  })}
                 </p>
               </div>
             </div>
 
-            {/* Performance Metrics */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Performance Metrics</h3>
-
-              {/* Accuracy */}
-              {stats.accuracy !== undefined && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm">Model Accuracy</span>
-                    <span className="font-mono text-sm">
-                      {(stats.accuracy * PERCENTAGE_MULTIPLIER).toFixed(2)}%
-                    </span>
-                  </div>
-                  <Progress value={stats.accuracy * PERCENTAGE_MULTIPLIER} />
-                </div>
-              )}
-
-              {/* Directional Accuracy */}
-              {stats.directionalAccuracy !== undefined && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm">Directional Accuracy</span>
-                    <span className="font-mono text-sm">
-                      {(
-                        stats.directionalAccuracy * PERCENTAGE_MULTIPLIER
-                      ).toFixed(2)}
-                      %
-                    </span>
-                  </div>
-                  <Progress
-                    value={stats.directionalAccuracy * PERCENTAGE_MULTIPLIER}
-                  />
-                </div>
-              )}
-
-              {/* R² Score */}
-              {stats.r2Score !== undefined && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm">R² Score</span>
-                    <span className="font-mono text-sm">
-                      {stats.r2Score.toFixed(4)}
-                    </span>
-                  </div>
-                  <Progress
-                    value={Math.max(0, stats.r2Score * PERCENTAGE_MULTIPLIER)}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Error Metrics */}
+            {/* Models List */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Error Metrics</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                {stats.mae !== undefined && (
-                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                    <p className="text-slate-400 text-xs">
-                      MAE (Mean Absolute Error)
-                    </p>
-                    <p className="mt-1 font-mono text-lg">
-                      {stats.mae.toFixed(2)}
-                    </p>
+              <h3 className="font-semibold text-lg">Models</h3>
+              {stats.models.map((model) => (
+                <div
+                  className="rounded-lg border border-slate-700 bg-slate-800/50 p-4"
+                  key={`${model.modelType}-${model.version}`}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <Badge variant="outline">{model.modelType}</Badge>
+                    <span className="text-slate-400 text-xs">
+                      v{model.version}
+                    </span>
                   </div>
-                )}
 
-                {stats.rmse !== undefined && (
-                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                    <p className="text-slate-400 text-xs">
-                      RMSE (Root Mean Squared Error)
-                    </p>
-                    <p className="mt-1 font-mono text-lg">
-                      {stats.rmse.toFixed(2)}
-                    </p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-slate-400 text-xs">Created</p>
+                      <p className="mt-1">
+                        {formatDistanceToNow(new Date(model.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-xs">Last Used</p>
+                      <p className="mt-1">
+                        {formatDistanceToNow(new Date(model.lastUsed), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-xs">Accuracy</p>
+                      <p className="mt-1 font-mono">
+                        {(model.accuracy * PERCENTAGE_MULTIPLIER).toFixed(2)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-xs">Size</p>
+                      <p className="mt-1 font-mono">
+                        {(model.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
                   </div>
-                )}
 
-                {stats.mape !== undefined && (
-                  <div className="col-span-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                    <p className="text-slate-400 text-xs">
-                      MAPE (Mean Absolute Percentage Error)
-                    </p>
-                    <p className="mt-1 font-mono text-lg">
-                      {(stats.mape * PERCENTAGE_MULTIPLIER).toFixed(2)}%
-                    </p>
+                  {/* Accuracy Progress */}
+                  <div className="mt-3">
+                    <Progress value={model.accuracy * PERCENTAGE_MULTIPLIER} />
                   </div>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

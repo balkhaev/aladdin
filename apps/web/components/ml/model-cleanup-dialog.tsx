@@ -31,11 +31,14 @@ export function ModelCleanupDialog({ open, onClose }: ModelCleanupDialogProps) {
 
   const handleCleanup = () => {
     const olderThan = Date.now() - days * MILLISECONDS_PER_DAY;
-    cleanupMutation.mutate(olderThan, {
-      onSuccess: () => {
-        onClose();
-      },
-    });
+    cleanupMutation.mutate(
+      { olderThanDays: olderThan },
+      {
+        onSuccess: () => {
+          onClose();
+        },
+      }
+    );
   };
 
   return (

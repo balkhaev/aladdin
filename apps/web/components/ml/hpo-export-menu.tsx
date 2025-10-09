@@ -39,8 +39,8 @@ export function HPOExportMenu({ result }: HPOExportMenuProps) {
   const handleExportJSON = () => {
     const filename = generateFilename(
       "hpo_result",
-      result.config.symbol,
-      result.config.modelType,
+      "optimization",
+      result.method,
       "json"
     );
     downloadJSON(result, filename);
@@ -50,8 +50,8 @@ export function HPOExportMenu({ result }: HPOExportMenuProps) {
     const csv = optimizationResultToCSV(result);
     const filename = generateFilename(
       "hpo_trials",
-      result.config.symbol,
-      result.config.modelType,
+      "optimization",
+      result.method,
       "csv"
     );
     downloadCSV(csv, filename);
@@ -61,8 +61,8 @@ export function HPOExportMenu({ result }: HPOExportMenuProps) {
     const { summary } = exportOptimizationSummary(result);
     const filename = generateFilename(
       "hpo_summary",
-      result.config.symbol,
-      result.config.modelType,
+      "optimization",
+      result.method,
       "txt"
     );
     const blob = new Blob([summary], { type: "text/plain" });
@@ -77,7 +77,7 @@ export function HPOExportMenu({ result }: HPOExportMenuProps) {
   };
 
   const handleCopyBestParams = async () => {
-    const params = JSON.stringify(result.bestHyperparameters, null, 2);
+    const params = JSON.stringify(result.bestParams, null, 2);
     const success = await copyToClipboard(params);
 
     if (success) {

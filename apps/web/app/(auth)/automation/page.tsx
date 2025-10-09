@@ -734,7 +734,7 @@ function MLModelsContent() {
                     saveModelMutation.mutate({
                       symbol: result.config.symbol,
                       modelType: result.config.modelType,
-                      config: {
+                      modelData: {
                         hiddenSize: 32,
                         sequenceLength: 20,
                         learningRate: 0.001,

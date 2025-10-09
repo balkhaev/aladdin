@@ -3,7 +3,7 @@
  * Main component for displaying HPO results
  */
 
-import { Calendar, Clock, Zap } from "lucide-react";
+import { Clock, Zap } from "lucide-react";
 import type { OptimizationResult } from "../../lib/api/ml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -19,7 +19,8 @@ type HPOOptimizationResultsProps = {
 export function HPOOptimizationResults({
   result,
 }: HPOOptimizationResultsProps) {
-  const { config, trials, totalExecutionTime } = result;
+  const { method, trials, optimizationMetric, totalTrials, completedAt } =
+    result;
 
   return (
     <div className="space-y-6">
@@ -27,46 +28,37 @@ export function HPOOptimizationResults({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>
-              Optimization Results: {config.symbol} ({config.modelType})
-            </span>
+            <span>Optimization Results</span>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 font-normal text-slate-400 text-sm">
                 <Clock className="h-4 w-4" />
-                {(totalExecutionTime / 1000 / 60).toFixed(1)} min
+                {new Date(completedAt).toLocaleTimeString("ru-RU")}
               </div>
               <HPOExportMenu result={result} />
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {/* Method */}
             <InfoItem
               icon={<Zap className="h-4 w-4" />}
               label="Method"
-              value={config.method === "GRID" ? "Grid Search" : "Random Search"}
+              value={method === "GRID" ? "Grid Search" : "Random Search"}
             />
 
             {/* Trials */}
             <InfoItem
               icon={<Zap className="h-4 w-4" />}
               label="Trials"
-              value={trials.length.toString()}
-            />
-
-            {/* Period */}
-            <InfoItem
-              icon={<Calendar className="h-4 w-4" />}
-              label="Period"
-              value={`${Math.ceil((config.endDate - config.startDate) / (1000 * 60 * 60 * 24))} days`}
+              value={`${trials.length} / ${totalTrials}`}
             />
 
             {/* Metric */}
             <InfoItem
               icon={<Zap className="h-4 w-4" />}
               label="Metric"
-              value={config.optimizationMetric.toUpperCase()}
+              value={optimizationMetric.replace("_", " ").toUpperCase()}
             />
           </div>
 
@@ -74,12 +66,12 @@ export function HPOOptimizationResults({
           <div className="mt-4 rounded border border-blue-500/20 bg-blue-500/10 p-3">
             <div className="text-sm">
               <span className="font-medium text-blue-400">
-                {config.method === "GRID" ? "Grid Search:" : "Random Search:"}
+                {method === "GRID" ? "Grid Search:" : "Random Search:"}
               </span>{" "}
               <span className="text-slate-300">
-                {config.method === "GRID"
+                {method === "GRID"
                   ? "Exhaustive search tested all parameter combinations"
-                  : `Tested ${config.nTrials || trials.length} random parameter combinations`}
+                  : `Tested ${totalTrials} random parameter combinations`}
               </span>
             </div>
           </div>

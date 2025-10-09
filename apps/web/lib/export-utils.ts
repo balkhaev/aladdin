@@ -40,37 +40,33 @@ function downloadBlob(blob: Blob, filename: string): void {
  * Convert optimization result to CSV format
  */
 export function optimizationResultToCSV(result: OptimizationResult): string {
-  const { trials, config } = result;
+  const { trials, method, optimizationMetric, totalTrials, bestValue } = result;
 
   // Header
   const headers = [
-    "Trial ID",
+    "Trial Number",
     "Score",
     "MAE",
     "RMSE",
     "MAPE",
     "R2 Score",
     "Directional Accuracy",
-    "Execution Time (s)",
-    ...Object.keys(trials[0]?.hyperparameters || {}),
+    ...Object.keys(trials[0]?.params || {}),
   ];
 
   // Rows
   const rows = trials.map((trial) => {
     const baseValues = [
-      trial.trialId,
-      trial.score.toFixed(4),
+      trial.trialNumber,
+      trial.value.toFixed(4),
       trial.metrics.mae.toFixed(2),
       trial.metrics.rmse.toFixed(2),
       trial.metrics.mape.toFixed(2),
       trial.metrics.r2Score.toFixed(4),
-      trial.metrics.directionalAccuracy.toFixed(2),
-      (trial.executionTime / 1000).toFixed(1),
+      (trial.metrics.directionalAccuracy * 100).toFixed(2),
     ];
 
-    const hyperparamValues = Object.values(trial.hyperparameters).map((v) =>
-      String(v)
-    );
+    const hyperparamValues = Object.values(trial.params).map((v) => String(v));
 
     return [...baseValues, ...hyperparamValues];
   });
@@ -78,19 +74,11 @@ export function optimizationResultToCSV(result: OptimizationResult): string {
   // Metadata rows
   const metadata = [
     ["# Hyperparameter Optimization Results"],
-    [`# Symbol: ${config.symbol}`],
-    [`# Model Type: ${config.modelType}`],
-    [`# Horizon: ${config.horizon}`],
-    [`# Method: ${config.method}`],
-    [`# Optimization Metric: ${config.optimizationMetric}`],
-    [
-      `# Period: ${new Date(config.startDate).toISOString()} to ${new Date(config.endDate).toISOString()}`,
-    ],
-    [`# Total Trials: ${trials.length}`],
-    [
-      `# Best Trial: ${result.bestTrial.trialId} (Score: ${result.bestTrial.score.toFixed(4)})`,
-    ],
-    [`# Improvement: ${result.improvementPercentage.toFixed(2)}%`],
+    [`# Method: ${method}`],
+    [`# Optimization Metric: ${optimizationMetric}`],
+    [`# Total Trials: ${totalTrials}`],
+    [`# Best Value: ${bestValue.toFixed(4)}`],
+    [`# Completed At: ${new Date(result.completedAt).toISOString()}`],
     [],
   ];
 
@@ -118,11 +106,11 @@ export function generateFilename(
  */
 export function exportOptimizationSummary(result: OptimizationResult): {
   summary: string;
-  bestParams: Record<string, number>;
+  bestParams: Record<string, number | boolean | string>;
   allTrials: Array<{
-    trialId: string;
-    score: number;
-    hyperparameters: Record<string, number>;
+    trialNumber: number;
+    value: number;
+    params: Record<string, number | boolean | string>;
     metrics: {
       mae: number;
       rmse: number;
@@ -133,10 +121,11 @@ export function exportOptimizationSummary(result: OptimizationResult): {
   }>;
 } {
   const {
-    config,
-    bestHyperparameters,
-    bestTrial,
-    improvementPercentage,
+    bestParams,
+    bestValue,
+    bestMetrics,
+    method,
+    optimizationMetric,
     trials,
   } = result;
 
@@ -145,35 +134,31 @@ Hyperparameter Optimization Results
 ====================================
 
 Configuration:
-- Symbol: ${config.symbol}
-- Model Type: ${config.modelType}
-- Horizon: ${config.horizon}
-- Method: ${config.method}
-- Optimization Metric: ${config.optimizationMetric}
+- Method: ${method}
+- Optimization Metric: ${optimizationMetric}
 - Trials: ${trials.length}
 
-Best Trial: ${bestTrial.trialId}
-- Score: ${bestTrial.score.toFixed(4)}
-- Improvement: ${improvementPercentage.toFixed(2)}%
-- MAE: $${bestTrial.metrics.mae.toFixed(2)}
-- RMSE: $${bestTrial.metrics.rmse.toFixed(2)}
-- MAPE: ${bestTrial.metrics.mape.toFixed(2)}%
-- R² Score: ${bestTrial.metrics.r2Score.toFixed(4)}
-- Directional Accuracy: ${bestTrial.metrics.directionalAccuracy.toFixed(2)}%
+Best Result:
+- Score: ${bestValue.toFixed(4)}
+- MAE: $${bestMetrics.mae.toFixed(2)}
+- RMSE: $${bestMetrics.rmse.toFixed(2)}
+- MAPE: ${bestMetrics.mape.toFixed(2)}%
+- R² Score: ${bestMetrics.r2Score.toFixed(4)}
+- Directional Accuracy: ${(bestMetrics.directionalAccuracy * 100).toFixed(2)}%
 
 Best Hyperparameters:
-${Object.entries(bestHyperparameters)
+${Object.entries(bestParams)
   .map(([key, value]) => `- ${key}: ${value}`)
   .join("\n")}
 `.trim();
 
   return {
     summary,
-    bestParams: bestHyperparameters,
+    bestParams,
     allTrials: trials.map((t) => ({
-      trialId: t.trialId.toString(),
-      score: t.score,
-      hyperparameters: t.hyperparameters,
+      trialNumber: t.trialNumber,
+      value: t.value,
+      params: t.params,
       metrics: t.metrics,
     })),
   };

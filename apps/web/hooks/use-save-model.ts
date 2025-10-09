@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { ModelType } from "../lib/api/ml";
+import type { EvaluationMetrics, ModelType } from "../lib/api/ml";
 import { saveModel } from "../lib/api/ml";
 
 /**
@@ -17,14 +17,8 @@ export function useSaveModel() {
     mutationFn: (params: {
       symbol: string;
       modelType: ModelType;
-      config: Record<string, number>;
-      metrics: {
-        mae: number;
-        rmse: number;
-        mape: number;
-        r2Score: number;
-        directionalAccuracy: number;
-      };
+      modelData: unknown;
+      metrics: EvaluationMetrics;
     }) => saveModel(params),
     onSuccess: (data) => {
       toast.success("Model Saved", {

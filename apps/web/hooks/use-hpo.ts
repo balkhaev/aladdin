@@ -4,10 +4,10 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  HPORecommendation,
   HyperparameterSpace,
   ModelType,
   OptimizationMetric,
-  OptimizationRecommendations,
   OptimizationResult,
   PredictionHorizon,
 } from "../lib/api/ml";
@@ -40,11 +40,12 @@ export function useRunOptimization() {
 export function useHPORecommendations(
   symbol: string,
   modelType: ModelType,
+  horizon: PredictionHorizon,
   enabled = true
 ) {
-  return useQuery<OptimizationRecommendations>({
-    queryKey: ["ml", "hpo", "recommendations", symbol, modelType],
-    queryFn: () => getHPORecommendations(symbol, modelType),
+  return useQuery<HPORecommendation>({
+    queryKey: ["ml", "hpo", "recommendations", symbol, modelType, horizon],
+    queryFn: () => getHPORecommendations(symbol, modelType, horizon),
     enabled,
     staleTime: 1000 * 60 * 60, // 1 hour
   });

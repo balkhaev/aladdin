@@ -1,8 +1,9 @@
 /**
  * API client for backtesting
+ * Unified API client using apiPost
  */
 
-import { API_BASE_URL } from "../runtime-env";
+import { apiPost } from "./client";
 
 export type BacktestStrategy =
   | "SMA_CROSSOVER"
@@ -60,29 +61,18 @@ export type BacktestResponse = {
 export async function runBacktest(
   params: BacktestParams
 ): Promise<BacktestResult> {
-  const response = await fetch(`${API_BASE_URL}/api/analytics/backtest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to run backtest");
-  }
-
-  const result: BacktestResponse = await response.json();
+  const result = await apiPost<BacktestResult>(
+    "/api/analytics/backtest",
+    params
+  );
 
   // Parse trade timestamps
-  result.data.trades = result.data.trades.map((trade) => ({
+  result.trades = result.trades.map((trade) => ({
     ...trade,
     timestamp: new Date(trade.timestamp),
   }));
 
-  return result.data;
+  return result;
 }
 
 /**

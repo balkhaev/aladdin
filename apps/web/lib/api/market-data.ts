@@ -109,8 +109,6 @@ export type RecentTrade = {
   isBuyerMaker: boolean;
 };
 
-import { API_BASE_URL } from "../runtime-env";
-
 /**
  * Get order book (market depth)
  */
@@ -118,23 +116,7 @@ export async function getOrderBook(
   symbol: string,
   limit = 20
 ): Promise<OrderBook> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-  });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/orderbook/${symbol}?${params}`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch order book");
-  }
-
-  const result = await response.json();
-  return result.data;
+  return apiGet<OrderBook>(`/api/market-data/orderbook/${symbol}`, { limit });
 }
 
 /**
@@ -144,23 +126,11 @@ export async function getRecentTrades(
   symbol: string,
   limit = 100
 ): Promise<RecentTrade[]> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-  });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/trades/${symbol}?${params}`,
-    {
-      credentials: "include",
-    }
+  const response = await apiGet<{ trades: RecentTrade[] }>(
+    `/api/market-data/trades/${symbol}`,
+    { limit }
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch recent trades");
-  }
-
-  const result = await response.json();
-  return result.data.trades;
+  return response.trades;
 }
 
 /**
@@ -203,21 +173,9 @@ export async function getFundingRate(
   symbol: string,
   exchange = "binance"
 ): Promise<FundingRate> {
-  const params = new URLSearchParams({ exchange });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/${symbol}/funding-rate?${params}`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch funding rate");
-  }
-
-  const result = await response.json();
-  return result.data;
+  return apiGet<FundingRate>(`/api/market-data/${symbol}/funding-rate`, {
+    exchange,
+  });
 }
 
 /**
@@ -226,19 +184,9 @@ export async function getFundingRate(
 export async function getAllFundingRates(
   symbol: string
 ): Promise<Record<string, FundingRate>> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/${symbol}/funding-rate/all`,
-    {
-      credentials: "include",
-    }
+  return apiGet<Record<string, FundingRate>>(
+    `/api/market-data/${symbol}/funding-rate/all`
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch funding rates");
-  }
-
-  const result = await response.json();
-  return result.data;
 }
 
 /**
@@ -248,21 +196,9 @@ export async function getOpenInterest(
   symbol: string,
   exchange = "binance"
 ): Promise<OpenInterest> {
-  const params = new URLSearchParams({ exchange });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/${symbol}/open-interest?${params}`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch open interest");
-  }
-
-  const result = await response.json();
-  return result.data;
+  return apiGet<OpenInterest>(`/api/market-data/${symbol}/open-interest`, {
+    exchange,
+  });
 }
 
 /**
@@ -271,19 +207,9 @@ export async function getOpenInterest(
 export async function getAllOpenInterest(
   symbol: string
 ): Promise<Record<string, OpenInterest>> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/${symbol}/open-interest/all`,
-    {
-      credentials: "include",
-    }
+  return apiGet<Record<string, OpenInterest>>(
+    `/api/market-data/${symbol}/open-interest/all`
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch open interest");
-  }
-
-  const result = await response.json();
-  return result.data;
 }
 
 /**
@@ -329,23 +255,9 @@ export async function getAggregatedPrice(
   symbol: string,
   limit = 1
 ): Promise<AggregatedPrice> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
+  return apiGet<AggregatedPrice>(`/api/market-data/aggregated/${symbol}`, {
+    limit,
   });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/aggregated/${symbol}?${params}`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch aggregated price");
-  }
-
-  const result = await response.json();
-  return result.data;
 }
 
 /**
@@ -355,22 +267,8 @@ export async function getArbitrageOpportunities(
   minSpread = 0.1,
   limit = 20
 ): Promise<ArbitrageOpportunity[]> {
-  const params = new URLSearchParams({
-    minSpread: minSpread.toString(),
-    limit: limit.toString(),
+  return apiGet<ArbitrageOpportunity[]>("/api/market-data/arbitrage", {
+    minSpread,
+    limit,
   });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/market-data/arbitrage?${params}`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch arbitrage opportunities");
-  }
-
-  const result = await response.json();
-  return result.data;
 }

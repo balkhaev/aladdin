@@ -60,7 +60,7 @@ export function ModelListCard() {
             Saved Models
             {data && (
               <Badge className="ml-2" variant="secondary">
-                {data.count}
+                {data.totalModels}
               </Badge>
             )}
           </CardTitle>
@@ -117,7 +117,7 @@ export function ModelListCard() {
                       <TableCell className="text-slate-400 text-sm">
                         {(() => {
                           try {
-                            const date = new Date(model.lastTrained);
+                            const date = new Date(model.lastUsed);
                             if (Number.isNaN(date.getTime())) {
                               return "Unknown";
                             }
@@ -130,7 +130,7 @@ export function ModelListCard() {
                         })()}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        {formatSize(model.size)}
+                        {formatSize(model.sizeBytes)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

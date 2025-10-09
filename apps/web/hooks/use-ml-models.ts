@@ -62,10 +62,11 @@ export function useCleanupModels() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: cleanupModels,
+    mutationFn: (params?: { olderThanDays?: number; keepBest?: boolean }) =>
+      cleanupModels(params?.olderThanDays, params?.keepBest),
     onSuccess: (data) => {
       toast.success("Cleanup completed", {
-        description: `Deleted ${data.deleted} old models`,
+        description: `Deleted ${data.deletedModels.length} old models, freed ${(data.freedSpaceBytes / (1024 * 1024)).toFixed(2)} MB`,
       });
       queryClient.invalidateQueries({ queryKey: ["ml-models"] });
     },

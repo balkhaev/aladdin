@@ -86,23 +86,19 @@ export function useQuickTrain() {
         throw new Error("Invalid comparison results: missing Hybrid metrics");
       }
 
-      const lstmAccuracy =
-        comparison.lstm.metrics.directionalAccuracy ?? 0;
-      const hybridAccuracy =
-        comparison.hybrid.metrics.directionalAccuracy ?? 0;
+      const lstmAccuracy = comparison.lstm.metrics.directionalAccuracy ?? 0;
+      const hybridAccuracy = comparison.hybrid.metrics.directionalAccuracy ?? 0;
 
       const bestModelType: "LSTM" | "HYBRID" =
         lstmAccuracy >= hybridAccuracy ? "LSTM" : "HYBRID";
       const bestResult =
-        bestModelType === "LSTM"
-          ? comparison.lstm
-          : comparison.hybrid;
+        bestModelType === "LSTM" ? comparison.lstm : comparison.hybrid;
 
       // Step 3: Save the best model
-      const saveResponse = await saveModel({
+      await saveModel({
         symbol,
         modelType: bestModelType,
-        config: {}, // Config is stored separately in backtest result
+        modelData: {}, // Model data placeholder (actual model is stored by backend)
         metrics: bestResult.metrics,
       });
 
@@ -110,7 +106,7 @@ export function useQuickTrain() {
         comparison,
         savedModel: {
           modelType: bestModelType,
-          accuracy: saveResponse.accuracy,
+          accuracy: bestResult.metrics.directionalAccuracy ?? 0,
         },
       };
     },

@@ -27,7 +27,7 @@ export function HPOImprovementChart({
   const seriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bestLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const { trials, config } = result;
+  const { trials, optimizationMetric } = result;
 
   // Initialize chart
   useEffect(() => {
@@ -112,26 +112,26 @@ export function HPOImprovementChart({
     if (trials.length === 0) return;
 
     const lowerIsBetter =
-      config.optimizationMetric === "mae" ||
-      config.optimizationMetric === "rmse" ||
-      config.optimizationMetric === "mape";
+      optimizationMetric === "mae" ||
+      optimizationMetric === "rmse" ||
+      optimizationMetric === "mape";
 
     // Trial scores
     const trialData = trials.map((trial) => ({
-      time: trial.trialId as never,
-      value: trial.score,
+      time: trial.trialNumber as never,
+      value: trial.value,
     }));
 
     // Best score so far
-    let bestSoFar = trials[0].score;
+    let bestSoFar = trials[0].value;
     const bestData = trials.map((trial) => {
       if (lowerIsBetter) {
-        bestSoFar = Math.min(bestSoFar, trial.score);
+        bestSoFar = Math.min(bestSoFar, trial.value);
       } else {
-        bestSoFar = Math.max(bestSoFar, trial.score);
+        bestSoFar = Math.max(bestSoFar, trial.value);
       }
       return {
-        time: trial.trialId as never,
+        time: trial.trialNumber as never,
         value: bestSoFar,
       };
     });
@@ -139,7 +139,7 @@ export function HPOImprovementChart({
     seriesRef.current.setData(trialData);
     bestLineRef.current.setData(bestData);
     chartRef.current.timeScale().fitContent();
-  }, [trials, config.optimizationMetric]);
+  }, [trials, optimizationMetric]);
 
   // Export chart as PNG
   const handleExportChart = () => {
@@ -154,7 +154,7 @@ export function HPOImprovementChart({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().split("T")[0];
-      link.download = `hpo_chart_${result.config.symbol}_${result.config.modelType}_${timestamp}.png`;
+      link.download = `hpo_chart_${result.method}_${timestamp}.png`;
       link.href = url;
       document.body.appendChild(link);
       link.click();

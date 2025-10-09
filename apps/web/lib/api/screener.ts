@@ -1,8 +1,9 @@
 /**
  * Screener API client
+ * Unified API client using apiGet/apiPost
  */
 
-import { API_BASE_URL } from "../runtime-env";
+import { apiGet, apiPost } from "./client";
 
 /**
  * Types for Screener API
@@ -69,23 +70,11 @@ export type QueueStats = {
 export async function getScreenerResults(
   limit = 100
 ): Promise<ScreenerResult[]> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-  });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/screener/results?${params}`,
-    {
-      credentials: "include",
-    }
+  const response = await apiGet<{ results: ScreenerResult[] }>(
+    "/api/screener/results",
+    { limit }
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch screener results");
-  }
-
-  const result = await response.json();
-  return result.data.results;
+  return response.results;
 }
 
 /**
@@ -95,61 +84,28 @@ export async function getTopSignals(
   recommendation: "STRONG_BUY" | "BUY" | "SELL" | "STRONG_SELL",
   limit = 20
 ): Promise<ScreenerResult[]> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-  });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/screener/signals/${recommendation}?${params}`,
-    {
-      credentials: "include",
-    }
+  const response = await apiGet<{ results: ScreenerResult[] }>(
+    `/api/screener/signals/${recommendation}`,
+    { limit }
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch top signals");
-  }
-
-  const result = await response.json();
-  return result.data.results;
+  return response.results;
 }
 
 /**
  * Run screening manually
  */
-export async function runScreening(timeframe = "15m"): Promise<{
+export function runScreening(timeframe = "15m"): Promise<{
   runId: string;
   jobCount: number;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/screener/run`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({ timeframe }),
+  return apiPost<{ runId: string; jobCount: number }>("/api/screener/run", {
+    timeframe,
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to run screening");
-  }
-
-  const result = await response.json();
-  return result.data;
 }
 
 /**
  * Get queue statistics
  */
-export async function getQueueStats(): Promise<QueueStats> {
-  const response = await fetch(`${API_BASE_URL}/api/screener/stats`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch queue stats");
-  }
-
-  const result = await response.json();
-  return result.data;
+export function getQueueStats(): Promise<QueueStats> {
+  return apiGet<QueueStats>("/api/screener/stats");
 }

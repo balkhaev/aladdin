@@ -12,8 +12,17 @@ type HPOBestParamsCardProps = {
 };
 
 export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
-  const { bestTrial, bestHyperparameters, improvementPercentage, config } =
-    result;
+  const { bestParams, trials, optimizationMetric } = result;
+
+  // Find best trial (first one in sorted array)
+  const bestTrial = trials[0];
+
+  // Calculate improvement percentage (best vs baseline/first trial)
+  const baselineValue = trials.at(-1)?.value ?? bestTrial.value;
+  const improvementPercentage =
+    baselineValue !== 0
+      ? ((bestTrial.value - baselineValue) / Math.abs(baselineValue)) * 100
+      : 0;
 
   const getImprovementColor = () => {
     if (improvementPercentage > 10) return "text-green-500";
@@ -28,7 +37,7 @@ export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="h-5 w-5 text-yellow-500" />
-          Best Parameters (Trial #{bestTrial.trialId})
+          Best Parameters (Trial #{bestTrial.trialNumber})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -53,7 +62,7 @@ export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
         <div>
           <h4 className="mb-3 font-semibold text-sm">Best Hyperparameters</h4>
           <div className="grid grid-cols-2 gap-3">
-            {Object.entries(bestHyperparameters).map(([key, value]) => (
+            {Object.entries(bestParams).map(([key, value]) => (
               <div
                 className="rounded-lg border border-slate-700 bg-slate-800/30 p-3"
                 key={key}
@@ -62,7 +71,7 @@ export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
                   {formatKey(key)}
                 </div>
                 <div className="font-mono font-semibold text-lg">
-                  {formatValue(key, value)}
+                  {formatValue(key, value as number)}
                 </div>
               </div>
             ))}
@@ -107,7 +116,7 @@ export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
         <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
           <div className="mb-2 font-semibold text-sm">Use These Parameters</div>
           <pre className="overflow-x-auto text-slate-300 text-xs">
-            {JSON.stringify(bestHyperparameters, null, 2)}
+            {JSON.stringify(bestParams, null, 2)}
           </pre>
         </div>
 
@@ -117,10 +126,7 @@ export function HPOBestParamsCard({ result }: HPOBestParamsCardProps) {
             Recommendation
           </div>
           <p className="text-slate-300 text-sm">
-            {getRecommendation(
-              improvementPercentage,
-              config.optimizationMetric
-            )}
+            {getRecommendation(improvementPercentage, optimizationMetric)}
           </p>
         </div>
       </CardContent>

@@ -48,7 +48,7 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
   const [nTrials, setNTrials] = useState(20);
   const [days, setDays] = useState(30);
   const [metric, setMetric] = useState<OptimizationMetric>(
-    "directionalAccuracy"
+    "directional_accuracy"
   );
   const [includeSentiment, setIncludeSentiment] = useState(true);
 
@@ -63,7 +63,11 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
   const [smoothingFactors, setSmoothingFactors] = useState("0.1,0.2,0.3");
 
   // Get recommendations
-  const { data: recommendations } = useHPORecommendations(symbol, modelType);
+  const { data: recommendations } = useHPORecommendations(
+    symbol,
+    modelType,
+    horizon
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,35 +76,55 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
 
     if (modelType === "LSTM") {
       if (hiddenSizes) {
-        space.hiddenSize = hiddenSizes
+        const values = hiddenSizes
           .split(",")
           .map((v) => Number.parseInt(v.trim(), 10));
+        space.hidden_size = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
       }
       if (sequenceLengths) {
-        space.sequenceLength = sequenceLengths
+        const values = sequenceLengths
           .split(",")
           .map((v) => Number.parseInt(v.trim(), 10));
+        space.sequence_length = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
       }
       if (learningRates) {
-        space.learningRate = learningRates
+        const values = learningRates
           .split(",")
           .map((v) => Number.parseFloat(v.trim()));
+        space.learning_rate = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+          log: true,
+        };
       }
       if (epochs) {
-        space.epochs = epochs
+        space.batch_size = epochs
           .split(",")
           .map((v) => Number.parseInt(v.trim(), 10));
       }
     } else {
+      // For HYBRID model, we might need different parameters
+      // Using available fields from HyperparameterSpace
       if (lookbackWindows) {
-        space.lookbackWindow = lookbackWindows
+        const values = lookbackWindows
           .split(",")
           .map((v) => Number.parseInt(v.trim(), 10));
+        space.sequence_length = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
       }
       if (smoothingFactors) {
-        space.smoothingFactor = smoothingFactors
+        const values = smoothingFactors
           .split(",")
           .map((v) => Number.parseFloat(v.trim()));
+        space.dropout = { min: Math.min(...values), max: Math.max(...values) };
       }
     }
 
@@ -121,28 +145,26 @@ export function HPOConfigForm({ onSubmit, isLoading }: HPOConfigFormProps) {
   const useRecommended = () => {
     if (!recommendations) return;
 
-    const { recommendedSpace } = recommendations;
+    const { recommendedParams } = recommendations;
 
+    // Convert recommended params object to comma-separated strings
     if (modelType === "LSTM") {
-      if (recommendedSpace.hiddenSize) {
-        setHiddenSizes(recommendedSpace.hiddenSize.join(","));
-      }
-      if (recommendedSpace.sequenceLength) {
-        setSequenceLengths(recommendedSpace.sequenceLength.join(","));
-      }
-      if (recommendedSpace.learningRate) {
-        setLearningRates(recommendedSpace.learningRate.join(","));
-      }
-      if (recommendedSpace.epochs) {
-        setEpochs(recommendedSpace.epochs.join(","));
-      }
-    } else {
-      if (recommendedSpace.lookbackWindow) {
-        setLookbackWindows(recommendedSpace.lookbackWindow.join(","));
-      }
-      if (recommendedSpace.smoothingFactor) {
-        setSmoothingFactors(recommendedSpace.smoothingFactor.join(","));
-      }
+      const params = Object.entries(recommendedParams);
+      params.forEach(([key, value]) => {
+        if (key === "hidden_size" && typeof value === "number") {
+          setHiddenSizes(
+            `${Math.floor(value * 0.5)},${value},${Math.floor(value * 1.5)}`
+          );
+        }
+        if (key === "sequence_length" && typeof value === "number") {
+          setSequenceLengths(
+            `${Math.floor(value * 0.5)},${value},${Math.floor(value * 1.5)}`
+          );
+        }
+        if (key === "learning_rate" && typeof value === "number") {
+          setLearningRates(`${value * 0.1},${value},${value * 10}`);
+        }
+      });
     }
   };
 

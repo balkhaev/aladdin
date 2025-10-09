@@ -1,9 +1,12 @@
 /**
  * ML Service API Client
+ * Unified API client using apiGet/apiPost
  * Routes through API Gateway (port 3000)
  */
 
-import { API_BASE_URL } from "../runtime-env";
+import { apiDelete, apiGet, apiPost } from "./client";
+
+// ==================== Types ====================
 
 export type PredictionHorizon = "1h" | "4h" | "1d" | "7d";
 export type ModelType = "LSTM" | "HYBRID";
@@ -96,434 +99,106 @@ export type ComparisonResult = {
   };
 };
 
-/**
- * Predict price
- */
-export async function predictPrice(params: {
-  symbol: string;
-  horizon: PredictionHorizon;
-  confidence?: number;
-  includeSentiment?: boolean;
-}): Promise<PredictionResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/predict`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Prediction failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Predict price with LSTM
- */
-export async function predictPriceLSTM(params: {
-  symbol: string;
-  horizon: PredictionHorizon;
-  confidence?: number;
-  includeSentiment?: boolean;
-}): Promise<PredictionResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/predict/lstm`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`LSTM prediction failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Run backtest
- */
-export async function runBacktest(config: {
-  symbol: string;
-  modelType: ModelType;
-  horizon: PredictionHorizon;
-  startDate: number;
-  endDate: number;
-  walkForward?: boolean;
-  retrainInterval?: number;
-  includeSentiment?: boolean;
-}): Promise<BacktestResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/backtest`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(config),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Backtest failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Compare models
- */
-export async function compareModels(config: {
-  symbol: string;
-  horizon: PredictionHorizon;
-  startDate: number;
-  endDate: number;
-  walkForward?: boolean;
-  retrainInterval?: number;
-  includeSentiment?: boolean;
-}): Promise<ComparisonResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/backtest/compare`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(config),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    const errorMessage = data?.error?.message || response.statusText;
-    throw new Error(`Model comparison failed: ${errorMessage}`);
-  }
-
-  const hasSuccess = Boolean(data.success);
-  const hasData = Boolean(data.data);
-
-  if (!hasSuccess) {
-    const errorMessage = data?.error?.message || "Request failed";
-    throw new Error(`Model comparison failed: ${errorMessage}`);
-  }
-
-  if (!hasData) {
-    const errorMessage = data?.error?.message || "Invalid response format";
-    throw new Error(`Model comparison failed: ${errorMessage}`);
-  }
-
-  // Validate response structure
-  const hasResults = Boolean(data.data.results);
-
-  if (!hasResults) {
-    console.error("Invalid comparison response (missing results):", data);
-    throw new Error(
-      "Model comparison returned incomplete results. Please check the date range and try again with more historical data."
-    );
-  }
-
-  const hasLstm = Boolean(data.data.results.lstm);
-  const hasHybrid = Boolean(data.data.results.hybrid);
-
-  if (!hasLstm) {
-    console.error("Invalid comparison response (missing LSTM):", data);
-    throw new Error(
-      "Model comparison returned incomplete results (missing LSTM data). Please check the date range and try again with more historical data."
-    );
-  }
-
-  if (!hasHybrid) {
-    console.error("Invalid comparison response (missing Hybrid):", data);
-    throw new Error(
-      "Model comparison returned incomplete results (missing Hybrid data). Please check the date range and try again with more historical data."
-    );
-  }
-
-  // Return just the comparison results (unwrap from API response)
-  return data.data.results;
-}
-
-/**
- * Get market regime
- */
-export async function getMarketRegime(params: {
-  symbol: string;
-  lookback?: number;
-  includeSentiment?: boolean;
-}): Promise<{
+// Market Regime types
+export type MarketRegimeAnalysis = {
   symbol: string;
   currentRegime: MarketRegime;
   confidence: number;
-  regimeHistory: Array<{
+  indicators: {
+    trend: number;
+    volatility: number;
+    momentum: number;
+    volume: number;
+  };
+  history: Array<{
     timestamp: number;
     regime: MarketRegime;
     confidence: number;
   }>;
-  indicators: {
-    trend: number;
-    volatility: number;
-    volume: number;
-    momentum: number;
-  };
-  nextRegimeProb: {
-    BULL: number;
-    BEAR: number;
-    SIDEWAYS: number;
-  };
-  includeSentiment?: boolean;
   generatedAt: number;
-}> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/regime`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Regime detection failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-// Hyperparameter Optimization types
-export type HyperparameterSpace = {
-  hiddenSize?: number[];
-  sequenceLength?: number[];
-  learningRate?: number[];
-  epochs?: number[];
-  lookbackWindow?: number[];
-  smoothingFactor?: number[];
-  retrainInterval?: number[];
 };
 
+// HPO types
 export type OptimizationMetric =
   | "mae"
   | "rmse"
   | "mape"
-  | "r2Score"
-  | "directionalAccuracy";
+  | "r2_score"
+  | "directional_accuracy";
 
-export type TrialResult = {
-  trialId: number;
-  hyperparameters: Record<string, number>;
+export type HyperparameterSpace = {
+  hidden_size?: { min: number; max: number };
+  num_layers?: { min: number; max: number };
+  learning_rate?: { min: number; max: number; log?: boolean };
+  dropout?: { min: number; max: number };
+  batch_size?: number[];
+  sequence_length?: { min: number; max: number };
+};
+
+export type OptimizationTrial = {
+  trialNumber: number;
+  params: Record<string, number | boolean | string>;
   metrics: EvaluationMetrics;
-  score: number;
-  executionTime: number;
-  completedAt: number;
+  value: number;
 };
 
 export type OptimizationResult = {
-  config: {
-    symbol: string;
-    modelType: ModelType;
-    horizon: PredictionHorizon;
-    hyperparameterSpace: HyperparameterSpace;
-    method: "GRID" | "RANDOM";
-    nTrials?: number;
-    startDate: number;
-    endDate: number;
-    optimizationMetric: OptimizationMetric;
-    crossValidationFolds?: number;
-  };
-  trials: TrialResult[];
-  bestTrial: TrialResult;
-  bestHyperparameters: Record<string, number>;
-  improvementPercentage: number;
-  totalExecutionTime: number;
+  bestParams: Record<string, number | boolean | string>;
+  bestValue: number;
+  bestMetrics: EvaluationMetrics;
+  trials: OptimizationTrial[];
+  optimizationMetric: OptimizationMetric;
+  totalTrials: number;
+  method: "GRID" | "RANDOM";
   completedAt: number;
 };
 
-export type OptimizationRecommendations = {
-  recommendedSpace: HyperparameterSpace;
-  reasoning: string;
-};
-
-/**
- * Run hyperparameter optimization
- */
-export async function runOptimization(config: {
+export type HPORecommendation = {
   symbol: string;
   modelType: ModelType;
   horizon: PredictionHorizon;
-  hyperparameterSpace: HyperparameterSpace;
-  method: "GRID" | "RANDOM";
-  nTrials?: number;
-  startDate: number;
-  endDate: number;
-  optimizationMetric: OptimizationMetric;
-  crossValidationFolds?: number;
-  includeSentiment?: boolean;
-}): Promise<OptimizationResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/optimize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(config),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Optimization failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Get hyperparameter recommendations
- */
-export async function getHPORecommendations(
-  symbol: string,
-  modelType: ModelType
-): Promise<OptimizationRecommendations> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/ml/optimize/recommendations?symbol=${symbol}&modelType=${modelType}`,
-    { credentials: "include" }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to get recommendations: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
+  recommendedParams: Record<string, number | boolean | string>;
+  expectedMetrics: EvaluationMetrics;
+  confidence: number;
+  reasoning: string;
+  generatedAt: number;
+};
 
 // Model Management types
-export type SavedModel = {
+export type ModelInfo = {
   symbol: string;
-  modelType: string;
+  modelType: ModelType;
   version: string;
-  lastTrained: number;
-  size: number;
+  createdAt: number;
+  lastUsed: number;
+  accuracy: number;
+  sizeBytes: number;
+  path: string;
 };
 
 export type ModelStats = {
   symbol: string;
-  modelType: string;
-  version: string;
-  trainedAt: number;
-  accuracy: number;
-  mae: number;
-  rmse: number;
-  mape: number;
-  r2Score: number;
-  directionalAccuracy: number;
-  trainingDuration: number;
-  dataPoints: number;
+  totalModels: number;
+  models: ModelInfo[];
+  totalSizeBytes: number;
+  oldestModel: number;
+  newestModel: number;
 };
 
-/**
- * List all saved models
- */
-export async function listModels(): Promise<{
-  models: SavedModel[];
-  count: number;
-}> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/models`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to list models: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Get model statistics
- */
-export async function getModelStats(symbol: string): Promise<ModelStats> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/ml/models/${symbol}/stats`,
-    {
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to get model stats: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Save model manually after backtest
- */
-export async function saveModel(params: {
+export type SaveModelResult = {
   symbol: string;
   modelType: ModelType;
-  config: Record<string, number>;
-  metrics: {
-    mae: number;
-    rmse: number;
-    mape: number;
-    r2Score: number;
-    directionalAccuracy: number;
-  };
-}): Promise<{
-  message: string;
-  symbol: string;
-  modelType: string;
-  accuracy: number;
-}> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/models/save`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
+  version: string;
+  path: string;
+  sizeBytes: number;
+  savedAt: number;
+};
 
-  if (!response.ok) {
-    throw new Error(`Failed to save model: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-/**
- * Delete a model
- */
-export async function deleteModel(symbol: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/models/${symbol}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to delete model: ${response.statusText}`);
-  }
-}
-
-/**
- * Cleanup old models
- */
-export async function cleanupModels(
-  olderThan?: number
-): Promise<{ deleted: number }> {
-  const body = olderThan ? { olderThan } : {};
-
-  const response = await fetch(`${API_BASE_URL}/api/ml/models/cleanup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to cleanup models: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
+export type CleanupResult = {
+  deletedModels: string[];
+  freedSpaceBytes: number;
+  remainingModels: number;
+};
 
 // Training types
 export type TrainRequest = {
@@ -557,27 +232,6 @@ export type TrainingResult = {
   model_size_mb: number;
 };
 
-/**
- * Train a new ML model
- */
-export async function trainModel(
-  config: TrainRequest
-): Promise<TrainingResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/train`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(config),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Training failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
 // Anomaly Detection types
 export type AnomalyDetectionRequest = {
   symbol: string;
@@ -601,27 +255,6 @@ export type AnomalyDetectionResult = {
   detectedAt: number;
 };
 
-/**
- * Detect anomalies in market data
- */
-export async function detectAnomalies(
-  params: AnomalyDetectionRequest
-): Promise<AnomalyDetectionResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/anomalies/detect`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Anomaly detection failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
 // Batch Prediction types
 export type BatchPredictionRequest = {
   symbols: string[];
@@ -635,27 +268,6 @@ export type BatchPredictionResult = {
   count: number;
   includeSentiment?: boolean;
 };
-
-/**
- * Run batch predictions for multiple symbols
- */
-export async function batchPredict(
-  params: BatchPredictionRequest
-): Promise<BatchPredictionResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/predict/batch`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Batch prediction failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
 
 // Ensemble Prediction types
 export type EnsembleStrategy = "WEIGHTED_AVERAGE" | "VOTING" | "STACKING";
@@ -687,23 +299,196 @@ export type EnsemblePredictionResult = {
   generatedAt: number;
 };
 
+// ==================== API Functions ====================
+
+/**
+ * Predict price
+ */
+export async function predictPrice(params: {
+  symbol: string;
+  horizon: PredictionHorizon;
+  confidence?: number;
+  includeSentiment?: boolean;
+}): Promise<PredictionResult> {
+  return apiPost<PredictionResult>("/api/ml/predict", params);
+}
+
+/**
+ * Predict price with LSTM
+ */
+export async function predictPriceLSTM(params: {
+  symbol: string;
+  horizon: PredictionHorizon;
+  confidence?: number;
+  includeSentiment?: boolean;
+}): Promise<PredictionResult> {
+  return apiPost<PredictionResult>("/api/ml/predict/lstm", params);
+}
+
+/**
+ * Run backtest
+ */
+export async function runBacktest(config: {
+  symbol: string;
+  modelType: ModelType;
+  horizon: PredictionHorizon;
+  startDate: number;
+  endDate: number;
+  walkForward?: boolean;
+  retrainInterval?: number;
+  includeSentiment?: boolean;
+}): Promise<BacktestResult> {
+  return apiPost<BacktestResult>("/api/ml/backtest", config);
+}
+
+/**
+ * Compare models
+ */
+export async function compareModels(config: {
+  symbol: string;
+  horizon: PredictionHorizon;
+  startDate: number;
+  endDate: number;
+  walkForward?: boolean;
+  retrainInterval?: number;
+  includeSentiment?: boolean;
+}): Promise<ComparisonResult> {
+  return apiPost<ComparisonResult>("/api/ml/backtest/compare", config);
+}
+
+/**
+ * Get market regime analysis
+ */
+export async function getMarketRegime(params: {
+  symbol: string;
+  lookbackDays?: number;
+}): Promise<MarketRegimeAnalysis> {
+  return apiPost<MarketRegimeAnalysis>("/api/ml/market-regime", params);
+}
+
+/**
+ * Run hyperparameter optimization
+ */
+export async function runOptimization(config: {
+  symbol: string;
+  modelType: ModelType;
+  horizon: PredictionHorizon;
+  hyperparameterSpace: HyperparameterSpace;
+  method: "GRID" | "RANDOM";
+  nTrials?: number;
+  startDate: number;
+  endDate: number;
+  optimizationMetric: OptimizationMetric;
+  crossValidationFolds?: number;
+  includeSentiment?: boolean;
+}): Promise<OptimizationResult> {
+  return apiPost<OptimizationResult>("/api/ml/hpo/optimize", config);
+}
+
+/**
+ * Get HPO recommendations
+ */
+export async function getHPORecommendations(
+  symbol: string,
+  modelType: ModelType,
+  horizon: PredictionHorizon
+): Promise<HPORecommendation> {
+  return apiGet<HPORecommendation>("/api/ml/hpo/recommendations", {
+    symbol,
+    modelType,
+    horizon,
+  });
+}
+
+/**
+ * List all models
+ */
+export async function listModels(): Promise<{
+  models: ModelInfo[];
+  totalModels: number;
+  totalSizeBytes: number;
+}> {
+  return apiGet<{
+    models: ModelInfo[];
+    totalModels: number;
+    totalSizeBytes: number;
+  }>("/api/ml/models");
+}
+
+/**
+ * Get model statistics for a symbol
+ */
+export async function getModelStats(symbol: string): Promise<ModelStats> {
+  return apiGet<ModelStats>(`/api/ml/models/${symbol}/stats`);
+}
+
+/**
+ * Save a trained model
+ */
+export async function saveModel(params: {
+  symbol: string;
+  modelType: ModelType;
+  modelData: unknown;
+  metrics: EvaluationMetrics;
+}): Promise<SaveModelResult> {
+  return apiPost<SaveModelResult>("/api/ml/models/save", params);
+}
+
+/**
+ * Delete a specific model
+ */
+export async function deleteModel(symbol: string): Promise<void> {
+  return apiDelete<void>(`/api/ml/models/${symbol}`);
+}
+
+/**
+ * Cleanup old models
+ */
+export async function cleanupModels(
+  olderThanDays?: number,
+  keepBest?: boolean
+): Promise<CleanupResult> {
+  return apiPost<CleanupResult>("/api/ml/models/cleanup", {
+    olderThanDays,
+    keepBest,
+  });
+}
+
+/**
+ * Train a new model
+ */
+export async function trainModel(
+  config: TrainRequest
+): Promise<TrainingResult> {
+  return apiPost<TrainingResult>("/api/ml/train", config);
+}
+
+/**
+ * Detect anomalies in recent data
+ */
+export async function detectAnomalies(
+  params: AnomalyDetectionRequest
+): Promise<AnomalyDetectionResult> {
+  return apiPost<AnomalyDetectionResult>("/api/ml/anomalies/detect", params);
+}
+
+/**
+ * Run batch predictions for multiple symbols
+ */
+export async function batchPredict(
+  params: BatchPredictionRequest
+): Promise<BatchPredictionResult> {
+  return apiPost<BatchPredictionResult>("/api/ml/predict/batch", params);
+}
+
 /**
  * Run ensemble prediction combining multiple models
  */
 export async function ensemblePredict(
   params: EnsemblePredictionRequest
 ): Promise<EnsemblePredictionResult> {
-  const response = await fetch(`${API_BASE_URL}/api/ml/predict/ensemble`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ensemble prediction failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data;
+  return apiPost<EnsemblePredictionResult>(
+    "/api/ml/predict/ensemble",
+    params
+  );
 }

@@ -20,6 +20,25 @@ import { useScrapersOverview } from "@/hooks/use-scrapers-overview";
 export function SocialSourcesCard() {
   const { data, isLoading, error } = useScrapersOverview();
 
+  // Защита от неправильной структуры данных
+  const safeData = data
+    ? {
+        ...data,
+        queues: Array.isArray(data.queues) ? data.queues : null,
+        news: data.news
+          ? {
+              ...data.news,
+              sources: Array.isArray(data.news.sources)
+                ? data.news.sources.filter(
+                    (s): s is { name: string; enabled: boolean } =>
+                      typeof s === "object" && s !== null && "name" in s
+                  )
+                : [],
+            }
+          : null,
+      }
+    : null;
+
   if (isLoading) {
     return (
       <Card>
@@ -38,7 +57,7 @@ export function SocialSourcesCard() {
     );
   }
 
-  if (error || !data) {
+  if (error || !safeData) {
     return (
       <Card>
         <CardHeader>
@@ -50,26 +69,21 @@ export function SocialSourcesCard() {
         <CardContent>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <AlertCircle className="size-4" />
-            <span>Не удалось загрузить статус источников</span>
+            <span>
+              {error instanceof Error
+                ? `Ошибка: ${error.message}`
+                : "Не удалось загрузить статус источников. Scraper service может быть недоступен."}
+            </span>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const queueEntries = data.queues ? Object.entries(data.queues) : [];
-  const totalPending = queueEntries.reduce(
-    (sum, [, stats]) => sum + stats.pending,
-    0
-  );
-  const totalActive = queueEntries.reduce(
-    (sum, [, stats]) => sum + stats.active,
-    0
-  );
-  const totalCompleted = queueEntries.reduce(
-    (sum, [, stats]) => sum + stats.completed,
-    0
-  );
+  const queues = safeData.queues ?? [];
+  const totalPending = queues.reduce((sum, q) => sum + q.pending, 0);
+  const totalActive = queues.reduce((sum, q) => sum + q.active, 0);
+  const totalCompleted = queues.reduce((sum, q) => sum + q.completed, 0);
 
   return (
     <Card>
@@ -96,7 +110,7 @@ export function SocialSourcesCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Queue Statistics */}
-        {data.queues && queueEntries.length > 0 && (
+        {safeData.queues && queues.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm">Очереди обработки</span>
@@ -126,96 +140,76 @@ export function SocialSourcesCard() {
         )}
 
         {/* Reddit Status */}
-        {data.reddit && (
+        {safeData.reddit && (
           <div className="rounded-lg border bg-card p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="size-4 text-orange-500" />
                 <span className="font-medium text-sm">Reddit</span>
               </div>
-              <Badge variant="outline">
-                {data.reddit.postsCollected} постов
+              <Badge
+                className={
+                  safeData.reddit.running ? "bg-green-500/20" : "bg-gray-500/20"
+                }
+                variant="outline"
+              >
+                {safeData.reddit.running ? "Активен" : "Неактивен"}
               </Badge>
             </div>
             <div className="mt-3 space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Сабреддиты</span>
-                <span>{data.reddit.subreddits.length}</span>
+                <span>{safeData.reddit.subreddits}</span>
               </div>
-              {data.reddit.lastScraped && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Последний сбор</span>
-                  <span>
-                    {new Date(data.reddit.lastScraped).toLocaleTimeString(
-                      "ru-RU",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Лимит постов</span>
+                <span>{safeData.reddit.postsLimit}</span>
+              </div>
             </div>
-            {data.reddit.subreddits.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {data.reddit.subreddits.slice(0, 3).map((sub) => (
-                  <Badge className="text-xs" key={sub} variant="secondary">
-                    r/{sub}
-                  </Badge>
-                ))}
-                {data.reddit.subreddits.length > 3 && (
-                  <Badge className="text-xs" variant="secondary">
-                    +{data.reddit.subreddits.length - 3}
-                  </Badge>
-                )}
-              </div>
-            )}
           </div>
         )}
 
         {/* News Status */}
-        {data.news && (
+        {safeData.news && (
           <div className="rounded-lg border bg-card p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Newspaper className="size-4 text-blue-500" />
                 <span className="font-medium text-sm">Новости</span>
               </div>
-              <Badge variant="outline">
-                {data.news.articlesCollected} статей
+              <Badge
+                className={
+                  safeData.news.running ? "bg-green-500/20" : "bg-gray-500/20"
+                }
+                variant="outline"
+              >
+                {safeData.news.running ? "Активен" : "Неактивен"}
               </Badge>
             </div>
             <div className="mt-3 space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Источники</span>
-                <span>{data.news.sources.length}</span>
+                <span>{safeData.news.sources.length}</span>
               </div>
-              {data.news.lastScraped && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Последний сбор</span>
-                  <span>
-                    {new Date(data.news.lastScraped).toLocaleTimeString(
-                      "ru-RU",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Лимит статей</span>
+                <span>{safeData.news.articlesLimit}</span>
+              </div>
             </div>
-            {data.news.sources.length > 0 && (
+            {safeData.news.sources.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {data.news.sources.slice(0, 3).map((source) => (
-                  <Badge className="text-xs" key={source} variant="secondary">
-                    {source}
+                {safeData.news.sources.slice(0, 3).map((source) => (
+                  <Badge
+                    className="text-xs"
+                    key={source.name}
+                    variant="secondary"
+                  >
+                    {source.name}
                   </Badge>
                 ))}
-                {data.news.sources.length > 3 && (
+                {safeData.news.sources.length > 3 && (
                   <Badge className="text-xs" variant="secondary">
-                    +{data.news.sources.length - 3}
+                    +{safeData.news.sources.length - 3}
                   </Badge>
                 )}
               </div>
@@ -226,7 +220,7 @@ export function SocialSourcesCard() {
         {/* Timestamp */}
         <div className="text-center text-muted-foreground text-xs">
           Обновлено:{" "}
-          {new Date(data.timestamp).toLocaleTimeString("ru-RU", {
+          {new Date(safeData.timestamp).toLocaleTimeString("ru-RU", {
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",

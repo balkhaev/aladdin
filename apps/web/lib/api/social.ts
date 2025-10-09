@@ -5,6 +5,7 @@
 import { API_BASE_URL } from "../runtime-env";
 
 export type ScraperQueueStats = {
+  name: string;
   pending: number;
   active: number;
   completed: number;
@@ -12,19 +13,19 @@ export type ScraperQueueStats = {
 };
 
 export type RedditStatus = {
-  subreddits: string[];
-  lastScraped: string | null;
-  postsCollected: number;
+  running: boolean;
+  postsLimit: number;
+  subreddits: number;
 };
 
 export type NewsStatus = {
-  sources: string[];
-  lastScraped: string | null;
-  articlesCollected: number;
+  running: boolean;
+  sources: Array<{ name: string; enabled: boolean }>;
+  articlesLimit: number;
 };
 
 export type ScrapersOverview = {
-  queues: Record<string, ScraperQueueStats> | null;
+  queues: ScraperQueueStats[] | null;
   reddit: RedditStatus | null;
   news: NewsStatus | null;
   timestamp: string;
@@ -49,15 +50,38 @@ export async function getScrapersOverview(): Promise<ScrapersOverview> {
 /**
  * Get queue statistics
  */
-export async function getQueueStats(): Promise<
-  Record<string, ScraperQueueStats>
-> {
+export async function getQueueStats(): Promise<ScraperQueueStats[]> {
   const response = await fetch(`${API_BASE_URL}/api/social/queues/stats`, {
     credentials: "include",
   });
 
   if (!response.ok) {
     throw new Error(`Failed to get queue stats: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data || [];
+}
+
+/**
+ * Trigger a scraper job manually
+ */
+export async function triggerScraper(
+  type: "reddit" | "news"
+): Promise<{ jobId: string; queued: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/api/social/queues/trigger`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ type }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to trigger ${type} scraper: ${response.statusText}`
+    );
   }
 
   const data = await response.json();

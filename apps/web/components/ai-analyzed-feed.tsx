@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSocialFeedWebSocket } from "@/hooks/use-social-feed-ws";
+import { API_BASE_URL } from "@/lib/runtime-env";
 
 type AnalyzedContent = {
   id: string;
@@ -56,7 +57,9 @@ async function fetchAnalyzedFeed(params: {
   if (params.offset) searchParams.set("offset", params.offset.toString());
   if (params.contentType) searchParams.set("contentType", params.contentType);
 
-  const response = await fetch(`/api/social/feed?${searchParams.toString()}`);
+  const response = await fetch(
+    `${API_BASE_URL}/api/social/feed?${searchParams.toString()}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch analyzed feed");

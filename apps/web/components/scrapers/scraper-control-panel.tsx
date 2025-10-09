@@ -18,6 +18,11 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  getScrapersOverview,
+  type ScrapersOverview,
+  triggerScraper,
+} from "@/lib/api/social";
 
 type ScraperStatus = {
   running: boolean;
@@ -26,50 +31,6 @@ type ScraperStatus = {
   articlesLimit?: number;
   subreddits?: number;
 };
-
-type ScrapersOverview = {
-  queues: Array<{
-    name: string;
-    pending: number;
-    active: number;
-    completed: number;
-    failed: number;
-  }> | null;
-  reddit: ScraperStatus | null;
-  news: ScraperStatus | null;
-  timestamp: string;
-};
-
-async function fetchScrapersOverview(): Promise<ScrapersOverview> {
-  const response = await fetch("/api/social/scrapers/overview");
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch scrapers overview");
-  }
-
-  const data = await response.json();
-  return data.data;
-}
-
-async function triggerScraper(type: "reddit" | "news"): Promise<{
-  jobId: string;
-  queued: boolean;
-}> {
-  const response = await fetch("/api/social/queues/trigger", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ type }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to trigger ${type} scraper`);
-  }
-
-  const data = await response.json();
-  return data.data;
-}
 
 type ScraperCardProps = {
   title: string;
@@ -163,9 +124,9 @@ function ScraperCard({
 export function ScraperControlPanel() {
   const queryClient = useQueryClient();
 
-  const { data: overview, isLoading } = useQuery({
+  const { data: overview, isLoading } = useQuery<ScrapersOverview, Error>({
     queryKey: ["scrapers-overview"],
-    queryFn: fetchScrapersOverview,
+    queryFn: getScrapersOverview,
     refetchInterval: 10_000, // Refresh every 10 seconds
   });
 

@@ -3,7 +3,8 @@ import type { Context } from "hono";
 
 const logger = createLogger({ service: "gateway-proxy" });
 
-const REQUEST_TIMEOUT_MS = 120_000; // 2 минуты для длительных операций (ML оптимизация, бэктестинг)
+const REQUEST_TIMEOUT_MS = 120_000; // 2 минуты для обычных операций
+const ML_REQUEST_TIMEOUT_MS = 600_000; // 10 минут для ML операций (training, HPO)
 const SERVICE_UNAVAILABLE_CODE = 503;
 
 type ProxyOptions = {
@@ -59,6 +60,16 @@ export function proxyToService({
         userId: user?.id,
       });
 
+      // Определяем таймаут в зависимости от сервиса и эндпоинта
+      // ML операции (training, HPO, backtesting) могут занимать много времени
+      const isMLOperation = serviceName === "ml" && 
+        (path.includes("/train") || path.includes("/optimize") || path.includes("/backtest"));
+      const timeout = isMLOperation ? ML_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+      
+      if (isMLOperation) {
+        logger.info("Using extended timeout for ML operation", { timeout });
+      }
+
       // Проксируем запрос
       const response = await fetch(url.toString(), {
         method: c.req.method,
@@ -67,7 +78,7 @@ export function proxyToService({
           c.req.method !== "GET" && c.req.method !== "HEAD"
             ? await c.req.raw.clone().text()
             : undefined,
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeout),
       });
 
       const duration = Date.now() - startTime;

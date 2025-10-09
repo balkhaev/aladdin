@@ -18,28 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getQueueStats, type ScraperQueueStats } from "@/lib/api/social";
 
-type QueueStats = {
-  name: string;
-  pending: number;
-  active: number;
-  completed: number;
-  failed: number;
-  lastProcessedAt?: string;
-};
-
-async function fetchQueueStats(): Promise<QueueStats[]> {
-  const response = await fetch("/api/social/queues/stats");
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch queue stats");
-  }
-
-  const data = await response.json();
-  return data.data || [];
-}
-
-function QueueStatCard({ queue }: { queue: QueueStats }) {
+function QueueStatCard({ queue }: { queue: ScraperQueueStats }) {
   const total = queue.completed + queue.failed;
   const successRate = total > 0 ? (queue.completed / total) * 100 : 0;
 
@@ -154,9 +135,9 @@ export function ScraperStatsCard() {
     data: queues,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<ScraperQueueStats[], Error>({
     queryKey: ["queue-stats"],
-    queryFn: fetchQueueStats,
+    queryFn: getQueueStats,
     refetchInterval: 10_000, // Refresh every 10 seconds
   });
 

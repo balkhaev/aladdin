@@ -8,10 +8,7 @@ const resolveBase = (value?: string | null) => {
 const isDev = process.env.NODE_ENV !== "production";
 const isServer = typeof window === "undefined";
 
-const runtimeOrigin = isServer
-  ? undefined
-  : trimTrailingSlash(window.location.origin);
-
+// В dev режиме всегда используем gateway на localhost:3000
 const defaultApiBaseUrl = resolveBase(
   isDev ? "http://localhost:3000" : "https://gateway.aladdin.balkhaev.com"
 );
@@ -28,14 +25,8 @@ const rawApiFromProcess =
       )
     : undefined;
 
-const fallbackApiBaseUrl =
-  defaultApiBaseUrl ?? (isServer ? undefined : runtimeOrigin);
-
 export const API_BASE_URL =
-  rawApiFromEnv ??
-  rawApiFromProcess ??
-  fallbackApiBaseUrl ??
-  "";
+  rawApiFromEnv ?? rawApiFromProcess ?? defaultApiBaseUrl ?? "";
 
 const computeWsFromApi = (apiUrl: string) => {
   if (!apiUrl) {

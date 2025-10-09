@@ -47,6 +47,20 @@ type SocialSentimentContext = {
     neutral: number;
     tweets: number;
   };
+  reddit?: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    posts: number;
+  };
+  news?: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    articles: number;
+  };
   confidence: number;
 };
 
@@ -132,43 +146,25 @@ export function useBatchCombinedSentiment(
  * Helper to get sentiment color based on signal
  */
 export function getSentimentColor(signal: SentimentSignal): string {
-  switch (signal) {
-    case "BULLISH":
-      return "text-green-500";
-    case "BEARISH":
-      return "text-red-500";
-    case "NEUTRAL":
-    default:
-      return "text-gray-500";
-  }
+  if (signal === "BULLISH") return "text-green-500";
+  if (signal === "BEARISH") return "text-red-500";
+  return "text-gray-500";
 }
 
 /**
  * Helper to get sentiment background color
  */
 export function getSentimentBgColor(signal: SentimentSignal): string {
-  switch (signal) {
-    case "BULLISH":
-      return "bg-green-500/10 border-green-500/20";
-    case "BEARISH":
-      return "bg-red-500/10 border-red-500/20";
-    case "NEUTRAL":
-    default:
-      return "bg-gray-500/10 border-gray-500/20";
-  }
+  if (signal === "BULLISH") return "bg-green-500/10 border-green-500/20";
+  if (signal === "BEARISH") return "bg-red-500/10 border-red-500/20";
+  return "bg-gray-500/10 border-gray-500/20";
 }
 
 /**
  * Helper to get sentiment icon (emoji) based on signal
  */
 export function getSentimentIcon(signal: SentimentSignal): string {
-  switch (signal) {
-    case "BULLISH":
-      return "📈";
-    case "BEARISH":
-      return "📉";
-    case "NEUTRAL":
-    default:
-      return "➡️";
-  }
+  if (signal === "BULLISH") return "📈";
+  if (signal === "BEARISH") return "📉";
+  return "➡️";
 }

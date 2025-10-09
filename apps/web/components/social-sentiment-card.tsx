@@ -6,6 +6,7 @@
 import {
   Activity,
   MessageSquare,
+  Newspaper,
   TrendingDown,
   TrendingUp,
   Twitter,
@@ -61,7 +62,9 @@ const getStrengthColor = (strength: "WEAK" | "MODERATE" | "STRONG") => {
   return "bg-gray-500/50 text-white";
 };
 
-const getComponentStrength = (score: number): "WEAK" | "MODERATE" | "STRONG" => {
+const getComponentStrength = (
+  score: number
+): "WEAK" | "MODERATE" | "STRONG" => {
   const absScore = Math.abs(score);
   if (absScore >= 70) return "STRONG";
   if (absScore >= 40) return "MODERATE";
@@ -84,13 +87,12 @@ export function SocialSentimentCard({
 
   const sentiment = providedSentiment ?? querySentiment;
   const isLoading = loadingOverride ?? queryLoading;
-  const resolvedError =
-    errorMessage ??
-    (queryError
-      ? queryError instanceof Error
-        ? queryError.message
-        : String(queryError)
-      : undefined);
+
+  let resolvedError = errorMessage;
+  if (!resolvedError && queryError) {
+    resolvedError =
+      queryError instanceof Error ? queryError.message : String(queryError);
+  }
 
   const socialComponent = sentiment?.components.social;
   const socialContext = sentiment?.context.social;
@@ -110,7 +112,9 @@ export function SocialSentimentCard({
     );
   }
 
-  if (!sentiment || !socialComponent) {
+  const hasSentimentData = sentiment && socialComponent;
+
+  if (!hasSentimentData) {
     return (
       <Card>
         <CardHeader>
@@ -135,7 +139,7 @@ export function SocialSentimentCard({
           <div>
             <CardTitle className="text-lg">Социальный Сентимент</CardTitle>
             <p className="mt-1 text-muted-foreground text-xs">
-              Настроения в Telegram и Twitter для {symbol}
+              Настроения из всех социальных источников для {symbol}
             </p>
           </div>
           <Badge
@@ -155,7 +159,9 @@ export function SocialSentimentCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Общий социальный Score</span>
+              <span className="font-medium text-sm">
+                Общий социальный Score
+              </span>
             </div>
             <span
               className={`font-bold text-2xl ${getSentimentColorFromScore(socialComponent.score)}`}
@@ -192,11 +198,15 @@ export function SocialSentimentCard({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm">Источники</span>
-              <Badge className={getStrengthColor(socialStrength)} variant="outline">
+              <Badge
+                className={getStrengthColor(socialStrength)}
+                variant="outline"
+              >
                 {socialStrength}
               </Badge>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
+              {/* Telegram */}
               <div className="rounded-lg border bg-card p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -222,6 +232,8 @@ export function SocialSentimentCard({
                   </div>
                 </div>
               </div>
+
+              {/* Twitter */}
               <div className="rounded-lg border bg-card p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -251,11 +263,82 @@ export function SocialSentimentCard({
                   </div>
                 </div>
               </div>
+
+              {/* Reddit */}
+              {socialContext.reddit && (
+                <div className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                      <span className="font-medium text-sm">Reddit</span>
+                    </div>
+                    <Badge variant="outline">
+                      {socialContext.reddit.score.toFixed(2)}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Позитивных</span>
+                      <span>{socialContext.reddit.positive}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Нейтральных</span>
+                      <span>{socialContext.reddit.neutral}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Негативных</span>
+                      <span>{socialContext.reddit.negative}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Всего постов
+                      </span>
+                      <span>{socialContext.reddit.posts}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* News */}
+              {socialContext.news && (
+                <div className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Newspaper className="h-4 w-4 text-purple-500" />
+                      <span className="font-medium text-sm">Новости</span>
+                    </div>
+                    <Badge variant="outline">
+                      {socialContext.news.score.toFixed(2)}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Позитивных</span>
+                      <span>{socialContext.news.positive}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Нейтральных</span>
+                      <span>{socialContext.news.neutral}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Негативных</span>
+                      <span>{socialContext.news.negative}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Всего статей
+                      </span>
+                      <span>{socialContext.news.articles}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
           <div className="rounded-lg border bg-muted/50 p-3 text-muted-foreground text-xs">
-            Детализация по соцсетям временно недоступна, используется только агрегированный сигнал.
+            Детализация по соцсетям временно недоступна, используется только
+            агрегированный сигнал.
           </div>
         )}
       </CardContent>

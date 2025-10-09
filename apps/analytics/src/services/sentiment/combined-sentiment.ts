@@ -90,6 +90,20 @@ type SocialSentimentData = {
     neutral: number;
     tweets: number;
   };
+  reddit?: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    posts: number;
+  };
+  news?: {
+    score: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    articles: number;
+  };
   confidence: number; // 0 to 1
 };
 
@@ -527,7 +541,7 @@ export class CombinedSentimentService {
   }
 
   /**
-   * Calculate social component sentiment (Telegram + Twitter)
+   * Calculate social component sentiment (Telegram + Twitter + Reddit + News)
    */
   private calculateSocialSentiment(
     data: SocialSentimentData | null
@@ -546,13 +560,21 @@ export class CombinedSentimentService {
     const score = data.overall * SCORE_SCALE;
 
     // Use confidence from social sentiment data
-    // Boost confidence if we have both Telegram and Twitter data
+    // Boost confidence if we have multiple sources
     const hasTelegram = data.telegram.signals > 0;
     const hasTwitter = data.twitter.tweets > 0;
+    const hasReddit = (data.reddit?.posts ?? 0) > 0;
+    const hasNews = (data.news?.articles ?? 0) > 0;
+
+    const sourcesCount = [hasTelegram, hasTwitter, hasReddit, hasNews].filter(
+      Boolean
+    ).length;
 
     let confidence = data.confidence;
-    if (hasTelegram && hasTwitter) {
-      confidence = Math.min(1, confidence * 1.2); // 20% boost for having both sources
+    // Boost confidence based on number of sources (up to 30% for 4 sources)
+    if (sourcesCount >= 2) {
+      const boost = 1 + (sourcesCount - 1) * 0.1; // 10% per additional source
+      confidence = Math.min(1, confidence * boost);
     }
 
     return {

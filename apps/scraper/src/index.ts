@@ -55,6 +55,13 @@ await initializeService<SocialIntegrationsService>({
               neutral: 0,
               tweets: 0,
             },
+            reddit: {
+              score: 0,
+              positive: 0,
+              negative: 0,
+              neutral: 0,
+              posts: 0,
+            },
             confidence: 0,
             timestamp: new Date().toISOString(),
           })

@@ -14,7 +14,7 @@ import { OrderBookSentimentCard } from "@/components/analytics/order-book-sentim
 import { SentimentHistoryChart } from "@/components/analytics/sentiment-history-chart";
 import { CombinedSentimentCard } from "@/components/combined-sentiment-card";
 import { SocialSentimentCard } from "@/components/social-sentiment-card";
-import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
+import { SocialSourcesCard } from "@/components/social-sources-card";
 import {
   Select,
   SelectContent,
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCombinedSentiment } from "@/hooks/use-combined-sentiment";
 
 const AVAILABLE_SYMBOLS = [
   "BTCUSDT",
@@ -41,7 +42,7 @@ export default function SentimentPage() {
   } = useCombinedSentiment(selectedSymbol);
 
   const combinedErrorMessage = useMemo(() => {
-    if (!combinedError) return undefined;
+    if (!combinedError) return;
     return combinedError instanceof Error
       ? combinedError.message
       : String(combinedError);
@@ -107,6 +108,9 @@ export default function SentimentPage() {
           symbol={selectedSymbol}
         />
       </div>
+
+      {/* Social Data Sources Status */}
+      <SocialSourcesCard />
 
       {/* Middle Row - History & Analysis */}
       <div className="grid gap-4 md:grid-cols-2">

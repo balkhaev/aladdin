@@ -389,6 +389,97 @@ await initializeService<SocialIntegrationsService>({
     });
 
     /**
+     * Queue Management Routes
+     */
+
+    /**
+     * GET /api/social/queues/stats - Get all queue statistics
+     */
+    app.get("/api/social/queues/stats", (c) => {
+      const stats = service.getQueueStats();
+      return c.json(createSuccessResponse(stats));
+    });
+
+    /**
+     * GET /api/social/queues/:queueName/stats - Get specific queue statistics
+     */
+    app.get("/api/social/queues/:queueName/stats", (c) => {
+      const queueName = c.req.param("queueName");
+      const stats = service.getSpecificQueueStats(`scraper.${queueName}`);
+
+      if (!stats) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "QUEUE_NOT_FOUND",
+              message: `Queue ${queueName} not found`,
+            },
+          },
+          404
+        );
+      }
+
+      return c.json(createSuccessResponse(stats));
+    });
+
+    /**
+     * POST /api/social/queues/trigger - Manually trigger a scraper job
+     */
+    app.post("/api/social/queues/trigger", async (c) => {
+      const body = await c.req.json();
+      const type = body.type as "reddit" | "news";
+      const data = (body.data as Record<string, unknown>) || {};
+
+      const validTypes = ["reddit", "news"];
+      const isValidType = type && validTypes.includes(type);
+
+      if (!isValidType) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "type is required and must be 'reddit' or 'news'",
+            },
+          },
+          400
+        );
+      }
+
+      try {
+        const result = await service.triggerScraperJob(type, data);
+        return c.json(createSuccessResponse(result));
+      } catch (error) {
+        service.logger.error("Failed to trigger scraper job", { type, error });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "TRIGGER_FAILED",
+              message: error instanceof Error ? error.message : "Unknown error",
+            },
+          },
+          500
+        );
+      }
+    });
+
+    /**
+     * GET /api/social/scrapers/overview - Get overview of all scrapers
+     */
+    app.get("/api/social/scrapers/overview", (c) => {
+      const overview = {
+        queues: service.getQueueStats(),
+        reddit: service.getRedditStatus(),
+        news: service.getNewsStatus(),
+        timestamp: new Date().toISOString(),
+      };
+
+      return c.json(createSuccessResponse(overview));
+    });
+
+    /**
      * GET /api/social/feed - Get AI analyzed content feed
      */
     app.get("/api/social/feed", async (c) => {

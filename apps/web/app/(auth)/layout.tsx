@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { HeaderTickers } from "@/components/header-tickers";
 import {
@@ -15,7 +16,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { WhaleAlertsPanel } from "@/components/whale-alerts-panel";
-import { usePathname } from "next/navigation";
 
 const PAGE_TITLES: Record<string, string> = {
   "/market": "Обзор рынка",
@@ -29,6 +29,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings": "Настройки",
   "/debug": "Отладка",
   "/admin/users": "Пользователи",
+  "/admin/webhooks": "Вебхуки",
+  "/admin/ml": "ML Модели",
+  "/admin/scrapers": "Скраперы",
   "/bybit-opportunities": "Bybit Opportunities",
 };
 

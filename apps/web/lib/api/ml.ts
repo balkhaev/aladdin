@@ -213,24 +213,24 @@ export async function compareModels(config: {
 
   // Validate response structure
   const hasResults = Boolean(data.data.results);
-  
+
   if (!hasResults) {
     console.error("Invalid comparison response (missing results):", data);
     throw new Error(
       "Model comparison returned incomplete results. Please check the date range and try again with more historical data."
     );
   }
-  
+
   const hasLstm = Boolean(data.data.results.lstm);
   const hasHybrid = Boolean(data.data.results.hybrid);
-  
+
   if (!hasLstm) {
     console.error("Invalid comparison response (missing LSTM):", data);
     throw new Error(
       "Model comparison returned incomplete results (missing LSTM data). Please check the date range and try again with more historical data."
     );
   }
-  
+
   if (!hasHybrid) {
     console.error("Invalid comparison response (missing Hybrid):", data);
     throw new Error(
@@ -519,6 +519,189 @@ export async function cleanupModels(
 
   if (!response.ok) {
     throw new Error(`Failed to cleanup models: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+// Training types
+export type TrainRequest = {
+  symbol: string;
+  model_type: "LSTM" | "GRU";
+  hidden_size?: number;
+  num_layers?: number;
+  sequence_length?: number;
+  lookback_days?: number;
+  learning_rate?: number;
+  batch_size?: number;
+  epochs?: number;
+  dropout?: number;
+  bidirectional?: boolean;
+  normalization?: "standard" | "minmax" | "robust";
+};
+
+export type TrainingResult = {
+  symbol: string;
+  model_type: string;
+  model_path: string;
+  training_time: number;
+  epochs_trained: number;
+  metrics: {
+    mae: number;
+    rmse: number;
+    mape: number;
+    r2Score: number;
+    directionalAccuracy: number;
+  };
+  model_size_mb: number;
+};
+
+/**
+ * Train a new ML model
+ */
+export async function trainModel(
+  config: TrainRequest
+): Promise<TrainingResult> {
+  const response = await fetch(`${API_BASE_URL}/api/ml/train`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(config),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Training failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+// Anomaly Detection types
+export type AnomalyDetectionRequest = {
+  symbol: string;
+  lookbackMinutes?: number;
+};
+
+export type AnomalyAlert = {
+  timestamp: number;
+  type: "PRICE_SPIKE" | "VOLUME_SPIKE" | "SPREAD_ANOMALY" | "PATTERN_BREAK";
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  price: number;
+  expectedPrice: number;
+  deviation: number;
+  message: string;
+  confidence: number;
+};
+
+export type AnomalyDetectionResult = {
+  symbol: string;
+  anomalies: AnomalyAlert[];
+  detectedAt: number;
+};
+
+/**
+ * Detect anomalies in market data
+ */
+export async function detectAnomalies(
+  params: AnomalyDetectionRequest
+): Promise<AnomalyDetectionResult> {
+  const response = await fetch(`${API_BASE_URL}/api/ml/anomalies/detect`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Anomaly detection failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+// Batch Prediction types
+export type BatchPredictionRequest = {
+  symbols: string[];
+  horizon: PredictionHorizon;
+  confidence?: number;
+  includeSentiment?: boolean;
+};
+
+export type BatchPredictionResult = {
+  predictions: PredictionResult[];
+  count: number;
+  includeSentiment?: boolean;
+};
+
+/**
+ * Run batch predictions for multiple symbols
+ */
+export async function batchPredict(
+  params: BatchPredictionRequest
+): Promise<BatchPredictionResult> {
+  const response = await fetch(`${API_BASE_URL}/api/ml/predict/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Batch prediction failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+// Ensemble Prediction types
+export type EnsembleStrategy = "WEIGHTED_AVERAGE" | "VOTING" | "STACKING";
+
+export type EnsemblePredictionRequest = {
+  symbol: string;
+  horizon: PredictionHorizon;
+  strategy?: EnsembleStrategy;
+  includeSentiment?: boolean;
+};
+
+export type EnsemblePredictionResult = {
+  symbol: string;
+  horizon: PredictionHorizon;
+  ensemble: {
+    prediction: PredictionPoint;
+    modelContributions: Array<{
+      modelType: ModelType;
+      prediction: PredictionPoint;
+      weight: number;
+    }>;
+  };
+  individualPredictions: {
+    lstm: PredictionResult;
+    hybrid: PredictionResult;
+  };
+  strategy: EnsembleStrategy;
+  confidence: number;
+  generatedAt: number;
+};
+
+/**
+ * Run ensemble prediction combining multiple models
+ */
+export async function ensemblePredict(
+  params: EnsemblePredictionRequest
+): Promise<EnsemblePredictionResult> {
+  const response = await fetch(`${API_BASE_URL}/api/ml/predict/ensemble`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ensemble prediction failed: ${response.statusText}`);
   }
 
   const data = await response.json();

@@ -8,6 +8,8 @@ import {
 } from "@aladdin/ai";
 import { BaseService } from "@aladdin/service";
 import { NewsService } from "./news/service";
+import { ScraperQueueManager } from "./queue/scraper-queue-manager";
+import type { ScraperJob, ScraperJobResult } from "./queue/types";
 import { RedditService } from "./reddit/service";
 import { SentimentAnalyzer } from "./sentiment/analyzer";
 import { HybridSentimentAnalyzer } from "./sentiment/hybrid-analyzer";
@@ -52,6 +54,7 @@ export class SocialIntegrationsService extends BaseService {
   private aiCache: AICacheService | null = null;
   private gptAnalyzer: GPTSentimentAnalyzer | null = null;
   private newsAnalyzer: NewsAnalyzer | null = null;
+  private queueManager!: ScraperQueueManager;
 
   // Regex patterns (defined at class level for performance)
   private static readonly SYMBOL_NORMALIZE_REGEX = /USDT|BUSD|USD$/i;
@@ -181,31 +184,57 @@ export class SocialIntegrationsService extends BaseService {
       );
     }
 
+    // Initialize Queue Manager
+    if (this.natsClient && this.clickhouse) {
+      this.queueManager = new ScraperQueueManager(
+        this.natsClient,
+        this.clickhouse,
+        this.logger
+      );
+
+      // Register job handlers
+      this.registerJobHandlers();
+    }
+
     this.logger.info("Scraper Service initialized successfully");
     return Promise.resolve();
   }
 
-  protected onStart(): Promise<void> {
+  protected async onStart(): Promise<void> {
     this.logger.info("Starting Scraper Service...");
 
-    // Start periodic Reddit monitoring
-    if (this.redditService) {
-      const redditInterval = Number(
-        process.env.REDDIT_SCRAPE_INTERVAL || 900_000
-      ); // 15 minutes
-      this.redditService.startPeriodicMonitoring(redditInterval);
-      this.logger.info("Reddit periodic monitoring started", {
-        intervalMinutes: redditInterval / 60_000,
-      });
-    }
+    // Start queue processing
+    if (this.queueManager) {
+      await this.queueManager.startProcessing();
+      this.logger.info("Queue processing started");
 
-    // Start periodic news scraping
-    if (this.newsService) {
-      const newsInterval = Number(process.env.NEWS_SCRAPE_INTERVAL || 600_000); // 10 minutes
-      this.newsService.startPeriodicScraping(newsInterval);
-      this.logger.info("News periodic scraping started", {
-        intervalMinutes: newsInterval / 60_000,
-      });
+      // Schedule periodic jobs
+      await this.schedulePeriodicJobs();
+    } else {
+      // Fallback to old method if queue manager not available
+      this.logger.warn("Queue manager not available, using fallback method");
+
+      // Start periodic Reddit monitoring
+      if (this.redditService) {
+        const redditInterval = Number(
+          process.env.REDDIT_SCRAPE_INTERVAL || 900_000
+        );
+        this.redditService.startPeriodicMonitoring(redditInterval);
+        this.logger.info("Reddit periodic monitoring started (fallback)", {
+          intervalMinutes: redditInterval / 60_000,
+        });
+      }
+
+      // Start periodic news scraping
+      if (this.newsService) {
+        const newsInterval = Number(
+          process.env.NEWS_SCRAPE_INTERVAL || 600_000
+        );
+        this.newsService.startPeriodicScraping(newsInterval);
+        this.logger.info("News periodic scraping started (fallback)", {
+          intervalMinutes: newsInterval / 60_000,
+        });
+      }
     }
 
     return Promise.resolve();
@@ -214,7 +243,12 @@ export class SocialIntegrationsService extends BaseService {
   protected onShutdown(): Promise<void> {
     this.logger.info("Shutting down Scraper Service");
 
-    // Stop periodic monitoring
+    // Stop queue processing
+    if (this.queueManager) {
+      this.queueManager.stopProcessing();
+    }
+
+    // Stop periodic monitoring (fallback)
     if (this.redditService) {
       this.redditService.stopPeriodicMonitoring();
     }
@@ -742,6 +776,161 @@ export class SocialIntegrationsService extends BaseService {
    */
   getRedditStatus(): ReturnType<RedditService["getStatus"]> | null {
     return this.redditService?.getStatus() || null;
+  }
+
+  /**
+   * Register job handlers for queue processing
+   */
+  private registerJobHandlers(): void {
+    if (!this.queueManager) return;
+
+    // Reddit job handler
+    this.queueManager.registerHandler(
+      "scraper.reddit",
+      async (job: ScraperJob): Promise<ScraperJobResult> => {
+        const startTime = Date.now();
+        try {
+          const postsLimit = 25; // Default posts limit
+          const result = await this.redditService.monitorSubreddits(postsLimit);
+
+          return {
+            jobId: job.id,
+            success: true,
+            itemsProcessed: result.length,
+            durationMs: Date.now() - startTime,
+            completedAt: new Date(),
+          };
+        } catch (error) {
+          return {
+            jobId: job.id,
+            success: false,
+            itemsProcessed: 0,
+            durationMs: Date.now() - startTime,
+            error: error instanceof Error ? error.message : String(error),
+            completedAt: new Date(),
+          };
+        }
+      }
+    );
+
+    // News job handler
+    this.queueManager.registerHandler(
+      "scraper.news",
+      async (job: ScraperJob): Promise<ScraperJobResult> => {
+        const startTime = Date.now();
+        try {
+          const result = await this.newsService.scrapeAllSources();
+
+          return {
+            jobId: job.id,
+            success: true,
+            itemsProcessed: result,
+            durationMs: Date.now() - startTime,
+            completedAt: new Date(),
+          };
+        } catch (error) {
+          return {
+            jobId: job.id,
+            success: false,
+            itemsProcessed: 0,
+            durationMs: Date.now() - startTime,
+            error: error instanceof Error ? error.message : String(error),
+            completedAt: new Date(),
+          };
+        }
+      }
+    );
+
+    this.logger.info("Job handlers registered");
+  }
+
+  /**
+   * Schedule periodic jobs for all scrapers
+   */
+  private async schedulePeriodicJobs(): Promise<void> {
+    if (!this.queueManager) return;
+
+    const redditInterval = Number(
+      process.env.REDDIT_SCRAPE_INTERVAL || 900_000
+    );
+    const newsInterval = Number(process.env.NEWS_SCRAPE_INTERVAL || 600_000);
+
+    // Schedule Reddit monitoring
+    await this.queueManager.schedulePeriodicJob(
+      "scraper.reddit",
+      {
+        type: "reddit",
+        priority: 5,
+        data: {},
+        maxAttempts: 3,
+      },
+      redditInterval
+    );
+
+    // Schedule News scraping
+    await this.queueManager.schedulePeriodicJob(
+      "scraper.news",
+      {
+        type: "news",
+        priority: 5,
+        data: {},
+        maxAttempts: 3,
+      },
+      newsInterval
+    );
+
+    this.logger.info("Periodic jobs scheduled", {
+      redditIntervalMs: redditInterval,
+      newsIntervalMs: newsInterval,
+    });
+  }
+
+  /**
+   * Get queue statistics
+   */
+  getQueueStats() {
+    if (!this.queueManager) {
+      return null;
+    }
+
+    return this.queueManager.getAllQueueStats();
+  }
+
+  /**
+   * Get specific queue statistics
+   */
+  getSpecificQueueStats(queueName: string) {
+    if (!this.queueManager) {
+      return null;
+    }
+
+    return this.queueManager.getQueueStats(queueName);
+  }
+
+  /**
+   * Manually trigger a scraper job
+   */
+  async triggerScraperJob(
+    type: "reddit" | "news",
+    data: Record<string, unknown> = {}
+  ) {
+    if (!this.queueManager) {
+      throw new Error("Queue manager not available");
+    }
+
+    const job: ScraperJob = {
+      id: `manual_${type}_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      type,
+      priority: 10, // Higher priority for manual jobs
+      data,
+      createdAt: new Date(),
+      attempts: 0,
+      maxAttempts: 3,
+    };
+
+    await this.queueManager.addJob(`scraper.${type}`, job);
+
+    return { jobId: job.id, queued: true };
   }
 
   /**

@@ -14,6 +14,9 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Admin routes require authentication - role check happens on the page level
+  // /admin/* routes will verify admin role in their page components
+
   return NextResponse.next();
 }
 

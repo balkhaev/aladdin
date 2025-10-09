@@ -1,25 +1,21 @@
-/**
- * React Query hooks for Anomaly Detection
- */
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type {
+  AnomalyDetectionRequest,
+  AnomalyDetectionResult,
+} from "@/lib/api/ml";
+import { detectAnomalies } from "@/lib/api/ml";
 
-import { useQuery } from "@tanstack/react-query";
-import type { AnomalyDetectionRequest } from "../lib/api/anomaly";
-import { detectAnomalies } from "../lib/api/anomaly";
+export function useDetectAnomalies(params: AnomalyDetectionRequest) {
+  return useQuery<AnomalyDetectionResult, Error>({
+    queryKey: ["ml", "anomalies", params.symbol, params.lookbackMinutes],
+    queryFn: () => detectAnomalies(params),
+    refetchInterval: 60_000, // Refresh every minute
+    enabled: Boolean(params.symbol),
+  });
+}
 
-/**
- * Detect anomalies for a symbol
- */
-export function useDetectAnomalies(
-  request: AnomalyDetectionRequest,
-  options?: {
-    enabled?: boolean;
-    refetchInterval?: number;
-  }
-) {
-  return useQuery({
-    queryKey: ["anomalies", request.symbol, request.lookbackMinutes],
-    queryFn: () => detectAnomalies(request),
-    enabled: options?.enabled,
-    refetchInterval: options?.refetchInterval,
+export function useDetectAnomaliesMutation() {
+  return useMutation<AnomalyDetectionResult, Error, AnomalyDetectionRequest>({
+    mutationFn: detectAnomalies,
   });
 }

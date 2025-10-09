@@ -5,6 +5,7 @@ import {
   Brain,
   Briefcase,
   Bug,
+  Database,
   LineChart,
   MessageSquare,
   Search,
@@ -179,6 +180,32 @@ export function AppSidebar() {
                     <Link href="/admin/webhooks">
                       <Webhook className="size-3.5" />
                       <span>Вебхуки</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 text-xs"
+                    isActive={currentPath === "/admin/ml"}
+                    tooltip="ML Модели"
+                  >
+                    <Link href="/admin/ml">
+                      <Brain className="size-3.5" />
+                      <span>ML</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 text-xs"
+                    isActive={currentPath === "/admin/scrapers"}
+                    tooltip="Скраперы"
+                  >
+                    <Link href="/admin/scrapers">
+                      <Database className="size-3.5" />
+                      <span>Скраперы</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -39,7 +39,7 @@
     "xtend": "workspace:xtend"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.4",
+    "@biomejs/biome": "^2.2.5",
     "bun-types": "^1.2.23",
     "eslint-plugin-react-hooks": "^6.1.1",
     "husky": "^9.1.7",

@@ -5,12 +5,20 @@ import type {
 } from "@/lib/api/ml";
 import { detectAnomalies } from "@/lib/api/ml";
 
-export function useDetectAnomalies(params: AnomalyDetectionRequest) {
+type UseDetectAnomaliesOptions = {
+  enabled?: boolean;
+  refetchInterval?: number;
+};
+
+export function useDetectAnomalies(
+  params: AnomalyDetectionRequest,
+  options?: UseDetectAnomaliesOptions
+) {
   return useQuery<AnomalyDetectionResult, Error>({
     queryKey: ["ml", "anomalies", params.symbol, params.lookbackMinutes],
     queryFn: () => detectAnomalies(params),
-    refetchInterval: 60_000, // Refresh every minute
-    enabled: Boolean(params.symbol),
+    refetchInterval: options?.refetchInterval ?? 60_000, // Refresh every minute
+    enabled: options?.enabled ?? Boolean(params.symbol),
   });
 }
 

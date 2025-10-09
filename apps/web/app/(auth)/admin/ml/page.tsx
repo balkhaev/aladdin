@@ -22,6 +22,7 @@ import { HPOOptimizationResults } from "@/components/ml/hpo-optimization-results
 import { ModelCleanupDialog } from "@/components/ml/model-cleanup-dialog";
 import { ModelListCard } from "@/components/ml/model-list-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRunOptimization } from "@/hooks/use-hpo";
@@ -46,6 +47,7 @@ export default function AdminMLPage() {
     useState<BatchPredictionResult | null>(null);
   const [ensembleResults, setEnsembleResults] =
     useState<EnsemblePredictionResult | null>(null);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
 
   const runOptimization = useRunOptimization();
 
@@ -135,13 +137,33 @@ export default function AdminMLPage() {
         <TabsContent className="space-y-4" value="hpo">
           <div className="grid grid-cols-2 gap-4">
             <HPOConfigForm
-              onOptimize={(config) => {
-                runOptimization.mutate(config, {
-                  onSuccess: (result) => {
-                    setOptimizationResult(result);
-                    toast.success("Оптимизация завершена!");
+              isLoading={runOptimization.isPending}
+              onSubmit={(config) => {
+                const now = Date.now();
+                const startDate = now - config.days * 24 * 60 * 60 * 1000;
+                const endDate = now;
+
+                runOptimization.mutate(
+                  {
+                    symbol: config.symbol,
+                    modelType: config.modelType,
+                    horizon: config.horizon,
+                    hyperparameterSpace: config.hyperparameterSpace,
+                    method: config.method,
+                    nTrials: config.nTrials,
+                    startDate,
+                    endDate,
+                    optimizationMetric: config.optimizationMetric,
+                    crossValidationFolds: 3,
+                    includeSentiment: config.includeSentiment,
                   },
-                });
+                  {
+                    onSuccess: (result) => {
+                      setOptimizationResult(result);
+                      toast.success("Оптимизация завершена!");
+                    },
+                  }
+                );
               }}
             />
             {optimizationResult && (
@@ -152,10 +174,18 @@ export default function AdminMLPage() {
 
         {/* Models Tab */}
         <TabsContent className="space-y-4" value="models">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <ModelListCard />
-            <ModelCleanupDialog />
+            <div className="flex justify-end">
+              <Button onClick={() => setCleanupDialogOpen(true)}>
+                Очистить старые модели
+              </Button>
+            </div>
           </div>
+          <ModelCleanupDialog
+            onClose={() => setCleanupDialogOpen(false)}
+            open={cleanupDialogOpen}
+          />
         </TabsContent>
 
         {/* Anomalies Tab */}

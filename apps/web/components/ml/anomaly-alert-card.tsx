@@ -1,25 +1,19 @@
 /**
  * Anomaly Alert Card
- * Display detected market anomalies
+ * Display detected market anomalies from ML service
  */
 
-import {
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  XCircle,
-  Zap,
-} from "lucide-react";
-import type { AnomalyDetection } from "../../lib/api/anomaly";
+import { AlertTriangle, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import type { AnomalyAlert } from "../../lib/api/ml";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type AnomalyAlertCardProps = {
-  anomaly: AnomalyDetection;
+  anomaly: AnomalyAlert;
 };
 
 export function AnomalyAlertCard({ anomaly }: AnomalyAlertCardProps) {
-  const { type, severity, confidence, description, recommendations } = anomaly;
+  const { type, severity, confidence, message, timestamp, price } = anomaly;
 
   const severityConfig = getSeverityConfig(severity);
   const typeConfig = getTypeConfig(type);
@@ -30,54 +24,49 @@ export function AnomalyAlertCard({ anomaly }: AnomalyAlertCardProps) {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {typeConfig.icon}
-            <span>{typeConfig.label}</span>
+            <span className="text-sm">{typeConfig.label}</span>
           </div>
           <Badge variant={severityConfig.variant}>{severity}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Description */}
+        {/* Message */}
         <div className="rounded-lg bg-slate-800/50 p-3">
-          <p className="text-slate-300 text-sm">{description}</p>
+          <p className="text-slate-300 text-sm leading-relaxed">{message}</p>
         </div>
 
-        {/* Confidence */}
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400 text-sm">Confidence</span>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-700">
-              <div
-                className={`h-full ${getConfidenceColor(confidence)}`}
-                style={{ width: `${confidence}%` }}
-              />
-            </div>
-            <span className="font-semibold text-sm">
-              {confidence.toFixed(0)}%
+        {/* Price & Deviation */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">Price</span>
+            <span className="font-mono text-sm">${price.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">Expected</span>
+            <span className="font-mono text-sm">
+              ${anomaly.expectedPrice.toFixed(2)}
             </span>
           </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">Deviation</span>
+            <span className="font-mono text-sm">
+              {(anomaly.deviation * 100).toFixed(2)}%
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">Confidence</span>
+            <Badge variant="outline">{(confidence * 100).toFixed(1)}%</Badge>
+          </div>
         </div>
 
-        {/* Recommendations */}
-        {recommendations.length > 0 && (
-          <div className="space-y-2">
-            <div className="font-semibold text-sm">Recommendations</div>
-            <ul className="space-y-1">
-              {recommendations.map((rec, idx) => (
-                <li
-                  className="flex items-start gap-2 text-slate-300 text-sm"
-                  key={idx}
-                >
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* Timestamp */}
-        <div className="text-right text-slate-500 text-xs">
-          Detected {new Date(anomaly.timestamp).toLocaleString()}
+        <div className="flex items-center justify-between text-muted-foreground text-xs">
+          <span>
+            {new Date(timestamp).toLocaleString("ru-RU", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -88,9 +77,7 @@ function getSeverityConfig(severity: string): {
   variant: "default" | "destructive" | "outline" | "secondary";
   borderClass: string;
 } {
-  const severityKey = severity as AnomalyDetection["severity"];
-
-  switch (severityKey) {
+  switch (severity) {
     case "CRITICAL":
       return {
         variant: "destructive",
@@ -120,45 +107,31 @@ function getSeverityConfig(severity: string): {
 }
 
 function getTypeConfig(type: string): { icon: React.ReactNode; label: string } {
-  const typeKey = type as AnomalyDetection["type"];
-
-  switch (typeKey) {
-    case "PUMP_AND_DUMP":
+  switch (type) {
+    case "PRICE_SPIKE":
       return {
-        icon: <TrendingUp className="h-5 w-5 text-red-500" />,
-        label: "Pump & Dump Detected",
+        icon: <TrendingUp className="size-5 text-red-500" />,
+        label: "Скачок цены",
       };
-    case "FLASH_CRASH":
+    case "VOLUME_SPIKE":
       return {
-        icon: <TrendingDown className="h-5 w-5 text-orange-500" />,
-        label: "Flash Crash Risk",
+        icon: <Zap className="size-5 text-yellow-500" />,
+        label: "Всплеск объема",
       };
-    case "UNUSUAL_VOLUME":
+    case "SPREAD_ANOMALY":
       return {
-        icon: <Zap className="h-5 w-5 text-yellow-500" />,
-        label: "Unusual Volume",
+        icon: <AlertTriangle className="size-5 text-orange-500" />,
+        label: "Аномальный спред",
       };
-    case "PRICE_MANIPULATION":
+    case "PATTERN_BREAK":
       return {
-        icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
-        label: "Price Manipulation",
-      };
-    case "WHALE_MOVEMENT":
-      return {
-        icon: <Zap className="h-5 w-5 text-blue-500" />,
-        label: "Whale Movement",
+        icon: <TrendingDown className="size-5 text-red-500" />,
+        label: "Нарушение паттерна",
       };
     default:
       return {
-        icon: <XCircle className="h-5 w-5" />,
-        label: "Unknown Anomaly",
+        icon: <AlertTriangle className="size-5" />,
+        label: "Аномалия",
       };
   }
-}
-
-function getConfidenceColor(confidence: number): string {
-  if (confidence >= 80) return "bg-red-500";
-  if (confidence >= 60) return "bg-orange-500";
-  if (confidence >= 40) return "bg-yellow-500";
-  return "bg-blue-500";
 }

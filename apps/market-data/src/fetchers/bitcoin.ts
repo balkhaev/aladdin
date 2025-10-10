@@ -1,13 +1,10 @@
-import type { Logger } from "@aladdin/logger";
 import type {
   ExchangeFlowDetail,
   OnChainMetrics,
   WhaleTransaction,
 } from "@aladdin/core";
-import {
-  getExchangeAddresses,
-  isExchangeAddress,
-} from "../data/exchange-addresses";
+import type { Logger } from "@aladdin/logger";
+import { isExchangeAddress } from "../data/exchange-addresses";
 import { BaseFetcher } from "./base";
 
 const BLOCKCHAIR_API = "https://api.blockchair.com/bitcoin";
@@ -24,18 +21,21 @@ const DEFAULT_WHALE_THRESHOLD = 10;
 export class BitcoinFetcher extends BaseFetcher {
   private whaleThreshold: number;
   private marketCapProvider?: () => Promise<number | undefined>;
+  private priceProvider?: () => Promise<number | undefined>;
   private apiKey?: string;
 
   constructor(
     logger: Logger,
     whaleThreshold = DEFAULT_WHALE_THRESHOLD,
     marketCapProvider?: () => Promise<number | undefined>,
+    priceProvider?: () => Promise<number | undefined>,
     apiKey?: string
   ) {
     // Blockchair: free tier 30 req/day (without key), 30 req/min (with key)
     super("BTC", logger, { maxRequests: 5, windowMs: 60_000 });
     this.whaleThreshold = whaleThreshold;
     this.marketCapProvider = marketCapProvider;
+    this.priceProvider = priceProvider;
     this.apiKey = apiKey;
   }
 
@@ -92,61 +92,35 @@ export class BitcoinFetcher extends BaseFetcher {
   }> {
     return await this.fetchWithRetry(async () => {
       try {
-        const exchangeAddresses = getExchangeAddresses("BTC");
+        // Get whale transactions from the last 24 hours
+        // Use a lower threshold (1 BTC) to catch more exchange flows
+        const whaleTransactions = await this.fetchWhaleTransactions(1);
 
-        // For Blockchair, we can query specific addresses
         let totalInflow = 0;
         let totalOutflow = 0;
 
-        // Sample a few exchange addresses to estimate flows
-        const sampleAddresses = exchangeAddresses
-          .filter((ex) => ex.type === "hot") // Hot wallets are more active
-          .slice(0, 3) // Limit to avoid rate limits
-          .flatMap((ex) => ex.addresses.slice(0, 2)); // Max 2 addresses per exchange
+        // Analyze each transaction to determine if it involves exchange addresses
+        for (const tx of whaleTransactions) {
+          const fromIsExchange = isExchangeAddress(tx.from, "BTC");
+          const toIsExchange = isExchangeAddress(tx.to, "BTC");
 
-        for (const address of sampleAddresses) {
-          try {
-            const keyParam = this.apiKey ? `&key=${this.apiKey}` : "";
-            const response = await fetch(
-              `${BLOCKCHAIR_API}/dashboards/address/${address}${keyParam}`
-            );
-
-            if (!response.ok) {
-              continue;
-            }
-
-            const data = (await response.json()) as {
-              data?: {
-                [key: string]: {
-                  address?: {
-                    received?: number;
-                    spent?: number;
-                  };
-                };
-              };
-            };
-
-            const addressData = data.data?.[address];
-            if (addressData?.address) {
-              const received = addressData.address.received ?? 0;
-              const spent = addressData.address.spent ?? 0;
-
-              // Estimate daily flow (rough approximation)
-              totalInflow += (received / SATOSHI_TO_BTC) * 0.01; // 1% as daily estimate
-              totalOutflow += (spent / SATOSHI_TO_BTC) * 0.01;
-            }
-          } catch {
-            // Skip failed addresses
+          if (toIsExchange && !fromIsExchange) {
+            // Inflow to exchange (from external address)
+            totalInflow += tx.value;
+          } else if (fromIsExchange && !toIsExchange) {
+            // Outflow from exchange (to external address)
+            totalOutflow += tx.value;
           }
+          // Skip transactions between exchanges or internal exchange transfers
         }
 
         const netFlow = totalInflow - totalOutflow;
 
-        this.logger.debug("Fetched exchange flows (estimated)", {
+        this.logger.debug("Fetched exchange flows from whale transactions", {
           inflow: totalInflow,
           outflow: totalOutflow,
           netFlow,
-          sampleSize: sampleAddresses.length,
+          transactionsAnalyzed: whaleTransactions.length,
         });
 
         return {
@@ -161,13 +135,13 @@ export class BitcoinFetcher extends BaseFetcher {
     }, "fetchExchangeFlows");
   }
 
-  async fetchExchangeFlowsByExchange(): Promise<ExchangeFlowDetail[]> {
+  fetchExchangeFlowsByExchange(): Promise<ExchangeFlowDetail[]> {
     // Blockchair free tier is too limited for per-exchange tracking
     // Would need multiple API calls per exchange
     this.logger.debug(
       "Per-exchange flow tracking not available with Blockchair free tier"
     );
-    return [];
+    return Promise.resolve([]);
   }
 
   async fetchActiveAddresses(_period = "24h"): Promise<number> {
@@ -230,19 +204,44 @@ export class BitcoinFetcher extends BaseFetcher {
     return await this.marketCapProvider();
   }
 
+  async fetchPrice(): Promise<number | undefined> {
+    if (!this.priceProvider) {
+      return;
+    }
+    return await this.priceProvider();
+  }
+
   async fetchNVTRatio(): Promise<number> {
     try {
-      const [marketCap, txVolume] = await Promise.all([
+      const [marketCap, txVolumeBTC, btcPrice] = await Promise.all([
         this.fetchMarketCap(),
         this.fetchTransactionVolume(),
+        this.fetchPrice(),
       ]);
 
-      if (!marketCap || txVolume === 0) {
+      if (!marketCap || txVolumeBTC === 0 || !btcPrice) {
         return 0;
       }
 
-      // NVT = Market Cap / Daily Transaction Volume
-      return marketCap / txVolume;
+      // Convert transaction volume from BTC to USD
+      const txVolumeUSD = txVolumeBTC * btcPrice;
+
+      if (txVolumeUSD === 0) {
+        return 0;
+      }
+
+      // NVT = Market Cap (USD) / Daily Transaction Volume (USD)
+      const nvtRatio = marketCap / txVolumeUSD;
+
+      this.logger.debug("Calculated NVT Ratio", {
+        marketCap,
+        txVolumeBTC,
+        btcPrice,
+        txVolumeUSD,
+        nvtRatio,
+      });
+
+      return nvtRatio;
     } catch (error) {
       this.logger.error("Failed to calculate Bitcoin NVT ratio", error);
       return 0;

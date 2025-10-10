@@ -28,21 +28,24 @@ export class EthereumFetcher extends BaseFetcher {
   private apiKey: string;
   private whaleThreshold: number;
   private marketCapProvider?: () => Promise<number | undefined>;
+  private priceProvider?: () => Promise<number | undefined>;
 
   constructor(
     logger: Logger,
     apiKey: string,
     whaleThreshold = 100,
-    marketCapProvider?: () => Promise<number | undefined>
+    marketCapProvider?: () => Promise<number | undefined>,
+    priceProvider?: () => Promise<number | undefined>
   ) {
     // Etherscan free tier: 5 calls/second, 100k calls/day
     super("ETH", logger, { maxRequests: 4, windowMs: 1000 });
     this.apiKey = apiKey;
     this.whaleThreshold = whaleThreshold;
     this.marketCapProvider = marketCapProvider;
+    this.priceProvider = priceProvider;
   }
 
-  async fetchWhaleTransactions(threshold: number): Promise<WhaleTransaction[]> {
+  fetchWhaleTransactions(threshold: number): Promise<WhaleTransaction[]> {
     return this.fetchWithRetry(async () => {
       try {
         // Get latest block number (Etherscan API V2)
@@ -168,7 +171,7 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchWhaleTransactions");
   }
 
-  async fetchExchangeFlows(): Promise<{
+  fetchExchangeFlows(): Promise<{
     inflow: number;
     outflow: number;
     netFlow: number;
@@ -294,7 +297,7 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchExchangeFlows");
   }
 
-  async fetchExchangeFlowsByExchange(): Promise<ExchangeFlowDetail[]> {
+  fetchExchangeFlowsByExchange(): Promise<ExchangeFlowDetail[]> {
     return this.fetchWithRetry(async () => {
       try {
         const exchangeAddresses = getExchangeAddresses("ETH");
@@ -407,7 +410,7 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchExchangeFlowsByExchange");
   }
 
-  async fetchActiveAddresses(_period = "24h"): Promise<number> {
+  fetchActiveAddresses(_period = "24h"): Promise<number> {
     return this.fetchWithRetry(async () => {
       try {
         // Get supply info which includes some network stats (Etherscan API V2)
@@ -438,7 +441,7 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchActiveAddresses");
   }
 
-  async fetchTransactionVolume(): Promise<number> {
+  fetchTransactionVolume(): Promise<number> {
     return this.fetchWithRetry(async () => {
       try {
         // Get latest block to estimate daily volume (Etherscan API V2)
@@ -460,26 +463,52 @@ export class EthereumFetcher extends BaseFetcher {
     }, "fetchTransactionVolume");
   }
 
-  async fetchMarketCap(): Promise<number | undefined> {
+  fetchMarketCap(): Promise<number | undefined> {
     if (this.marketCapProvider) {
       return this.marketCapProvider();
     }
+    return Promise.resolve(undefined);
   }
 
-  async fetchNVTRatio(): Promise<number> {
+  fetchPrice(): Promise<number | undefined> {
+    if (this.priceProvider) {
+      return this.priceProvider();
+    }
+    return Promise.resolve(undefined);
+  }
+
+  fetchNVTRatio(): Promise<number> {
     return this.fetchWithRetry(async () => {
       try {
-        const [marketCap, txVolume] = await Promise.all([
+        const [marketCap, txVolumeETH, ethPrice] = await Promise.all([
           this.fetchMarketCap(),
           this.fetchTransactionVolume(),
+          this.fetchPrice(),
         ]);
 
-        if (!marketCap || txVolume === 0) {
+        if (!marketCap || txVolumeETH === 0 || !ethPrice) {
           return 0;
         }
 
-        // NVT = Market Cap / Daily Transaction Volume
-        return marketCap / txVolume;
+        // Convert transaction volume from ETH to USD
+        const txVolumeUSD = txVolumeETH * ethPrice;
+
+        if (txVolumeUSD === 0) {
+          return 0;
+        }
+
+        // NVT = Market Cap (USD) / Daily Transaction Volume (USD)
+        const nvtRatio = marketCap / txVolumeUSD;
+
+        this.logger.debug("Calculated NVT Ratio", {
+          marketCap,
+          txVolumeETH,
+          ethPrice,
+          txVolumeUSD,
+          nvtRatio,
+        });
+
+        return nvtRatio;
       } catch (error) {
         this.logger.error("Failed to calculate Ethereum NVT ratio", error);
         return 0;

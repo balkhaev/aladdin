@@ -1,7 +1,4 @@
-import {
-  BaseService,
-  type BaseServiceConfig,
-} from "@aladdin/service";
+import { BaseService, type BaseServiceConfig } from "@aladdin/service";
 import { BitcoinFetcher } from "../fetchers/bitcoin";
 import { BitcoinMempoolFetcher } from "../fetchers/bitcoin-mempool";
 import { EthereumFetcher } from "../fetchers/ethereum";
@@ -79,12 +76,14 @@ export class OnChainService extends BaseService {
               this.logger,
               whaleThreshold,
               () => this.marketCapProvider?.getMarketCap("BTC") ?? 0,
+              () => this.marketCapProvider?.getPrice("BTC") ?? 0,
               this.config.blockchairApiKey
             )
           : new BitcoinMempoolFetcher(
               this.logger,
               whaleThreshold,
-              () => this.marketCapProvider?.getMarketCap("BTC") ?? 0
+              () => this.marketCapProvider?.getMarketCap("BTC") ?? 0,
+              () => this.marketCapProvider?.getPrice("BTC") ?? 0
             );
 
         this.fetchers.push(btcFetcher);
@@ -99,7 +98,8 @@ export class OnChainService extends BaseService {
           this.logger,
           this.config.etherscanApiKey ?? "",
           whaleThreshold,
-          () => this.marketCapProvider?.getMarketCap("ETH") ?? 0
+          () => this.marketCapProvider?.getMarketCap("ETH") ?? 0,
+          () => this.marketCapProvider?.getPrice("ETH") ?? 0
         );
         this.fetchers.push(ethFetcher);
         this.logger.info("Ethereum fetcher initialized", { whaleThreshold });

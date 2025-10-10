@@ -25,16 +25,19 @@ const ADDRESSES_PER_TX = 1.5;
 export class BitcoinMempoolFetcher extends BaseFetcher {
   private whaleThreshold: number;
   private marketCapProvider?: () => Promise<number | undefined>;
+  private priceProvider?: () => Promise<number | undefined>;
 
   constructor(
     logger: Logger,
     whaleThreshold = DEFAULT_WHALE_THRESHOLD,
-    marketCapProvider?: () => Promise<number | undefined>
+    marketCapProvider?: () => Promise<number | undefined>,
+    priceProvider?: () => Promise<number | undefined>
   ) {
     // Mempool.space: public API, reasonable rate limits
     super("BTC", logger, { maxRequests: 10, windowMs: 60_000 });
     this.whaleThreshold = whaleThreshold;
     this.marketCapProvider = marketCapProvider;
+    this.priceProvider = priceProvider;
   }
 
   async fetchWhaleTransactions(threshold: number): Promise<WhaleTransaction[]> {
@@ -137,89 +140,35 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
   }> {
     return await this.fetchWithRetry(async () => {
       try {
-        const exchangeAddresses = getExchangeAddresses("BTC");
-        // Bitcoin addresses are case-sensitive, don't lowercase them
-        const allAddresses = new Set(
-          exchangeAddresses.flatMap((ex) => ex.addresses)
-        );
+        // Get whale transactions from the last 24 hours
+        // Use a lower threshold (1 BTC) to catch more exchange flows
+        const whaleTransactions = await this.fetchWhaleTransactions(1);
 
         let totalInflow = 0;
         let totalOutflow = 0;
 
-        // Get recent blocks
-        const response = await fetch(`${MEMPOOL_API}/blocks`);
-        if (!response.ok) {
-          this.logger.warn("Failed to fetch blocks for exchange flows");
-          return { inflow: 0, outflow: 0, netFlow: 0 };
-        }
+        // Analyze each transaction to determine if it involves exchange addresses
+        for (const tx of whaleTransactions) {
+          const fromIsExchange = isExchangeAddress(tx.from, "BTC");
+          const toIsExchange = isExchangeAddress(tx.to, "BTC");
 
-        const blocks = (await response.json()) as Array<{
-          id: string;
-          height: number;
-        }>;
-
-        // Check recent blocks for exchange flows (increased to 10 blocks for better coverage)
-        for (const block of blocks.slice(0, 10)) {
-          try {
-            const txResponse = await fetch(
-              `${MEMPOOL_API}/block/${block.id}/txs`
-            );
-            if (!txResponse.ok) {
-              continue;
-            }
-
-            const transactions = (await txResponse.json()) as Array<{
-              vin: Array<{ prevout?: { scriptpubkey_address?: string } }>;
-              vout: Array<{
-                value: number;
-                scriptpubkey_address?: string;
-              }>;
-            }>;
-
-            for (const tx of transactions) {
-              // Check if transaction involves exchange addresses
-              // Bitcoin addresses are case-sensitive
-              const fromExchange = tx.vin.some(
-                (input) =>
-                  input.prevout?.scriptpubkey_address &&
-                  allAddresses.has(input.prevout.scriptpubkey_address)
-              );
-
-              const toExchange = tx.vout.some(
-                (output) =>
-                  output.scriptpubkey_address &&
-                  allAddresses.has(output.scriptpubkey_address)
-              );
-
-              if (fromExchange && !toExchange) {
-                // Outflow from exchange
-                const totalValue = tx.vout.reduce(
-                  (sum, out) => sum + out.value,
-                  0
-                );
-                totalOutflow += totalValue / SATOSHI_TO_BTC;
-              } else if (!fromExchange && toExchange) {
-                // Inflow to exchange
-                const totalValue = tx.vout.reduce(
-                  (sum, out) => sum + out.value,
-                  0
-                );
-                totalInflow += totalValue / SATOSHI_TO_BTC;
-              }
-            }
-          } catch {
-            this.logger.debug("Failed to process block for exchange flows", {
-              blockId: block.id,
-            });
+          if (toIsExchange && !fromIsExchange) {
+            // Inflow to exchange (from external address)
+            totalInflow += tx.value;
+          } else if (fromIsExchange && !toIsExchange) {
+            // Outflow from exchange (to external address)
+            totalOutflow += tx.value;
           }
+          // Skip transactions between exchanges or internal exchange transfers
         }
 
         const netFlow = totalInflow - totalOutflow;
 
-        this.logger.debug("Fetched exchange flows", {
+        this.logger.debug("Fetched exchange flows from whale transactions", {
           inflow: totalInflow,
           outflow: totalOutflow,
           netFlow,
+          transactionsAnalyzed: whaleTransactions.length,
         });
 
         return {
@@ -421,19 +370,44 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
     return await this.marketCapProvider();
   }
 
+  async fetchPrice(): Promise<number | undefined> {
+    if (!this.priceProvider) {
+      return;
+    }
+    return await this.priceProvider();
+  }
+
   async fetchNVTRatio(): Promise<number> {
     try {
-      const [marketCap, txVolume] = await Promise.all([
+      const [marketCap, txVolumeBTC, btcPrice] = await Promise.all([
         this.fetchMarketCap(),
         this.fetchTransactionVolume(),
+        this.fetchPrice(),
       ]);
 
-      if (!marketCap || txVolume === 0) {
+      if (!marketCap || txVolumeBTC === 0 || !btcPrice) {
         return 0;
       }
 
-      // NVT = Market Cap / Daily Transaction Volume
-      return marketCap / txVolume;
+      // Convert transaction volume from BTC to USD
+      const txVolumeUSD = txVolumeBTC * btcPrice;
+
+      if (txVolumeUSD === 0) {
+        return 0;
+      }
+
+      // NVT = Market Cap (USD) / Daily Transaction Volume (USD)
+      const nvtRatio = marketCap / txVolumeUSD;
+
+      this.logger.debug("Calculated NVT Ratio", {
+        marketCap,
+        txVolumeBTC,
+        btcPrice,
+        txVolumeUSD,
+        nvtRatio,
+      });
+
+      return nvtRatio;
     } catch (error) {
       this.logger.error("Failed to calculate Bitcoin NVT ratio", error);
       return 0;

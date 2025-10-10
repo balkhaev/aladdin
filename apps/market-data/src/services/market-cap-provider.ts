@@ -3,11 +3,12 @@ import type { Logger } from "@aladdin/logger";
 type MarketCapData = {
   symbol: string;
   marketCap: number;
+  price: number;
   lastUpdated: number;
 };
 
 /**
- * MarketCapProvider - Provides market cap data for cryptocurrencies
+ * MarketCapProvider - Provides market cap and price data for cryptocurrencies
  */
 export class MarketCapProvider {
   private marketCapCache = new Map<string, MarketCapData>();
@@ -23,37 +24,61 @@ export class MarketCapProvider {
    * Get market cap for a symbol
    */
   async getMarketCap(symbol: string): Promise<number> {
+    const data = await this.getData(symbol);
+    return data.marketCap;
+  }
+
+  /**
+   * Get current price for a symbol
+   */
+  async getPrice(symbol: string): Promise<number> {
+    const data = await this.getData(symbol);
+    return data.price;
+  }
+
+  /**
+   * Get market data (cached or fresh)
+   */
+  private async getData(symbol: string): Promise<MarketCapData> {
     const cached = this.marketCapCache.get(symbol);
     const now = Date.now();
 
     // Return cached value if still valid
     if (cached && now - cached.lastUpdated < this.CACHE_TTL_MS) {
-      return cached.marketCap;
+      return cached;
     }
 
     // Fetch fresh data
     try {
-      const marketCap = await this.fetchMarketCap(symbol);
+      const data = await this.fetchMarketData(symbol);
       this.marketCapCache.set(symbol, {
         symbol,
-        marketCap,
+        marketCap: data.marketCap,
+        price: data.price,
         lastUpdated: now,
       });
-      return marketCap;
+      return {
+        symbol,
+        marketCap: data.marketCap,
+        price: data.price,
+        lastUpdated: now,
+      };
     } catch (error) {
-      this.logger.error("Failed to fetch market cap", { symbol, error });
+      this.logger.error("Failed to fetch market data", { symbol, error });
       // Return cached value if fetch fails
       if (cached) {
-        return cached.marketCap;
+        return cached;
       }
-      return 0;
+      return { symbol, marketCap: 0, price: 0, lastUpdated: now };
     }
   }
 
   /**
-   * Fetch market cap from CoinMarketCap API
+   * Fetch market cap and price from CoinMarketCap API
    */
-  private async fetchMarketCap(symbol: string): Promise<number> {
+  private async fetchMarketData(
+    symbol: string
+  ): Promise<{ marketCap: number; price: number }> {
     const url = `${this.CMC_API_BASE}/cryptocurrency/quotes/latest?symbol=${symbol}`;
 
     const response = await fetch(url, {
@@ -73,11 +98,13 @@ export class MarketCapProvider {
       throw new Error(`No data for symbol: ${symbol}`);
     }
 
-    const marketCap = data.data[symbol].quote.USD.market_cap;
+    const quote = data.data[symbol].quote.USD;
+    const marketCap = quote.market_cap;
+    const price = quote.price;
 
-    this.logger.debug("Fetched market cap", { symbol, marketCap });
+    this.logger.debug("Fetched market data", { symbol, marketCap, price });
 
-    return marketCap;
+    return { marketCap, price };
   }
 
   /**

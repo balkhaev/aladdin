@@ -30,11 +30,6 @@ def get_clickhouse_client():
             # Настройки для работы с большими запросами и таймаутов
             connect_timeout=30,  # 30 секунд на подключение
             send_receive_timeout=300,  # 5 минут на выполнение запроса
-            # Настройки для стабильности соединения
-            pool_mgr_kwargs={
-                'maxsize': 10,  # Максимум 10 соединений в пуле
-                'block': True,   # Блокировать при исчерпании пула
-            },
             # Настройки ClickHouse для больших запросов
             settings={
                 'max_execution_time': 300,  # 5 минут
@@ -227,4 +222,3 @@ class ClickHouseLoader:
         """Close ClickHouse connection."""
         # Не закрываем shared client
         logger.info("ClickHouse connection is managed globally, not closing")
-

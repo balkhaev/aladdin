@@ -280,6 +280,13 @@ export class ScraperQueueManager {
   }
 
   /**
+   * Convert JS Date to ClickHouse-compatible unix timestamp (seconds)
+   */
+  private static toUnixSeconds(date: Date): number {
+    return Math.floor(date.getTime() / 1000);
+  }
+
+  /**
    * Store job in ClickHouse
    */
   private async storeJob(queueName: string, job: ScraperJob): Promise<void> {
@@ -293,7 +300,7 @@ export class ScraperQueueManager {
           job_data: JSON.stringify(job.data ?? {}),
           attempts: job.attempts,
           max_attempts: job.maxAttempts,
-          created_at: job.createdAt.toISOString(),
+          created_at: ScraperQueueManager.toUnixSeconds(job.createdAt),
         },
       ]);
     } catch (error) {
@@ -317,7 +324,7 @@ export class ScraperQueueManager {
           items_processed: result.itemsProcessed,
           duration_ms: result.durationMs,
           error: result.error ?? null,
-          completed_at: result.completedAt.toISOString(),
+          completed_at: ScraperQueueManager.toUnixSeconds(result.completedAt),
         },
       ]);
     } catch (error) {

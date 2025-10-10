@@ -6,7 +6,7 @@ import { CoinGeckoProvider } from "../providers/coingecko";
 import { FearGreedProvider } from "../providers/feargreed";
 
 const DEFAULT_GLOBAL_METRICS_INTERVAL = 600_000; // 10 minutes
-const DEFAULT_FEARGREED_INTERVAL = 3_600_000; // 60 minutes
+const DEFAULT_FEARGREED_INTERVAL = 900_000; // 15 minutes
 const DEFAULT_TRENDING_INTERVAL = 1_800_000; // 30 minutes
 const MINUTES_TO_MS = 60_000;
 const HUNDRED = 100;

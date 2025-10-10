@@ -9,6 +9,7 @@ import { CategoryPerformance } from "@/components/macro/category-performance";
 import { DominanceChart } from "@/components/macro/dominance-chart";
 import { FearGreedGauge } from "@/components/macro/fear-greed-gauge";
 import { GlobalMarketStats } from "@/components/macro/global-market-stats";
+import { MacroTechnicalMetrics } from "@/components/macro/technical-metrics";
 import { TrendingCoins } from "@/components/macro/trending-coins";
 import { MarketOverview } from "@/components/market-overview";
 import { MarketTickerWS } from "@/components/market-ticker-ws";
@@ -39,6 +40,11 @@ export default function MarketOverviewPage() {
       <WidgetGrid columns={2}>
         <FearGreedGauge />
         <DominanceChart />
+      </WidgetGrid>
+
+      {/* Macro Technical Indicators */}
+      <WidgetGrid columns={2}>
+        <MacroTechnicalMetrics />
       </WidgetGrid>
 
       {/* Trending Coins + Category Performance */}

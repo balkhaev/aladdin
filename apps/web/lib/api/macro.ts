@@ -74,6 +74,16 @@ export type CorrelationData = {
   correlation: number;
 };
 
+export type MacroTechnicals = {
+  timestamp: string;
+  averageCryptoRsi: number | null;
+  assetsCount: number;
+  altseasonIndex: number | null;
+  altseasonSample: number;
+  baseAsset: string;
+  lookbackDays: number;
+};
+
 // ==================== API Functions ====================
 
 /**
@@ -119,6 +129,12 @@ export const getFearGreedHistory = (days = 30) =>
  */
 export const getCategoryCorrelation = (days = 7) =>
   apiGet<CorrelationData[]>(`${MACRO_BASE}/categories/correlation`, { days });
+
+/**
+ * Получить технические макро метрики (Average RSI, Altseason Index)
+ */
+export const getMacroTechnicals = () =>
+  apiGet<MacroTechnicals>(`${MACRO_BASE}/technicals`);
 
 // ==================== Constants ====================
 

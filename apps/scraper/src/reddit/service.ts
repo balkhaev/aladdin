@@ -267,7 +267,7 @@ export class RedditService {
         )`;
       });
 
-      await this.clickhouse.execute(query + values.join(","));
+      await this.clickhouse.query(query + values.join(","));
 
       this.logger.info("Stored Reddit posts", { count: posts.length });
     } catch (error) {

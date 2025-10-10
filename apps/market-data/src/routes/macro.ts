@@ -9,6 +9,148 @@ const MAX_CORRELATION_DAYS = 30;
 const MIN_CORRELATION_COUNT = 2;
 const DEFAULT_TOP_COINS_LIMIT = 50;
 const TRENDING_COINS_LIMIT = 10;
+const RSI_PERIOD = 14;
+const ALTSEASON_LOOKBACK_DAYS = 90;
+const TECHNICALS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TECHNICALS_SYMBOL_LIMIT = 30;
+const DAILY_TIMEFRAME = "1d";
+
+const STABLECOIN_SYMBOLS = new Set([
+  "USDT",
+  "USDC",
+  "BUSD",
+  "DAI",
+  "TUSD",
+  "USDD",
+  "FDUSD",
+  "GUSD",
+  "LUSD",
+]);
+
+type CandleRow = {
+  timestamp: string;
+  close: number | string;
+};
+
+type MacroTechnicals = {
+  timestamp: string;
+  averageCryptoRsi: number | null;
+  assetsCount: number;
+  altseasonIndex: number | null;
+  altseasonSample: number;
+  baseAsset: string;
+  lookbackDays: number;
+};
+
+let macroTechnicalsCache:
+  | {
+      expiresAt: number;
+      payload: MacroTechnicals;
+    }
+  | null = null;
+
+function toTradingPair(symbol: string): string {
+  const sanitized = symbol.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (sanitized.endsWith("USDT")) {
+    return sanitized;
+  }
+  return `${sanitized}USDT`;
+}
+
+function calculateRsi(closes: number[], period = RSI_PERIOD): number | null {
+  if (closes.length < period + 1) {
+    return null;
+  }
+
+  let gainSum = 0;
+  let lossSum = 0;
+
+  for (let i = 1; i <= period; i++) {
+    const delta = closes[i] - closes[i - 1];
+    if (delta >= 0) {
+      gainSum += delta;
+    } else {
+      lossSum -= delta;
+    }
+  }
+
+  let averageGain = gainSum / period;
+  let averageLoss = lossSum / period;
+
+  if (closes.length === period + 1) {
+    if (averageLoss === 0) return 100;
+    if (averageGain === 0) return 0;
+    const rs = averageGain / averageLoss;
+    return 100 - 100 / (1 + rs);
+  }
+
+  for (let i = period + 1; i < closes.length; i++) {
+    const delta = closes[i] - closes[i - 1];
+    const gain = delta > 0 ? delta : 0;
+    const loss = delta < 0 ? -delta : 0;
+
+    averageGain = (averageGain * (period - 1) + gain) / period;
+    averageLoss = (averageLoss * (period - 1) + loss) / period;
+  }
+
+  if (averageLoss === 0) return 100;
+  if (averageGain === 0) return 0;
+
+  const rs = averageGain / averageLoss;
+  return 100 - 100 / (1 + rs);
+}
+
+function calculateReturn(
+  closes: number[],
+  lookbackDays: number
+): number | null {
+  if (closes.length < lookbackDays + 1) {
+    return null;
+  }
+
+  const latest = closes.at(-1);
+  const past = closes.at(-(lookbackDays + 1));
+
+  if (!latest || !past || past === 0) {
+    return null;
+  }
+
+  return ((latest - past) / past) * 100;
+}
+
+async function fetchCandles(
+  clickhouse: ClickHouseClient,
+  symbol: string,
+  timeframe: string,
+  limit: number
+): Promise<number[]> {
+  const query = `
+    SELECT 
+      timestamp,
+      close
+    FROM aladdin.candles
+    WHERE symbol = {symbol:String}
+      AND timeframe = {timeframe:String}
+    ORDER BY timestamp DESC
+    LIMIT {limit:UInt32}
+  `;
+
+  const rows = await clickhouse.query<CandleRow>(query, {
+    symbol,
+    timeframe,
+    limit,
+  });
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Преобразуем строки в числа и разворачиваем в хронологический порядок
+  return rows
+    .map((row) => Number.parseFloat(String(row.close)))
+    .reverse()
+    .filter((value) => Number.isFinite(value));
+}
 
 export function setupMacroRoutes(
   app: Hono,
@@ -419,4 +561,176 @@ export function setupMacroRoutes(
       });
     }
   );
+
+  /**
+   * GET /api/market-data/macro/technicals - Получить технические макро метрики
+   * Average Crypto RSI и Altseason Index
+   */
+  app.get("/api/market-data/macro/technicals", async (c: Context) => {
+    const now = Date.now();
+    if (macroTechnicalsCache && macroTechnicalsCache.expiresAt > now) {
+      return c.json({
+        success: true,
+        data: macroTechnicalsCache.payload,
+        cached: true,
+      });
+    }
+
+    if (!clickhouse) {
+      throw new NotFoundError("ClickHouse connection");
+    }
+
+    // Получаем список топ-коинов по последнему snapshot
+    const latestResult = await clickhouse.query<{
+      latest_timestamp: string;
+    }>(`
+      SELECT max(timestamp) as latest_timestamp
+      FROM aladdin.top_coins
+    `);
+
+    const baseSymbols = new Set<string>();
+
+    if (
+      latestResult.length > 0 &&
+      latestResult[0].latest_timestamp !== undefined
+    ) {
+      const latestTimestamp = latestResult[0].latest_timestamp;
+
+      const coins = await clickhouse.query<{
+        symbol: string;
+        market_cap_rank: number;
+      }>(
+        `
+        SELECT 
+          symbol,
+          market_cap_rank
+        FROM aladdin.top_coins
+        WHERE timestamp = {latestTimestamp:DateTime}
+        ORDER BY market_cap_rank ASC
+        LIMIT {limit:UInt32}
+      `,
+        {
+          latestTimestamp,
+          limit: TECHNICALS_SYMBOL_LIMIT,
+        }
+      );
+
+      for (const coin of coins) {
+        if (coin.symbol) {
+          baseSymbols.add(coin.symbol.toUpperCase());
+        }
+      }
+    }
+
+    // Добавляем BTC в список обязательно
+    baseSymbols.add("BTC");
+
+    // Фильтруем стабильные монеты
+    const filteredSymbols = Array.from(baseSymbols).filter(
+      (symbol) => !STABLECOIN_SYMBOLS.has(symbol)
+    );
+
+    const candleLimit = Math.max(
+      ALTSEASON_LOOKBACK_DAYS + 5,
+      RSI_PERIOD + 5
+    );
+
+    const symbolData = new Map<
+      string,
+      {
+        closes: number[];
+        rsi: number | null;
+      }
+    >();
+
+    for (const symbol of filteredSymbols) {
+      const pair = toTradingPair(symbol);
+      const closes = await fetchCandles(
+        clickhouse,
+        pair,
+        DAILY_TIMEFRAME,
+        candleLimit
+      );
+
+      if (closes.length === 0) {
+        continue;
+      }
+
+      const rsi = calculateRsi(closes, RSI_PERIOD);
+
+      symbolData.set(symbol, {
+        closes,
+        rsi,
+      });
+    }
+
+    // Расчет среднего RSI
+    const rsiValues = Array.from(symbolData.values())
+      .map((data) => data.rsi)
+      .filter((value): value is number => value !== null);
+
+    const averageRsi =
+      rsiValues.length > 0
+        ? Number(
+            (
+              rsiValues.reduce((sum, value) => sum + value, 0) /
+              rsiValues.length
+            ).toFixed(1)
+          )
+        : null;
+
+    // Расчет Altseason Index
+    const btcData = symbolData.get("BTC");
+    const btcReturn = btcData
+      ? calculateReturn(btcData.closes, ALTSEASON_LOOKBACK_DAYS)
+      : null;
+
+    let altSeasonSample = 0;
+    let altSeasonWinners = 0;
+
+    if (btcReturn !== null) {
+      for (const [symbol, data] of symbolData.entries()) {
+        if (symbol === "BTC") continue;
+
+        const performance = calculateReturn(
+          data.closes,
+          ALTSEASON_LOOKBACK_DAYS
+        );
+
+        if (performance === null) continue;
+
+        altSeasonSample += 1;
+        if (performance > btcReturn) {
+          altSeasonWinners += 1;
+        }
+      }
+    }
+
+    const altseasonIndex =
+      altSeasonSample > 0
+        ? Number(
+            ((altSeasonWinners / altSeasonSample) * 100).toFixed(1)
+          )
+        : null;
+
+    const payload: MacroTechnicals = {
+      timestamp: new Date().toISOString(),
+      averageCryptoRsi: averageRsi,
+      assetsCount: rsiValues.length,
+      altseasonIndex,
+      altseasonSample: altSeasonSample,
+      baseAsset: toTradingPair("BTC"),
+      lookbackDays: ALTSEASON_LOOKBACK_DAYS,
+    };
+
+    macroTechnicalsCache = {
+      expiresAt: now + TECHNICALS_CACHE_TTL_MS,
+      payload,
+    };
+
+    return c.json({
+      success: true,
+      data: payload,
+    });
+  });
 }

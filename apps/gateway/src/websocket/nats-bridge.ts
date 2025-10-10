@@ -1,5 +1,9 @@
 import { getLogger } from "@aladdin/logger";
-import { getNatsClient } from "@aladdin/messaging";
+import {
+  getNatsClient,
+  initNatsClient,
+  type NatsClient,
+} from "@aladdin/messaging";
 import type { ServerWebSocket } from "bun";
 import type { Subscription } from "nats";
 
@@ -9,14 +13,31 @@ type WebSocketData = {
 };
 
 const logger = getLogger("nats-websocket-bridge");
+const NATS_URL = process.env.NATS_URL ?? "nats://localhost:4222";
+
+let natsClientInitPromise: Promise<NatsClient> | null = null;
+
+function ensureNatsClient(): Promise<NatsClient> {
+  if (!natsClientInitPromise) {
+    natsClientInitPromise = initNatsClient({
+      servers: NATS_URL,
+      logger,
+    }).catch((error) => {
+      natsClientInitPromise = null;
+      throw error;
+    });
+  }
+
+  return natsClientInitPromise;
+}
 
 /**
  * Subscribe to NATS topic and forward messages to WebSocket client
  */
-export function subscribeToNatsTopic(
+export async function subscribeToNatsTopic(
   ws: ServerWebSocket<WebSocketData>,
   topic: string
-): void {
+): Promise<void> {
   const { clientId } = ws.data;
 
   try {
@@ -31,7 +52,7 @@ export function subscribeToNatsTopic(
       return;
     }
 
-    const natsClient = getNatsClient();
+    const natsClient = await ensureNatsClient().then(() => getNatsClient());
 
     // Subscribe to NATS topic
     const subscription = natsClient.subscribe(topic, (data: unknown) => {
@@ -81,11 +102,16 @@ export function subscribeToNatsTopic(
 /**
  * Unsubscribe from NATS topic
  */
-export async function unsubscribeFromNatsTopic(
+export function unsubscribeFromNatsTopic(
   ws: ServerWebSocket<WebSocketData>,
   topic: string
-): Promise<void> {
+): void {
   const { clientId, natsSubscriptions } = ws.data;
+
+  if (!natsSubscriptions) {
+    logger.debug(`No subscriptions found for ${topic}`, { clientId });
+    return;
+  }
 
   const hasSubscription = natsSubscriptions?.has(topic);
 
@@ -95,7 +121,7 @@ export async function unsubscribeFromNatsTopic(
   }
 
   try {
-    const subscription = natsSubscriptions.get(topic);
+    const subscription = natsSubscriptions?.get(topic);
     if (!subscription) {
       logger.debug(`Subscription for ${topic} not found`, { clientId });
       return;
@@ -110,10 +136,7 @@ export async function unsubscribeFromNatsTopic(
       return;
     }
 
-    const unsubscribeResult = subscription.unsubscribe();
-    if (unsubscribeResult && typeof unsubscribeResult.then === "function") {
-      await unsubscribeResult;
-    }
+    subscription.unsubscribe();
 
     natsSubscriptions.delete(topic);
     logger.info(`Unsubscribed from NATS topic: ${topic}`, { clientId });
@@ -130,9 +153,9 @@ export async function unsubscribeFromNatsTopic(
 /**
  * Unsubscribe from all NATS topics for this client
  */
-export async function unsubscribeAllNatsTopics(
+export function unsubscribeAllNatsTopics(
   ws: ServerWebSocket<WebSocketData>
-): Promise<void> {
+): void {
   const { clientId, natsSubscriptions } = ws.data;
 
   if (!natsSubscriptions || natsSubscriptions.size === 0) {
@@ -143,8 +166,6 @@ export async function unsubscribeAllNatsTopics(
     clientId,
     count: natsSubscriptions.size,
   });
-
-  const unsubscribePromises: Promise<void>[] = [];
 
   for (const [topic, subscription] of natsSubscriptions.entries()) {
     // Skip if subscription is undefined/null
@@ -169,26 +190,7 @@ export async function unsubscribeAllNatsTopics(
     }
 
     try {
-      const unsubscribeResult = subscription.unsubscribe();
-
-      // Check if unsubscribe returned a Promise
-      if (unsubscribeResult && typeof unsubscribeResult.catch === "function") {
-        unsubscribePromises.push(
-          unsubscribeResult.catch((error) => {
-            logger.error(`Failed to unsubscribe from ${topic}`, {
-              clientId,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          })
-        );
-      } else {
-        logger.warn(
-          `Subscription.unsubscribe() for ${topic} did not return a Promise`,
-          {
-            clientId,
-          }
-        );
-      }
+      subscription.unsubscribe();
     } catch (error) {
       logger.error(`Error calling unsubscribe for ${topic}`, {
         clientId,
@@ -197,7 +199,6 @@ export async function unsubscribeAllNatsTopics(
     }
   }
 
-  await Promise.all(unsubscribePromises);
   natsSubscriptions.clear();
 }
 
@@ -228,7 +229,7 @@ export async function handleWhaleAlertSubscription(
   }
 
   if (action === "subscribe") {
-    subscribeToNatsTopic(ws, natsTopic);
+    await subscribeToNatsTopic(ws, natsTopic);
   } else {
     await unsubscribeFromNatsTopic(ws, natsTopic);
   }

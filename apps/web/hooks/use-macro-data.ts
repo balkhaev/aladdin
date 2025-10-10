@@ -9,6 +9,7 @@ import {
   getGlobalMetrics,
   getTopCoins,
   getTrendingCoins,
+  getMacroTechnicals,
 } from "@/lib/api/macro";
 
 const SECONDS_IN_MINUTE = 60;
@@ -16,13 +17,14 @@ const MS_IN_SECOND = 1000;
 const MINUTES_TO_MS = SECONDS_IN_MINUTE * MS_IN_SECOND;
 const TEN_MINUTES = 10;
 const THIRTY_MINUTES = 30;
-const SIXTY_MINUTES = 60;
+const FIFTEEN_MINUTES = 15;
 
 const REFETCH_INTERVALS = {
   GLOBAL: TEN_MINUTES * MINUTES_TO_MS,
-  FEAR_GREED: SIXTY_MINUTES * MINUTES_TO_MS,
+  FEAR_GREED: FIFTEEN_MINUTES * MINUTES_TO_MS,
   TRENDING: THIRTY_MINUTES * MINUTES_TO_MS,
   CATEGORIES: TEN_MINUTES * MINUTES_TO_MS,
+  TECHNICALS: TEN_MINUTES * MINUTES_TO_MS,
 };
 
 /**
@@ -108,5 +110,17 @@ export function useCategoryCorrelation(days = 7) {
       import("@/lib/api/macro").then((m) => m.getCategoryCorrelation(days)),
     refetchInterval: REFETCH_INTERVALS.CATEGORIES,
     staleTime: REFETCH_INTERVALS.CATEGORIES,
+  });
+}
+
+/**
+ * Hook для технических макро метрик (Average RSI, Altseason Index)
+ */
+export function useMacroTechnicals() {
+  return useQuery({
+    queryKey: ["macro", "technicals"],
+    queryFn: getMacroTechnicals,
+    refetchInterval: REFETCH_INTERVALS.TECHNICALS,
+    staleTime: REFETCH_INTERVALS.TECHNICALS,
   });
 }

@@ -12,3 +12,6 @@ logs/
 nats-data/
 
 dist
+dist-test
+
+.DS_Store

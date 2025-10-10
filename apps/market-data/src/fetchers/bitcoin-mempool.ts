@@ -101,6 +101,9 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
                   tx.vin[0]?.prevout?.scriptpubkey_address ?? "unknown";
                 const toAddress = tx.vout[0]?.scriptpubkey_address ?? "unknown";
 
+                const fromInfo = isExchangeAddress(fromAddress, "BTC");
+                const toInfo = isExchangeAddress(toAddress, "BTC");
+
                 whaleTransactions.push({
                   transactionHash: tx.txid,
                   timestamp: tx.status.block_time * MILLISECONDS_IN_SECOND,
@@ -108,6 +111,14 @@ export class BitcoinMempoolFetcher extends BaseFetcher {
                   to: toAddress,
                   value: totalOutput / SATOSHI_TO_BTC,
                   blockchain: "BTC",
+                  fromType: fromInfo.isExchange
+                    ? ("exchange" as const)
+                    : ("whale" as const),
+                  toType: toInfo.isExchange
+                    ? ("exchange" as const)
+                    : ("whale" as const),
+                  fromExchange: fromInfo.exchange,
+                  toExchange: toInfo.exchange,
                 });
 
                 seenTxHashes.add(tx.txid);

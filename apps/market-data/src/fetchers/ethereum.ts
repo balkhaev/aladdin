@@ -4,7 +4,10 @@ import type {
   WhaleTransaction,
 } from "@aladdin/core";
 import type { Logger } from "@aladdin/logger";
-import { getExchangeAddresses } from "../data/exchange-addresses";
+import {
+  getExchangeAddresses,
+  isExchangeAddress,
+} from "../data/exchange-addresses";
 import { BaseFetcher } from "./base";
 
 const ETHERSCAN_API = "https://api.etherscan.io/v2/api";
@@ -17,7 +20,6 @@ const WEI_TO_ETH = 1_000_000_000_000_000_000; // 10^18
 const BLOCKS_TO_CHECK = 100; // Check last 100 blocks (~20 minutes)
 const BLOCKS_TO_SAMPLE = 25; // Sample blocks (increased from 5 to 25)
 const BLOCKS_SAMPLING_DIVISOR = 4; // Check every 4th block (increased from 20)
-const BLOCKS_FOR_EXCHANGE_FLOWS = 10;
 const EXCHANGE_SAMPLE_LIMIT = 3;
 const TX_LIST_OFFSET = 50;
 
@@ -132,15 +134,36 @@ export class EthereumFetcher extends BaseFetcher {
               if (value >= thresholdWei) {
                 // Include all transactions >= threshold (100 ETH by default)
                 // This ensures we track all significant whale movements
+                const from = tx.from;
+                const to = tx.to ?? "contract";
+                const fromInfo = isExchangeAddress(from, "ETH");
+                const toInfo = isExchangeAddress(to, "ETH");
+
+                // Determine toType based on multiple conditions
+                let toType: "exchange" | "whale" | "unknown";
+                if (to === "contract") {
+                  toType = "unknown";
+                } else if (toInfo.isExchange) {
+                  toType = "exchange";
+                } else {
+                  toType = "whale";
+                }
+
                 whaleTransactions.push({
                   transactionHash: tx.hash,
                   timestamp: txData.result?.timestamp
                     ? Number.parseInt(txData.result.timestamp, 16) * 1000
                     : Date.now(),
-                  from: tx.from,
-                  to: tx.to ?? "contract",
+                  from,
+                  to,
                   value: Number(value) / WEI_TO_ETH,
                   blockchain: "ETH",
+                  fromType: fromInfo.isExchange
+                    ? ("exchange" as const)
+                    : ("whale" as const),
+                  toType,
+                  fromExchange: fromInfo.exchange,
+                  toExchange: toInfo.exchange,
                 });
 
                 seenTxHashes.add(tx.hash);
@@ -178,111 +201,35 @@ export class EthereumFetcher extends BaseFetcher {
   }> {
     return this.fetchWithRetry(async () => {
       try {
-        const exchangeAddresses = getExchangeAddresses("ETH");
-        const exchangeSet = new Set(
-          exchangeAddresses.flatMap((ex) =>
-            ex.addresses.map((a) => a.toLowerCase())
-          )
-        );
+        // Get whale transactions from the last 24 hours
+        // Use a lower threshold (10 ETH) to catch more exchange flows
+        const whaleTransactions = await this.fetchWhaleTransactions(10);
 
         let totalInflow = 0;
         let totalOutflow = 0;
 
-        // Get latest block number (Etherscan API V2)
-        const blockResponse = await fetch(
-          `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`
-        );
+        // Analyze each transaction to determine if it involves exchange addresses
+        for (const tx of whaleTransactions) {
+          const fromIsExchange = isExchangeAddress(tx.from, "ETH");
+          const toIsExchange = isExchangeAddress(tx.to, "ETH");
 
-        if (!blockResponse.ok) {
-          this.logger.warn("Failed to fetch block number for exchange flows");
-          return { inflow: 0, outflow: 0, netFlow: 0 };
-        }
-
-        const blockData = (await blockResponse.json()) as {
-          result?: string;
-          jsonrpc?: string;
-        };
-        const latestBlock = blockData.result
-          ? Number.parseInt(blockData.result, 16)
-          : 0;
-
-        if (!latestBlock) {
-          return { inflow: 0, outflow: 0, netFlow: 0 };
-        }
-
-        // Check recent blocks
-        const blocksToCheck = BLOCKS_FOR_EXCHANGE_FLOWS;
-        const startBlock = latestBlock - blocksToCheck;
-
-        for (
-          let blockNum = startBlock;
-          blockNum <= latestBlock;
-          blockNum += 2
-        ) {
-          try {
-            const txResponse = await fetch(
-              `${ETHERSCAN_API}?chainid=${ETHERSCAN_CHAIN_ID}&module=proxy&action=eth_getBlockByNumber&tag=0x${blockNum.toString(16)}&boolean=true&apikey=${this.apiKey}`
-            );
-
-            if (!txResponse.ok) {
-              continue;
-            }
-
-            const txData = (await txResponse.json()) as {
-              result?: {
-                transactions?: Array<{
-                  from: string;
-                  to: string;
-                  value: string;
-                }>;
-              };
-              jsonrpc?: string;
-            };
-
-            const transactions = txData.result?.transactions;
-            if (!transactions) {
-              continue;
-            }
-
-            for (const tx of transactions) {
-              const fromAddr = tx.from.toLowerCase();
-              const toAddr = tx.to?.toLowerCase();
-
-              if (!toAddr) continue;
-
-              const fromExchange = exchangeSet.has(fromAddr);
-              const toExchange = exchangeSet.has(toAddr);
-
-              if (fromExchange && !toExchange) {
-                // Outflow from exchange
-                try {
-                  const value = BigInt(tx.value);
-                  totalOutflow += Number(value) / WEI_TO_ETH;
-                } catch {
-                  // Skip invalid values
-                }
-              } else if (!fromExchange && toExchange) {
-                // Inflow to exchange
-                try {
-                  const value = BigInt(tx.value);
-                  totalInflow += Number(value) / WEI_TO_ETH;
-                } catch {
-                  // Skip invalid values
-                }
-              }
-            }
-          } catch {
-            // Skip failed blocks
+          if (toIsExchange && !fromIsExchange) {
+            // Inflow to exchange (from external address)
+            totalInflow += tx.value;
+          } else if (fromIsExchange && !toIsExchange) {
+            // Outflow from exchange (to external address)
+            totalOutflow += tx.value;
           }
+          // Skip transactions between exchanges or internal exchange transfers
         }
 
         const netFlow = totalInflow - totalOutflow;
 
-        this.logger.debug("Fetched Ethereum exchange flows", {
+        this.logger.debug("Fetched exchange flows from whale transactions", {
           inflow: totalInflow,
           outflow: totalOutflow,
           netFlow,
-          blocksChecked: blocksToCheck / 2,
+          transactionsAnalyzed: whaleTransactions.length,
         });
 
         return {

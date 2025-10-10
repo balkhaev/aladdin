@@ -70,14 +70,29 @@ export class BitcoinFetcher extends BaseFetcher {
           return [];
         }
 
-        return data.data.map((tx) => ({
-          transactionHash: tx.hash,
-          timestamp: new Date(tx.time).getTime(),
-          from: "multiple", // Bitcoin has multiple inputs
-          to: "multiple", // Bitcoin has multiple outputs
-          value: tx.output_total / SATOSHI_TO_BTC,
-          blockchain: "BTC",
-        }));
+        return data.data.map((tx) => {
+          const from = "multiple";
+          const to = "multiple";
+          const fromInfo = isExchangeAddress(from, "BTC");
+          const toInfo = isExchangeAddress(to, "BTC");
+
+          return {
+            transactionHash: tx.hash,
+            timestamp: new Date(tx.time).getTime(),
+            from,
+            to,
+            value: tx.output_total / SATOSHI_TO_BTC,
+            blockchain: "BTC",
+            fromType: fromInfo.isExchange
+              ? ("exchange" as const)
+              : ("unknown" as const),
+            toType: toInfo.isExchange
+              ? ("exchange" as const)
+              : ("unknown" as const),
+            fromExchange: fromInfo.exchange,
+            toExchange: toInfo.exchange,
+          };
+        });
       } catch (error) {
         this.logger.error("Failed to fetch Bitcoin whale transactions", error);
         return [];

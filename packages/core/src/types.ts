@@ -306,6 +306,10 @@ export type WhaleTransaction = {
   to: string;
   value: number;
   blockchain: string;
+  fromType?: "exchange" | "whale" | "unknown";
+  toType?: "exchange" | "whale" | "unknown";
+  fromExchange?: string;
+  toExchange?: string;
 };
 
 export type ExchangeFlow = {

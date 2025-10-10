@@ -1,12 +1,12 @@
-import { ExternalLink } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   formatAddress,
   formatNumber,
   formatRelativeTime,
-  formatTxHash,
 } from "@/lib/formatters";
 import { API_BASE_URL } from "../lib/runtime-env";
+import { Badge } from "./ui/badge";
 import {
   Card,
   CardContent,
@@ -25,6 +25,10 @@ type WhaleTransaction = {
   value: number;
   from: string;
   to: string;
+  fromType?: "exchange" | "whale" | "unknown";
+  toType?: "exchange" | "whale" | "unknown";
+  fromExchange?: string;
+  toExchange?: string;
 };
 
 type WhaleTransactionsListProps = {
@@ -142,10 +146,42 @@ export const WhaleTransactionsList = ({
                         {formatRelativeTime(tx.timestamp)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                      <span>From: {formatAddress(tx.from)}</span>
-                      <span>→</span>
-                      <span>To: {formatAddress(tx.to)}</span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">From:</span>
+                        <span className="font-mono text-foreground">
+                          {formatAddress(tx.from)}
+                        </span>
+                        {tx.fromType === "exchange" && tx.fromExchange && (
+                          <Badge className="h-5 capitalize" variant="outline">
+                            <ArrowDownCircle className="mr-1 h-3 w-3" />
+                            {tx.fromExchange}
+                          </Badge>
+                        )}
+                        {tx.fromType === "whale" && (
+                          <Badge className="h-5" variant="secondary">
+                            🐋 Whale
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-muted-foreground">→</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">To:</span>
+                        <span className="font-mono text-foreground">
+                          {formatAddress(tx.to)}
+                        </span>
+                        {tx.toType === "exchange" && tx.toExchange && (
+                          <Badge className="h-5 capitalize" variant="outline">
+                            <ArrowUpCircle className="mr-1 h-3 w-3" />
+                            {tx.toExchange}
+                          </Badge>
+                        )}
+                        {tx.toType === "whale" && (
+                          <Badge className="h-5" variant="secondary">
+                            🐋 Whale
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <a

@@ -284,29 +284,18 @@ export class ScraperQueueManager {
    */
   private async storeJob(queueName: string, job: ScraperJob): Promise<void> {
     try {
-      const query = `
-        INSERT INTO aladdin.scraper_jobs (
-          job_id,
-          queue_name,
-          job_type,
-          priority,
-          job_data,
-          attempts,
-          max_attempts,
-          created_at
-        ) VALUES (
-          '${job.id}',
-          '${queueName}',
-          '${job.type}',
-          ${job.priority},
-          '${JSON.stringify(job.data).replace(/'/g, "\\'")}',
-          ${job.attempts},
-          ${job.maxAttempts},
-          '${job.createdAt.toISOString()}'
-        )
-      `;
-
-      await this.clickhouse.query(query);
+      await this.clickhouse.insert("aladdin.scraper_jobs", [
+        {
+          job_id: job.id,
+          queue_name: queueName,
+          job_type: job.type,
+          priority: job.priority,
+          job_data: JSON.stringify(job.data ?? {}),
+          attempts: job.attempts,
+          max_attempts: job.maxAttempts,
+          created_at: job.createdAt.toISOString(),
+        },
+      ]);
     } catch (error) {
       this.logger.error("Failed to store job", { jobId: job.id, error });
     }
@@ -320,31 +309,17 @@ export class ScraperQueueManager {
     result: ScraperJobResult
   ): Promise<void> {
     try {
-      const errorStr = result.error
-        ? `'${result.error.replace(/'/g, "\\'")}'`
-        : "NULL";
-
-      const query = `
-        INSERT INTO aladdin.scraper_job_results (
-          job_id,
-          queue_name,
-          success,
-          items_processed,
-          duration_ms,
-          error,
-          completed_at
-        ) VALUES (
-          '${result.jobId}',
-          '${queueName}',
-          ${result.success ? 1 : 0},
-          ${result.itemsProcessed},
-          ${result.durationMs},
-          ${errorStr},
-          '${result.completedAt.toISOString()}'
-        )
-      `;
-
-      await this.clickhouse.query(query);
+      await this.clickhouse.insert("aladdin.scraper_job_results", [
+        {
+          job_id: result.jobId,
+          queue_name: queueName,
+          success: result.success ? 1 : 0,
+          items_processed: result.itemsProcessed,
+          duration_ms: result.durationMs,
+          error: result.error ?? null,
+          completed_at: result.completedAt.toISOString(),
+        },
+      ]);
     } catch (error) {
       this.logger.error("Failed to store job result", {
         jobId: result.jobId,

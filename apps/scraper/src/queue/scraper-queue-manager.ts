@@ -306,7 +306,7 @@ export class ScraperQueueManager {
         )
       `;
 
-      await this.clickhouse.execute(query);
+      await this.clickhouse.query(query);
     } catch (error) {
       this.logger.error("Failed to store job", { jobId: job.id, error });
     }
@@ -344,7 +344,7 @@ export class ScraperQueueManager {
         )
       `;
 
-      await this.clickhouse.execute(query);
+      await this.clickhouse.query(query);
     } catch (error) {
       this.logger.error("Failed to store job result", {
         jobId: result.jobId,
